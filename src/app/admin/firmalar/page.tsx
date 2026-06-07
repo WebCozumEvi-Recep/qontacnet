@@ -170,12 +170,12 @@ export default function AdminFirmalarPage() {
 
       {/* Düzenle Modal */}
       {editFirma && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setEditFirma(null)}>
-          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             {/* Başlık */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <h3 className="font-semibold text-on-surface text-base">Firmayı Düzenle</h3>
-              <button onClick={() => setEditFirma(null)} className="text-on-surface-variant hover:text-on-surface transition-all">
+              <button className="text-on-surface-variant hover:text-on-surface transition-all">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -284,7 +284,7 @@ export default function AdminFirmalarPage() {
               <div className="px-6 pb-5">
                 {editError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setEditFirma(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
+                  <button type="button" className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
                     İptal
                   </button>
                   <button type="submit" disabled={editLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
@@ -299,8 +299,8 @@ export default function AdminFirmalarPage() {
 
       {/* Sil Onay Dialog */}
       {deleteFirma && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setDeleteFirma(null)}>
-          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-red-400 text-2xl">delete_forever</span>
             </div>
@@ -309,7 +309,7 @@ export default function AdminFirmalarPage() {
               <span className="text-on-surface font-medium">{deleteFirma.ad}</span> firması ve tüm verisi kalıcı olarak silinecek. Bu işlem geri alınamaz.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteFirma(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
+              <button className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
                 İptal
               </button>
               <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
