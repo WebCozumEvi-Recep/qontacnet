@@ -1,26 +1,194 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Material Design 3 Color Tokens */
+  --color-primary: #a8e8ff;
+  --color-primary-container: #00d4ff;
+  --color-on-primary: #003642;
+  --color-on-primary-container: #00586b;
+  --color-primary-fixed: #b4ebff;
+  --color-primary-fixed-dim: #3cd7ff;
+  --color-secondary: #d2bbff;
+  --color-secondary-container: #6001d1;
+  --color-on-secondary: #3f008e;
+  --color-on-secondary-container: #c9aeff;
+  --color-tertiary: #42faba;
+  --color-tertiary-container: #00dda0;
+  --color-on-tertiary: #003826;
+  --color-on-tertiary-container: #005c40;
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+  --color-background: #0f1321;
+  --color-on-background: #dfe1f6;
+  --color-surface: #0f1321;
+  --color-surface-dim: #0f1321;
+  --color-surface-bright: #353849;
+  --color-surface-container-lowest: #0a0d1c;
+  --color-surface-container-low: #171b2a;
+  --color-surface-container: #1b1f2e;
+  --color-surface-container-high: #262939;
+  --color-surface-container-highest: #303444;
+  --color-surface-variant: #303444;
+  --color-on-surface: #dfe1f6;
+  --color-on-surface-variant: #bbc9cf;
+  --color-outline: #859398;
+  --color-outline-variant: #3c494e;
+  --color-inverse-surface: #dfe1f6;
+  --color-inverse-on-surface: #2c303f;
+  --color-inverse-primary: #00677e;
+  --color-surface-tint: #3cd7ff;
+
+  /* Custom Spacing Scale */
+  --spacing-xs: 0.5rem;   /* 8px */
+  --spacing-sm: 1rem;     /* 16px */
+  --spacing-md: 1.5rem;   /* 24px */
+  --spacing-lg: 2.5rem;   /* 40px */
+  --spacing-xl: 4rem;     /* 64px */
+
+  /* Container max-widths (max-w-*) — Tailwind v4'te spacing scale ile çakışmasın diye explicit veriyoruz */
+  --container-xs: 20rem;    /* 320px */
+  --container-sm: 24rem;    /* 384px */
+  --container-md: 28rem;    /* 448px */
+  --container-lg: 32rem;    /* 512px */
+  --container-xl: 36rem;    /* 576px */
+  --container-2xl: 42rem;   /* 672px */
+  --container-3xl: 48rem;   /* 768px */
+  --container-4xl: 56rem;   /* 896px */
+  --container-5xl: 64rem;   /* 1024px */
+  --container-6xl: 72rem;   /* 1152px */
+  --container-7xl: 80rem;   /* 1280px */
+
+  /* Font Families */
+  --font-display-lg: "Sora", sans-serif;
+  --font-display-lg-mobile: "Sora", sans-serif;
+  --font-headline-md: "Sora", sans-serif;
+  --font-headline-sm: "Sora", sans-serif;
+  --font-body-md: "Inter", sans-serif;
+  --font-body-lg: "Inter", sans-serif;
+  --font-label-md: "Inter", sans-serif;
+  --font-label-sm: "Inter", sans-serif;
+
+  /* Font Sizes */
+  --text-display-lg: 3rem;
+  --text-display-lg-mobile: 2rem;
+  --text-headline-md: 1.5rem;
+  --text-headline-sm: 1.25rem;
+  --text-body-lg: 1.125rem;
+  --text-body-md: 1rem;
+  --text-label-md: 0.875rem;
+  --text-label-sm: 0.75rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@utility max-w-container-max {
+  max-width: 1280px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Tailwind v4'te custom --spacing-{sm,md,lg,xl} bizim max-w-{sm,md,lg,xl}'i bozuyor.
+   Standart container scale'i plain CSS ile geri yüklüyoruz. */
+.max-w-xs { max-width: 20rem; }
+.max-w-sm { max-width: 24rem; }
+.max-w-md { max-width: 28rem; }
+.max-w-lg { max-width: 32rem; }
+.max-w-xl { max-width: 36rem; }
+.max-w-2xl { max-width: 42rem; }
+.max-w-3xl { max-width: 48rem; }
+.max-w-4xl { max-width: 56rem; }
+.max-w-5xl { max-width: 64rem; }
+.max-w-6xl { max-width: 72rem; }
+.max-w-7xl { max-width: 80rem; }
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #050816;
+  color: #dfe1f6;
+  font-family: "Inter", sans-serif;
+  overflow-x: hidden;
 }
+
+::selection {
+  background-color: #00d4ff;
+  color: #00586b;
+}
+
+/* Material Symbols base style */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+/* Glass Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glow Hover */
+.glow-hover {
+  transition: all 0.3s ease;
+}
+.glow-hover:hover {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+  border-color: rgba(0, 212, 255, 0.4);
+  transform: translateY(-4px);
+}
+
+/* Grid Pattern */
+.grid-pattern {
+  background-image: radial-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* Pulse Dot */
+.pulse-dot {
+  animation: pulse-anim 2s infinite;
+}
+
+@keyframes pulse-anim {
+  0% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.4; transform: scale(0.9); }
+}
+
+/* Shimmer */
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  background-size: 200% 100%;
+  animation: shimmer-anim 3s infinite;
+}
+
+@keyframes shimmer-anim {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Neon accent */
+.neon-accent {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #050816; }
+::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.3); border-radius: 3px; }

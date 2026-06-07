@@ -1,0 +1,164 @@
+"use client";
+import { use } from "react";
+import { mockMembers, mockLeads } from "@/lib/mock-data";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+export default function UyeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const member = mockMembers.find(m => m.id === id) ?? mockMembers[0];
+  const leads = mockLeads.filter(l => l.uyeId === id);
+  const router = useRouter();
+
+  const contactItems = [
+    { icon: "mail", label: "E-Posta", value: member.email, href: `mailto:${member.email}` },
+    { icon: "phone", label: "Telefon", value: member.telefon, href: `tel:${member.telefon}` },
+    { icon: "chat", label: "WhatsApp", value: member.whatsapp, href: `https://wa.me/${member.whatsapp}` },
+    { icon: "link", label: "LinkedIn", value: member.linkedin, href: `https://${member.linkedin}` },
+  ].filter(i => i.value);
+
+  return (
+    <div className="max-w-[900px] space-y-6">
+      {/* Back */}
+      <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary transition-all">
+        <span className="material-symbols-outlined text-base">arrow_back</span>
+        Üye Listesine Dön
+      </button>
+
+      {/* Profile Header */}
+      <div className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-5">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 border-2"
+          style={{ background: `${member.kartRenk}20`, borderColor: `${member.kartRenk}40` }}>
+          <span className="material-symbols-outlined text-4xl" style={{ color: member.kartRenk }}>person</span>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
+                {member.ad} {member.soyad}
+              </h2>
+              <p className="text-on-surface-variant text-sm mt-0.5">{member.unvan} · {member.departman}</p>
+              <p className="text-primary text-xs mt-1">{member.firmaAdi}</p>
+            </div>
+            <div className="flex gap-2">
+              <span className={`text-xs px-3 py-1.5 rounded-full font-medium border ${
+                member.aktif ? "bg-tertiary/10 text-tertiary border-tertiary/20" : "bg-red-400/10 text-red-400 border-red-400/20"
+              }`}>{member.aktif ? "Aktif" : "Pasif"}</span>
+              <Link href={`/kart/${member.id}`} target="_blank"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 glass-card rounded-full text-on-surface-variant hover:text-primary transition-all">
+                <span className="material-symbols-outlined text-sm">open_in_new</span>
+                Kartı Gör
+              </Link>
+            </div>
+          </div>
+          {member.biyografi && (
+            <p className="text-sm text-on-surface-variant mt-3 max-w-lg">{member.biyografi}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Stats */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { icon: "visibility", label: "Görüntülenme", value: member.goruntulemeSayisi, color: "#00d4ff" },
+              { icon: "group_add", label: "Lead", value: member.leadSayisi, color: "#42faba" },
+              { icon: "nfc", label: "NFC Dokunma", value: Math.floor(member.goruntulemeSayisi * 0.6), color: "#6001d1" },
+              { icon: "qr_code_2", label: "QR Tarama", value: Math.floor(member.goruntulemeSayisi * 0.4), color: "#a8e8ff" },
+            ].map(s => (
+              <div key={s.label} className="glass-card rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-base" style={{ color: s.color }}>{s.icon}</span>
+                  <span className="text-xs text-on-surface-variant">{s.label}</span>
+                </div>
+                <p className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Leads */}
+          <div className="glass-card rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>
+              Liderler ({leads.length})
+            </h3>
+            {leads.length === 0 ? (
+              <p className="text-sm text-on-surface-variant text-center py-6">Henüz lead yok</p>
+            ) : (
+              <div className="space-y-2">
+                {leads.map(l => (
+                  <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/3 transition-all">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-primary text-sm">person</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-on-surface">{l.ad}</p>
+                      <p className="text-xs text-on-surface-variant">{l.sirket}</p>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      l.kaynak === "NFC" ? "bg-primary/10 text-primary" : l.kaynak === "QR" ? "bg-tertiary/10 text-tertiary" : "bg-secondary/20 text-secondary"
+                    }`}>{l.kaynak}</span>
+                    <span className="text-xs text-on-surface-variant">{l.tarih}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Contact + Actions */}
+        <div className="space-y-4">
+          <div className="glass-card rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>İletişim</h3>
+            <div className="space-y-3">
+              {contactItems.map(c => (
+                <a key={c.label} href={c.href} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-all group">
+                  <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-all text-base">{c.icon}</span>
+                  <div>
+                    <p className="text-xs text-on-surface-variant">{c.label}</p>
+                    <p className="text-sm text-on-surface truncate">{c.value}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-card rounded-2xl p-5 space-y-2">
+            <h3 className="text-sm font-semibold text-on-surface mb-3" style={{ fontFamily: "Sora, sans-serif" }}>İşlemler</h3>
+            <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5 transition-all">
+              <span className="material-symbols-outlined text-base">edit</span>
+              Profili Düzenle
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5 transition-all">
+              <span className="material-symbols-outlined text-base">lock_reset</span>
+              Şifre Sıfırla
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5 transition-all">
+              <span className="material-symbols-outlined text-base">send</span>
+              Davet Gönder
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-400/5 transition-all">
+              <span className="material-symbols-outlined text-base">person_off</span>
+              Hesabı Pasife Al
+            </button>
+          </div>
+
+          <div className="glass-card rounded-2xl p-4 text-xs space-y-2 text-on-surface-variant">
+            <div className="flex justify-between">
+              <span>Kart rengi</span>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ background: member.kartRenk }} />
+                <span>{member.kartRenk}</span>
+              </div>
+            </div>
+            <div className="flex justify-between">
+              <span>Üyelik Tarihi</span>
+              <span>{member.olusturmaTarihi}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
