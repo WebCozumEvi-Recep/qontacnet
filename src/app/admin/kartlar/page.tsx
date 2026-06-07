@@ -186,8 +186,8 @@ export default function AdminKartlarPage() {
 
       {/* Detay Modal */}
       {(detayLoading || detayBatch) && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => { setDetayBatch(null); setDetayLoading(false); }}>
-          <div className="w-full max-w-md rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <h3 className="font-semibold text-on-surface">Batch Detayı</h3>
               <button onClick={() => { setDetayBatch(null); setDetayLoading(false); }} className="text-on-surface-variant hover:text-on-surface transition-all">
@@ -241,8 +241,8 @@ export default function AdminKartlarPage() {
 
       {/* Seri No Listesi Modal */}
       {seriModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setSeriModal(null)}>
-          <div className="w-full max-w-md rounded-2xl flex flex-col" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", maxHeight: "80vh" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl flex flex-col" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", maxHeight: "80vh" }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8 flex-shrink-0">
               <div>
                 <h3 className="font-semibold text-on-surface">Seri No Listesi</h3>
@@ -290,8 +290,8 @@ export default function AdminKartlarPage() {
 
       {/* Yeni Batch Modal */}
       {newModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setNewModal(false)}>
-          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <h3 className="font-semibold text-on-surface">Yeni Üretim Siparişi</h3>
               <button onClick={() => setNewModal(false)} className="text-on-surface-variant hover:text-on-surface transition-all">
@@ -372,8 +372,8 @@ export default function AdminKartlarPage() {
 
       {/* Düzenle Modal */}
       {editBatch && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setEditBatch(null)}>
-          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <div>
                 <h3 className="font-semibold text-on-surface">Batch Düzenle</h3>
@@ -454,8 +454,8 @@ export default function AdminKartlarPage() {
 
       {/* Sil Onay Dialog */}
       {deleteBatch && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setDeleteBatch(null)}>
-          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-red-400 text-2xl">delete_forever</span>
             </div>
