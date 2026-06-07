@@ -134,7 +134,37 @@ gerekirse `git reflog`/yedekten Laravel stack ayağa kaldırılabilir.
 
 ---
 
-## AŞAMA 7 — Sonrası (henüz planlanmadı)
+## AŞAMA 7 — Gerçek Backend + Veritabanı ✅ KISMEN (2026-06-07)
+
+Mock veriden gerçek persistence'a geçiş başladı.
+
+**Tamamlanan (Faz 1 — auth + üye/kart kalıcılığı):**
+- [x] Prisma 7 + Postgres (pg driver adapter). Şema: Firma, Member, Admin, CardTemplate, Lead
+      + kart görünürlük alanları (showWhatsapp/Linkedin/Instagram/Website/Bio)
+- [x] Gerçek auth: bcrypt + JWT httpOnly cookie. `/api/auth/{login,register,logout,me}` — 3 rol
+- [x] Üye API: `/api/me/profile`, `/api/me/card`, `/api/me/templates`, public `/api/kart/[id]`
+- [x] `/api/lead` DB'ye yazıyor + sayaç
+- [x] auth-context API tabanlı; üye profil/kart sayfaları gerçek kayıt — **toggle'lar çalışıyor & kalıcı**
+- [x] Docker: postgres + migrate (builder target) + app + nginx; seed scripti
+- [x] Canlıda doğrulandı: login/profil/kart/public hepsi kalıcı
+
+**Demo loginler (DB):** admin@qontac.net/qontac123 · firma@qontac.net/123456 · demo@qontac.net/123456
+
+**Bekleyen (Faz 2 — firma/admin sayfalarını DB'ye taşı):**
+- [ ] Firma paneli (üye listesi/detay, şablon, analitik, ayarlar) → DB (şu an hâlâ mock-data.ts)
+- [ ] Admin paneli (firmalar, kartlar, siparişler, lisanslar, gelir, başvurular) → DB
+- [ ] Üye davet/aktivasyon akışı (şu an register ilk firmaya bağlıyor)
+- [ ] CardBatch/Order/License/Application modelleri
+
+**Dağıtım notları:**
+- nginx, app yeniden oluşturulunca eski IP'yi cache'ler → deploy.sh artık nginx'i restart eder.
+- Migration: `migrate` servisi her up'ta `prisma migrate deploy` (idempotent). Seed SADECE ilk kurulumda
+  manuel: `docker compose -f docker-compose.prod.yml run --rm migrate npm run db:seed` (deleteMany içerir!).
+- .env.production: SMTP + DATABASE_URL + JWT_SECRET. Postgres iç ağda, host'a kapalı.
+
+---
+
+## AŞAMA 8 — Sonrası (henüz planlanmadı)
 
 - [ ] Gerçek backend (DB + auth + API)
 - [ ] Mobil uygulama (üye kart aktivasyon)

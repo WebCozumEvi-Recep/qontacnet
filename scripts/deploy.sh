@@ -24,8 +24,13 @@ fi
 echo "--- Image build ediliyor ---"
 docker compose -f docker-compose.prod.yml build
 
-echo "--- Servisler güncelleniyor ---"
+echo "--- Servisler güncelleniyor (postgres + migrate + app) ---"
 docker compose -f docker-compose.prod.yml up -d
+
+# app yeniden oluşturulduysa yeni IP alır; nginx eski IP'yi cache'lememesi için
+# yeniden başlat (502 önlemi).
+echo "--- nginx yenileniyor ---"
+docker compose -f docker-compose.prod.yml restart nginx
 
 echo "--- Eski image temizliği ---"
 docker image prune -f
