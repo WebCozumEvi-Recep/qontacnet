@@ -33,6 +33,12 @@ export default function AdminKartlarPage() {
   const [deleteBatch, setDeleteBatch] = useState<Batch | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const emptyNewForm: EditForm = { kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: new Date().toISOString().slice(0, 10), durum: "URETIMDE", tahsisFirma: "" };
+  const [newModal, setNewModal] = useState(false);
+  const [newForm, setNewForm] = useState<EditForm>(emptyNewForm);
+  const [newLoading, setNewLoading] = useState(false);
+  const [newError, setNewError] = useState("");
+
   useEffect(() => {
     fetch("/api/admin/batches").then(r => r.json()).then(j => { if (j.ok) setBatches(j.batches); }).finally(() => setLoading(false));
     fetch("/api/admin/firmalar").then(r => r.json()).then(j => { if (j.ok) setFirmalar(j.firmalar.map((f: { id: string; ad: string }) => ({ id: f.id, ad: f.ad }))); });
@@ -51,6 +57,22 @@ export default function AdminKartlarPage() {
       durum: b.durum, tahsisFirma: b.tahsisFirma ?? "",
     });
     setEditError("");
+  }
+
+  async function handleNew(e: React.FormEvent) {
+    e.preventDefault();
+    setNewLoading(true); setNewError("");
+    const res = await fetch("/api/admin/batches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...newForm, miktar: parseInt(newForm.miktar) }),
+    });
+    const j = await res.json();
+    setNewLoading(false);
+    if (!j.ok) { setNewError(j.error || "Oluşturma başarısız."); return; }
+    setBatches(prev => [j.batch, ...prev]);
+    setNewModal(false);
+    setNewForm(emptyNewForm);
   }
 
   async function handleEdit(e: React.FormEvent) {
@@ -111,7 +133,7 @@ export default function AdminKartlarPage() {
 
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Üretim Partileri (Batch)</h3>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
+        <button onClick={() => { setNewForm(emptyNewForm); setNewError(""); setNewModal(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
           <span className="material-symbols-outlined text-base">add</span>Yeni Üretim Siparişi
         </button>
       </div>
@@ -262,6 +284,88 @@ export default function AdminKartlarPage() {
                 <span className="material-symbols-outlined text-sm">download</span>TXT İndir
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Yeni Batch Modal */}
+      {newModal && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setNewModal(false)}>
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
+              <h3 className="font-semibold text-on-surface">Yeni Üretim Siparişi</h3>
+              <button onClick={() => setNewModal(false)} className="text-on-surface-variant hover:text-on-surface transition-all">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleNew}>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Batch Kodu *</label>
+                    <input required value={newForm.kod} onChange={e => setNewForm(p => ({ ...p, kod: e.target.value }))}
+                      placeholder="QNC-B2501-001"
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Seri Prefix</label>
+                    <input value={newForm.seriPrefix} onChange={e => setNewForm(p => ({ ...p, seriPrefix: e.target.value }))}
+                      placeholder="QNC-2501"
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Miktar (adet) *</label>
+                    <input required type="number" min={1} value={newForm.miktar} onChange={e => setNewForm(p => ({ ...p, miktar: e.target.value }))}
+                      placeholder="500"
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Üretim Tarihi</label>
+                    <input type="date" value={newForm.uretimTarihi} onChange={e => setNewForm(p => ({ ...p, uretimTarihi: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Üretici Firma</label>
+                  <input value={newForm.uretici} onChange={e => setNewForm(p => ({ ...p, uretici: e.target.value }))}
+                    placeholder="NFC Solutions Ltd."
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
+                    <select value={newForm.durum} onChange={e => setNewForm(p => ({ ...p, durum: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                      <option value="URETIMDE">Üretimde</option>
+                      <option value="STOKTA">Stokta</option>
+                      <option value="TAHSIS">Tahsis Edildi</option>
+                      <option value="IPTAL">İptal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Tahsis Edilen Firma</label>
+                    <select value={newForm.tahsisFirma} onChange={e => setNewForm(p => ({ ...p, tahsisFirma: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                      <option value="">— Seçilmedi —</option>
+                      {firmalar.map(f => <option key={f.id} value={f.ad}>{f.ad}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 pb-5">
+                {newError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{newError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setNewModal(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
+                    İptal
+                  </button>
+                  <button type="submit" disabled={newLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
+                    {newLoading ? "Oluşturuluyor..." : "Oluştur"}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
