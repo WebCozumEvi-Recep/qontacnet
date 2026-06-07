@@ -15,10 +15,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const body = (await req.json()) as Record<string, unknown>;
   const data: Record<string, unknown> = {};
+  if (typeof body.ad === "string" && body.ad.trim()) data.ad = body.ad.trim();
+  if (typeof body.email === "string" && body.email.trim()) data.email = body.email.trim();
   if (typeof body.durum === "string" && DURUMLAR.includes(body.durum)) data.durum = body.durum;
   if (typeof body.paket === "string" && PAKETLER.includes(body.paket)) {
     data.paket = body.paket;
-    // pakete göre MRR güncelle
     const lic = await prisma.license.findUnique({ where: { ad: body.paket as "BASLANGIC" | "PROFESYONEL" | "KURUMSAL" } });
     if (lic) data.mrr = body.durum === "DENEME" || f.durum === "DENEME" ? 0 : lic.aylikFiyat;
   }
@@ -28,6 +29,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { passwordHash, ...safe } = updated;
   void passwordHash;
   return NextResponse.json({ ok: true, firma: safe });
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await requireRole("admin");
+  if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
+  const { id } = await params;
+
+  const f = await prisma.firma.findUnique({ where: { id } });
+  if (!f) return NextResponse.json({ ok: false, error: "Firma bulunamadı." }, { status: 404 });
+
+  await prisma.firma.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
