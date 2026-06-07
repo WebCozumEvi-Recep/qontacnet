@@ -183,8 +183,12 @@ model Order {
   adet      Int
   tutar     Int
   durum     SiparisDurum @default(HAZIRLANIYOR)
-  kargoNo   String?
-  createdAt DateTime     @default(now())
+  kargoNo    String?
+  birimFiyat Int          @default(0)
+  kdvOrani   Int          @default(20)
+  indirim    Int          @default(0)
+  notlar     String       @default("")
+  createdAt  DateTime     @default(now())
 }
 
 model Application {

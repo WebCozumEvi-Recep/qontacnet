@@ -1,14 +1,20 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { siparisDurumMap, trDate } from "@/lib/labels";
 
 interface Order {
   id: string; siparisNo: string; firma: string; firmaId?: string | null;
-  urun: string; adet: number; tutar: number; durum: string;
-  kargoNo: string | null; createdAt: string;
+  urun: string; adet: number; tutar: number; birimFiyat: number;
+  kdvOrani: number; indirim: number; notlar: string;
+  durum: string; kargoNo: string | null; createdAt: string;
 }
 
-interface OrderForm { firma: string; urun: string; adet: string; tutar: string; durum: string; kargoNo: string; }
+interface OrderForm {
+  firma: string; urun: string; adet: string; tutar: string;
+  birimFiyat: string; kdvOrani: string; indirim: string; notlar: string;
+  durum: string; kargoNo: string;
+}
 
 const URUNLER = ["NFC Kart (Standart)", "NFC Kart (Premium)", "NFC Kart (Metalik)", "NFC Kart (Özel Baskı)", "NFC Sticker", "NFC Kart (Şeffaf)"];
 
@@ -18,9 +24,8 @@ export default function AdminSiparislerPage() {
   const [tab, setTab] = useState<string>("tum");
   const [firmalar, setFirmalar] = useState<{ id: string; ad: string }[]>([]);
 
-  const [detayOrder, setDetayOrder] = useState<Order | null>(null);
 
-  const emptyForm: OrderForm = { firma: "", urun: URUNLER[0], adet: "", tutar: "", durum: "HAZIRLANIYOR", kargoNo: "" };
+  const emptyForm: OrderForm = { firma: "", urun: URUNLER[0], adet: "", tutar: "", birimFiyat: "", kdvOrani: "20", indirim: "0", notlar: "", durum: "HAZIRLANIYOR", kargoNo: "" };
   const [newModal, setNewModal] = useState(false);
   const [newForm, setNewForm] = useState<OrderForm>(emptyForm);
   const [newLoading, setNewLoading] = useState(false);
@@ -50,7 +55,7 @@ export default function AdminSiparislerPage() {
 
   function openEdit(o: Order) {
     setEditOrder(o);
-    setEditForm({ firma: o.firma, urun: o.urun, adet: String(o.adet), tutar: String(o.tutar), durum: o.durum, kargoNo: o.kargoNo ?? "" });
+    setEditForm({ firma: o.firma, urun: o.urun, adet: String(o.adet), tutar: String(o.tutar), birimFiyat: String(o.birimFiyat || ""), kdvOrani: String(o.kdvOrani ?? 20), indirim: String(o.indirim || 0), notlar: o.notlar ?? "", durum: o.durum, kargoNo: o.kargoNo ?? "" });
     setEditError("");
   }
 
@@ -60,7 +65,7 @@ export default function AdminSiparislerPage() {
     const res = await fetch("/api/admin/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...newForm, adet: parseInt(newForm.adet), tutar: parseInt(newForm.tutar) }),
+      body: JSON.stringify({ ...newForm, adet: parseInt(newForm.adet), tutar: parseInt(newForm.tutar) || 0, birimFiyat: parseInt(newForm.birimFiyat) || 0, kdvOrani: parseInt(newForm.kdvOrani) || 20, indirim: parseInt(newForm.indirim) || 0 }),
     });
     const j = await res.json();
     setNewLoading(false);
@@ -76,7 +81,7 @@ export default function AdminSiparislerPage() {
     const res = await fetch(`/api/admin/orders/${editOrder.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...editForm, adet: parseInt(editForm.adet), tutar: parseInt(editForm.tutar) }),
+      body: JSON.stringify({ ...editForm, adet: parseInt(editForm.adet), tutar: parseInt(editForm.tutar) || 0, birimFiyat: parseInt(editForm.birimFiyat) || 0, kdvOrani: parseInt(editForm.kdvOrani) || 20, indirim: parseInt(editForm.indirim) || 0 }),
     });
     const j = await res.json();
     setEditLoading(false);
@@ -91,7 +96,7 @@ export default function AdminSiparislerPage() {
     const res = await fetch(`/api/admin/orders/${deleteOrder.id}`, { method: "DELETE" });
     const j = await res.json();
     setDeleteLoading(false);
-    if (j.ok) { setOrders(prev => prev.filter(o => o.id !== deleteOrder.id)); setDeleteOrder(null); setDetayOrder(null); }
+    if (j.ok) { setOrders(prev => prev.filter(o => o.id !== deleteOrder.id)); setDeleteOrder(null); }
   }
 
   return (
@@ -140,7 +145,7 @@ export default function AdminSiparislerPage() {
             <div className="text-left md:text-right"><p className="text-xs text-on-surface-variant">Adet</p><p className="text-on-surface font-medium">{o.adet}</p></div>
             <div className="text-left md:text-right"><p className="text-xs text-on-surface-variant">Tutar</p><p className="text-on-surface font-bold text-lg" style={{ fontFamily: "Sora, sans-serif" }}>₺{o.tutar.toLocaleString("tr-TR")}</p></div>
             <div className="flex items-center gap-1">
-              <button onClick={() => setDetayOrder(o)} className="px-4 py-2 glass-card rounded-lg text-xs text-on-surface-variant hover:text-primary transition-all">Yönet</button>
+              <Link href={`/admin/siparisler/${o.id}`} className="px-4 py-2 glass-card rounded-lg text-xs text-on-surface-variant hover:text-primary transition-all">Yönet</Link>
               <button onClick={() => openEdit(o)} className="p-2 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface transition-all" title="Düzenle">
                 <span className="material-symbols-outlined text-base">edit</span>
               </button>
@@ -153,74 +158,6 @@ export default function AdminSiparislerPage() {
         {!loading && filtered.length === 0 && <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant">Bu durumda sipariş yok.</div>}
       </div>
 
-      {/* Detay / Yönet Modal */}
-      {detayOrder && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
-              <div>
-                <h3 className="font-semibold text-on-surface">Sipariş Detayı</h3>
-                <p className="text-xs font-mono text-on-surface-variant">{detayOrder.siparisNo}</p>
-              </div>
-              <button onClick={() => setDetayOrder(null)} className="text-on-surface-variant hover:text-on-surface transition-all">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-on-surface-variant">Durum</span>
-                <span className="text-xs px-3 py-1 rounded-full font-medium"
-                  style={{ background: `${siparisDurumMap[detayOrder.durum].color}15`, color: siparisDurumMap[detayOrder.durum].color, border: `1px solid ${siparisDurumMap[detayOrder.durum].color}30` }}>
-                  {siparisDurumMap[detayOrder.durum].label}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: "Firma", value: detayOrder.firma },
-                  { label: "Ürün", value: detayOrder.urun },
-                  { label: "Adet", value: `${detayOrder.adet} adet` },
-                  { label: "Tutar", value: `₺${detayOrder.tutar.toLocaleString("tr-TR")}` },
-                  { label: "Sipariş Tarihi", value: trDate(detayOrder.createdAt) },
-                  { label: "Kargo No", value: detayOrder.kargoNo ?? "—", mono: true },
-                ].map(({ label, value, mono }) => (
-                  <div key={label}>
-                    <p className="text-xs text-on-surface-variant mb-0.5">{label}</p>
-                    <p className={`text-sm text-on-surface ${mono ? "font-mono" : ""}`}>{value}</p>
-                  </div>
-                ))}
-              </div>
-              {/* Hızlı durum güncelleme */}
-              <div className="pt-3 border-t border-white/8">
-                <p className="text-xs text-on-surface-variant mb-2">Durumu Güncelle</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(siparisDurumMap).map(d => (
-                    <button key={d} disabled={detayOrder.durum === d}
-                      onClick={async () => {
-                        const res = await fetch(`/api/admin/orders/${detayOrder.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ durum: d }) });
-                        const j = await res.json();
-                        if (j.ok) { setOrders(prev => prev.map(o => o.id === detayOrder.id ? { ...o, durum: d } : o)); setDetayOrder(prev => prev ? { ...prev, durum: d } : null); }
-                      }}
-                      className="text-xs px-3 py-1.5 rounded-lg transition-all disabled:opacity-40 disabled:cursor-default"
-                      style={{ background: detayOrder.durum === d ? `${siparisDurumMap[d].color}20` : "rgba(255,255,255,0.05)", color: siparisDurumMap[d].color, border: `1px solid ${siparisDurumMap[d].color}30` }}>
-                      {siparisDurumMap[d].label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="px-6 pb-5 flex gap-3">
-              <button onClick={() => { openEdit(detayOrder); setDetayOrder(null); }}
-                className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all flex items-center justify-center gap-1">
-                <span className="material-symbols-outlined text-sm">edit</span>Düzenle
-              </button>
-              <button onClick={() => { setDeleteOrder(detayOrder); setDetayOrder(null); }}
-                className="py-2.5 px-4 rounded-xl text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">delete</span>Sil
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Yeni Sipariş Modal */}
       {newModal && (
@@ -249,26 +186,45 @@ export default function AdminSiparislerPage() {
                     {URUNLER.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs text-on-surface-variant mb-1 block">Adet *</label>
                     <input required type="number" min={1} value={newForm.adet} onChange={e => setNewForm(p => ({ ...p, adet: e.target.value }))}
                       placeholder="50"
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Tutar (₺)</label>
-                    <input type="number" min={0} value={newForm.tutar} onChange={e => setNewForm(p => ({ ...p, tutar: e.target.value }))}
-                      placeholder="7500"
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                    <label className="text-xs text-on-surface-variant mb-1 block">Birim Fiyat (₺)</label>
+                    <input type="number" min={0} value={newForm.birimFiyat} onChange={e => setNewForm(p => ({ ...p, birimFiyat: e.target.value }))}
+                      placeholder="150"
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">KDV %</label>
+                    <input type="number" min={0} max={100} value={newForm.kdvOrani} onChange={e => setNewForm(p => ({ ...p, kdvOrani: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">İndirim (₺)</label>
+                    <input type="number" min={0} value={newForm.indirim} onChange={e => setNewForm(p => ({ ...p, indirim: e.target.value }))}
+                      placeholder="0"
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
+                    <select value={newForm.durum} onChange={e => setNewForm(p => ({ ...p, durum: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                      {Object.entries(siparisDurumMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                    </select>
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
-                  <select value={newForm.durum} onChange={e => setNewForm(p => ({ ...p, durum: e.target.value }))}
-                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                    {Object.entries(siparisDurumMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                  </select>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Notlar</label>
+                  <textarea value={newForm.notlar} onChange={e => setNewForm(p => ({ ...p, notlar: e.target.value }))}
+                    rows={2} placeholder="Sipariş notu..."
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all resize-none" />
                 </div>
               </div>
               <div className="px-6 pb-5">
@@ -318,16 +274,34 @@ export default function AdminSiparislerPage() {
                     {!URUNLER.includes(editForm.urun) && <option value={editForm.urun}>{editForm.urun}</option>}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs text-on-surface-variant mb-1 block">Adet *</label>
                     <input required type="number" min={1} value={editForm.adet} onChange={e => setEditForm(p => ({ ...p, adet: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Tutar (₺)</label>
-                    <input type="number" min={0} value={editForm.tutar} onChange={e => setEditForm(p => ({ ...p, tutar: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                    <label className="text-xs text-on-surface-variant mb-1 block">Birim Fiyat (₺)</label>
+                    <input type="number" min={0} value={editForm.birimFiyat} onChange={e => setEditForm(p => ({ ...p, birimFiyat: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">KDV %</label>
+                    <input type="number" min={0} max={100} value={editForm.kdvOrani} onChange={e => setEditForm(p => ({ ...p, kdvOrani: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">İndirim (₺)</label>
+                    <input type="number" min={0} value={editForm.indirim} onChange={e => setEditForm(p => ({ ...p, indirim: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Kargo No</label>
+                    <input value={editForm.kargoNo} onChange={e => setEditForm(p => ({ ...p, kargoNo: e.target.value }))}
+                      placeholder="TRK1234567"
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -339,10 +313,10 @@ export default function AdminSiparislerPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Kargo No</label>
-                    <input value={editForm.kargoNo} onChange={e => setEditForm(p => ({ ...p, kargoNo: e.target.value }))}
-                      placeholder="TRK1234567"
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
+                    <label className="text-xs text-on-surface-variant mb-1 block">Notlar</label>
+                    <input value={editForm.notlar} onChange={e => setEditForm(p => ({ ...p, notlar: e.target.value }))}
+                      placeholder="Sipariş notu..."
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
                   </div>
                 </div>
               </div>

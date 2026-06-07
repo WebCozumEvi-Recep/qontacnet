@@ -12,13 +12,26 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await requireRole("admin");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
-  const { firma, urun, adet, tutar } = (await req.json()) as Record<string, unknown>;
+  const body = (await req.json()) as Record<string, unknown>;
+  const { firma, urun, adet, birimFiyat, kdvOrani, indirim, notlar } = body;
+  const tutar = body.tutar;
   if (!firma || !urun || !adet) return NextResponse.json({ ok: false, error: "Firma, ürün ve adet zorunlu." }, { status: 400 });
+
+  const bp = Number(birimFiyat) || 0;
+  const kv = Number(kdvOrani) ?? 20;
+  const ind = Number(indirim) || 0;
+  const araToplam = Number(adet) * bp;
+  const hesaplananTutar = bp > 0 ? Math.round(araToplam + araToplam * kv / 100 - ind) : Number(tutar) || 0;
 
   const count = await prisma.order.count();
   const siparisNo = `SIP-${new Date().getFullYear()}-${String(1300 + count + 1)}`;
   const order = await prisma.order.create({
-    data: { siparisNo, firma: String(firma), urun: String(urun), adet: Number(adet), tutar: Number(tutar) || 0, durum: "HAZIRLANIYOR" },
+    data: {
+      siparisNo, firma: String(firma), urun: String(urun), adet: Number(adet),
+      tutar: hesaplananTutar, durum: "HAZIRLANIYOR",
+      birimFiyat: bp, kdvOrani: kv, indirim: ind,
+      notlar: String(notlar || ""),
+    },
   });
   return NextResponse.json({ ok: true, order });
 }
