@@ -7,13 +7,17 @@ interface Batch {
   durum: string; tahsisFirma: string | null; seriPrefix: string; createdAt: string;
 }
 
-interface BatchDetail extends Batch {
-  seriNumaralari: string[];
+interface BatchDetail extends Batch { seriNumaralari: string[]; }
+
+interface EditForm {
+  kod: string; miktar: string; seriPrefix: string; uretici: string;
+  uretimTarihi: string; durum: string; tahsisFirma: string;
 }
 
 export default function AdminKartlarPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [firmalar, setFirmalar] = useState<{ id: string; ad: string }[]>([]);
 
   const [detayBatch, setDetayBatch] = useState<BatchDetail | null>(null);
   const [detayLoading, setDetayLoading] = useState(false);
@@ -21,12 +25,49 @@ export default function AdminKartlarPage() {
   const [seriModal, setSeriModal] = useState<BatchDetail | null>(null);
   const [seriSearch, setSeriSearch] = useState("");
 
+  const [editBatch, setEditBatch] = useState<Batch | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: "", durum: "", tahsisFirma: "" });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+
   const [deleteBatch, setDeleteBatch] = useState<Batch | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/batches").then(r => r.json()).then(j => { if (j.ok) setBatches(j.batches); }).finally(() => setLoading(false));
+    fetch("/api/admin/firmalar").then(r => r.json()).then(j => { if (j.ok) setFirmalar(j.firmalar.map((f: { id: string; ad: string }) => ({ id: f.id, ad: f.ad }))); });
   }, []);
+
+  function toDateInput(v?: string | null) {
+    if (!v) return "";
+    return new Date(v).toISOString().slice(0, 10);
+  }
+
+  function openEdit(b: Batch) {
+    setEditBatch(b);
+    setEditForm({
+      kod: b.kod, miktar: String(b.miktar), seriPrefix: b.seriPrefix,
+      uretici: b.uretici, uretimTarihi: toDateInput(b.uretimTarihi),
+      durum: b.durum, tahsisFirma: b.tahsisFirma ?? "",
+    });
+    setEditError("");
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editBatch) return;
+    setEditLoading(true); setEditError("");
+    const res = await fetch(`/api/admin/batches/${editBatch.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...editForm, miktar: parseInt(editForm.miktar) }),
+    });
+    const j = await res.json();
+    setEditLoading(false);
+    if (!j.ok) { setEditError(j.error || "Güncelleme başarısız."); return; }
+    setBatches(prev => prev.map(b => b.id === editBatch.id ? { ...b, ...j.batch } : b));
+    setEditBatch(null);
+  }
 
   const sum = (d: string) => batches.filter(b => b.durum === d).reduce((a, b) => a + b.miktar, 0);
   const toplam = batches.reduce((a, b) => a + b.miktar, 0);
@@ -88,6 +129,9 @@ export default function AdminKartlarPage() {
                   <span className="text-xs px-2 py-1 rounded-full whitespace-nowrap" style={{ background: `${batchDurumMap[b.durum].color}15`, color: batchDurumMap[b.durum].color, border: `1px solid ${batchDurumMap[b.durum].color}30` }}>
                     {batchDurumMap[b.durum].label}
                   </span>
+                  <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface transition-all" title="Düzenle">
+                    <span className="material-symbols-outlined text-base">edit</span>
+                  </button>
                   <button onClick={() => setDeleteBatch(b)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400 transition-all" title="Sil">
                     <span className="material-symbols-outlined text-base">delete</span>
                   </button>
@@ -218,6 +262,88 @@ export default function AdminKartlarPage() {
                 <span className="material-symbols-outlined text-sm">download</span>TXT İndir
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Düzenle Modal */}
+      {editBatch && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setEditBatch(null)}>
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
+              <div>
+                <h3 className="font-semibold text-on-surface">Batch Düzenle</h3>
+                <p className="text-xs text-on-surface-variant font-mono">{editBatch.kod}</p>
+              </div>
+              <button onClick={() => setEditBatch(null)} className="text-on-surface-variant hover:text-on-surface transition-all">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleEdit}>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Batch Kodu *</label>
+                    <input required value={editForm.kod} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Seri Prefix</label>
+                    <input value={editForm.seriPrefix} onChange={e => setEditForm(p => ({ ...p, seriPrefix: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Miktar (adet) *</label>
+                    <input required type="number" min={1} value={editForm.miktar} onChange={e => setEditForm(p => ({ ...p, miktar: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Üretim Tarihi</label>
+                    <input type="date" value={editForm.uretimTarihi} onChange={e => setEditForm(p => ({ ...p, uretimTarihi: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Üretici Firma</label>
+                  <input value={editForm.uretici} onChange={e => setEditForm(p => ({ ...p, uretici: e.target.value }))}
+                    placeholder="Üretici firma adı"
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
+                    <select value={editForm.durum} onChange={e => setEditForm(p => ({ ...p, durum: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                      <option value="URETIMDE">Üretimde</option>
+                      <option value="STOKTA">Stokta</option>
+                      <option value="TAHSIS">Tahsis Edildi</option>
+                      <option value="IPTAL">İptal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Tahsis Edilen Firma</label>
+                    <select value={editForm.tahsisFirma} onChange={e => setEditForm(p => ({ ...p, tahsisFirma: e.target.value }))}
+                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                      <option value="">— Seçilmedi —</option>
+                      {firmalar.map(f => <option key={f.id} value={f.ad}>{f.ad}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 pb-5">
+                {editError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setEditBatch(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
+                    İptal
+                  </button>
+                  <button type="submit" disabled={editLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
+                    {editLoading ? "Kaydediliyor..." : "Kaydet"}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

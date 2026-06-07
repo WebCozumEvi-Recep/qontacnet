@@ -41,9 +41,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const DURUMLAR = ["URETIMDE", "STOKTA", "TAHSIS", "IPTAL"];
   const body = (await req.json()) as Record<string, unknown>;
   const data: Record<string, unknown> = {};
+  if (typeof body.kod === "string" && body.kod.trim()) data.kod = body.kod.trim();
+  if (typeof body.miktar === "number" && body.miktar > 0) data.miktar = body.miktar;
+  if (typeof body.seriPrefix === "string") data.seriPrefix = body.seriPrefix.trim();
+  if (typeof body.uretici === "string") data.uretici = body.uretici.trim();
+  if (typeof body.uretimTarihi === "string" && body.uretimTarihi) data.uretimTarihi = new Date(body.uretimTarihi);
   if (typeof body.durum === "string" && DURUMLAR.includes(body.durum)) data.durum = body.durum;
   if (typeof body.tahsisFirma === "string") data.tahsisFirma = body.tahsisFirma || null;
-  if (typeof body.uretici === "string") data.uretici = body.uretici;
 
   const updated = await prisma.cardBatch.update({ where: { id }, data });
   return NextResponse.json({ ok: true, batch: updated });
