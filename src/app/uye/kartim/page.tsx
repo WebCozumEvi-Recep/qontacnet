@@ -166,9 +166,19 @@ export default function KartimPage() {
                 <span className="text-on-surface-variant">NFC Bağlantısı</span>
                 <span className="text-tertiary font-medium">✓ Bağlı</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex items-center justify-between">
                 <span className="text-on-surface-variant">Kart URL</span>
-                <span className="text-primary text-xs">qontac.net/kart/{user?.id?.slice(0, 8)}</span>
+                <div className="flex gap-2">
+                  <button onClick={() => {
+                    const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://qontac.net'}/kart/${user?.id}`;
+                    navigator.clipboard.writeText(url).then(() => alert("Kopyalandı!"));
+                  }} className="flex items-center gap-1.5 px-2 py-1 text-xs glass-card rounded-lg text-on-surface-variant hover:text-primary transition-all">
+                    <span className="material-symbols-outlined text-sm">content_copy</span>Kopyala
+                  </button>
+                  <a href={`/kart/${user?.id}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 text-xs glass-card rounded-lg text-on-surface-variant hover:text-primary transition-all">
+                    <span className="material-symbols-outlined text-sm">open_in_new</span>Git
+                  </a>
+                </div>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
 interface NavItem {
@@ -46,8 +47,19 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [displayName, setDisplayName] = useState<string>("");
   const nav = role === "uye" ? uyeNav : role === "firma" ? firmaNav : adminNav;
   const roleLabel = role === "uye" ? "Üye" : role === "firma" ? "Firma" : "Platform";
+
+  useEffect(() => {
+    if (user?.data?.["ad"] && user?.data?.["soyad"]) {
+      setDisplayName(`${user.data["ad"]} ${user.data["soyad"]}`);
+    } else if (user?.data?.["ad"]) {
+      setDisplayName(String(user.data["ad"]));
+    } else if (user?.email) {
+      setDisplayName(user.email.split("@")[0]);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -105,13 +117,7 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
               <span className="material-symbols-outlined text-primary text-sm">person</span>
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-on-surface truncate">
-                {user?.data?.["ad"] && user?.data?.["soyad"]
-                  ? `${user.data["ad"]} ${user.data["soyad"]}`
-                  : user?.data?.["ad"]
-                  ? String(user.data["ad"])
-                  : user?.email?.split("@")[0]}
-              </p>
+              <p className="text-sm font-medium text-on-surface truncate">{displayName}</p>
               <p className="text-xs text-on-surface-variant truncate">{user?.email}</p>
             </div>
           </div>
