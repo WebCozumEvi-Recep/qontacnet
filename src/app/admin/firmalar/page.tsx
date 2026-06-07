@@ -6,9 +6,15 @@ import { paketLabel, firmaDurumMap } from "@/lib/labels";
 interface AdminFirma {
   id: string; ad: string; email: string; paket: string; durum: string;
   mrr: number; uyeSayisi: number; aktifKart: number;
+  telefon?: string; adres?: string; website?: string; sektor?: string;
+  temsilci?: string; paketBaslangic?: string; paketBitis?: string | null;
 }
 
-interface EditForm { ad: string; email: string; paket: string; durum: string; }
+interface EditForm {
+  ad: string; email: string; telefon: string; adres: string;
+  website: string; sektor: string; temsilci: string;
+  paket: string; durum: string; paketBaslangic: string; paketBitis: string;
+}
 
 export default function AdminFirmalarPage() {
   const [firmalar, setFirmalar] = useState<AdminFirma[]>([]);
@@ -18,7 +24,8 @@ export default function AdminFirmalarPage() {
   const [paket, setPaket] = useState("tum");
 
   const [editFirma, setEditFirma] = useState<AdminFirma | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ ad: "", email: "", paket: "", durum: "" });
+  const [editForm, setEditForm] = useState<EditForm>({ ad: "", email: "", telefon: "", adres: "", website: "", sektor: "", temsilci: "", paket: "", durum: "", paketBaslangic: "", paketBitis: "" });
+  const [editTab, setEditTab] = useState<"genel" | "paket">("genel");
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -36,9 +43,23 @@ export default function AdminFirmalarPage() {
     return true;
   }), [firmalar, q, durum, paket]);
 
+  function toDateInput(v?: string | null) {
+    if (!v) return "";
+    return new Date(v).toISOString().slice(0, 10);
+  }
+
   function openEdit(f: AdminFirma) {
     setEditFirma(f);
-    setEditForm({ ad: f.ad, email: f.email, paket: f.paket, durum: f.durum });
+    setEditTab("genel");
+    setEditForm({
+      ad: f.ad, email: f.email,
+      telefon: f.telefon ?? "", adres: f.adres ?? "",
+      website: f.website ?? "", sektor: f.sektor ?? "",
+      temsilci: f.temsilci ?? "",
+      paket: f.paket, durum: f.durum,
+      paketBaslangic: toDateInput(f.paketBaslangic),
+      paketBitis: toDateInput(f.paketBitis),
+    });
     setEditError("");
   }
 
@@ -54,7 +75,7 @@ export default function AdminFirmalarPage() {
     const j = await res.json();
     setEditLoading(false);
     if (!j.ok) { setEditError(j.error || "Güncelleme başarısız."); return; }
-    setFirmalar(prev => prev.map(f => f.id === editFirma.id ? { ...f, ...editForm } : f));
+    setFirmalar(prev => prev.map(f => f.id === editFirma.id ? { ...f, ...editForm, paketBaslangic: editForm.paketBaslangic || f.paketBaslangic, paketBitis: editForm.paketBitis || null } : f));
     setEditFirma(null);
   }
 
@@ -150,53 +171,126 @@ export default function AdminFirmalarPage() {
       {/* Düzenle Modal */}
       {editFirma && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setEditFirma(null)}>
-          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            {/* Başlık */}
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <h3 className="font-semibold text-on-surface text-base">Firmayı Düzenle</h3>
               <button onClick={() => setEditFirma(null)} className="text-on-surface-variant hover:text-on-surface transition-all">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form onSubmit={handleEdit} className="space-y-4">
-              <div>
-                <label className="text-xs text-on-surface-variant mb-1 block">Firma Adı</label>
-                <input required value={editForm.ad} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))}
-                  className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-              </div>
-              <div>
-                <label className="text-xs text-on-surface-variant mb-1 block">E-Posta</label>
-                <input required type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
-                  className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-on-surface-variant mb-1 block">Paket</label>
-                  <select value={editForm.paket} onChange={e => setEditForm(p => ({ ...p, paket: e.target.value }))}
-                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                    <option value="BASLANGIC">Başlangıç</option>
-                    <option value="PROFESYONEL">Profesyonel</option>
-                    <option value="KURUMSAL">Kurumsal</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
-                  <select value={editForm.durum} onChange={e => setEditForm(p => ({ ...p, durum: e.target.value }))}
-                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                    <option value="AKTIF">Aktif</option>
-                    <option value="DENEME">Deneme</option>
-                    <option value="ASKIDA">Askıda</option>
-                    <option value="IPTAL">İptal</option>
-                  </select>
-                </div>
-              </div>
-              {editError && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setEditFirma(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
-                  İptal
+            {/* Sekmeler */}
+            <div className="flex border-b border-white/8">
+              {(["genel", "paket"] as const).map(tab => (
+                <button key={tab} onClick={() => setEditTab(tab)}
+                  className={`px-6 py-3 text-sm font-medium transition-all border-b-2 -mb-px ${editTab === tab ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}>
+                  {tab === "genel" ? "Genel Bilgiler" : "Paket & Tarih"}
                 </button>
-                <button type="submit" disabled={editLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
-                  {editLoading ? "Kaydediliyor..." : "Kaydet"}
-                </button>
+              ))}
+            </div>
+            <form onSubmit={handleEdit}>
+              <div className="p-6 space-y-4">
+                {editTab === "genel" ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Firma Adı *</label>
+                        <input required value={editForm.ad} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))}
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">E-Posta *</label>
+                        <input required type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Telefon</label>
+                        <input value={editForm.telefon} onChange={e => setEditForm(p => ({ ...p, telefon: e.target.value }))}
+                          placeholder="+90 5xx xxx xx xx"
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Temsilci</label>
+                        <input value={editForm.temsilci} onChange={e => setEditForm(p => ({ ...p, temsilci: e.target.value }))}
+                          placeholder="Sorumlu kişi adı"
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Sektör</label>
+                        <input value={editForm.sektor} onChange={e => setEditForm(p => ({ ...p, sektor: e.target.value }))}
+                          placeholder="Teknoloji, Sağlık..."
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Website</label>
+                        <input value={editForm.website} onChange={e => setEditForm(p => ({ ...p, website: e.target.value }))}
+                          placeholder="https://..."
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-on-surface-variant mb-1 block">Adres</label>
+                      <input value={editForm.adres} onChange={e => setEditForm(p => ({ ...p, adres: e.target.value }))}
+                        placeholder="Şirket adresi"
+                        className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Paket</label>
+                        <select value={editForm.paket} onChange={e => setEditForm(p => ({ ...p, paket: e.target.value }))}
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                          <option value="BASLANGIC">Başlangıç</option>
+                          <option value="PROFESYONEL">Profesyonel</option>
+                          <option value="KURUMSAL">Kurumsal</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
+                        <select value={editForm.durum} onChange={e => setEditForm(p => ({ ...p, durum: e.target.value }))}
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                          <option value="AKTIF">Aktif</option>
+                          <option value="DENEME">Deneme</option>
+                          <option value="ASKIDA">Askıda</option>
+                          <option value="IPTAL">İptal</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Paket Başlangıç</label>
+                        <input type="date" value={editForm.paketBaslangic} onChange={e => setEditForm(p => ({ ...p, paketBaslangic: e.target.value }))}
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-on-surface-variant mb-1 block">Paket Bitiş <span className="text-on-surface-variant/50">(opsiyonel)</span></label>
+                        <input type="date" value={editForm.paketBitis} onChange={e => setEditForm(p => ({ ...p, paketBitis: e.target.value }))}
+                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/3 border border-white/8 text-xs text-on-surface-variant">
+                      <span className="material-symbols-outlined text-sm align-middle mr-1">info</span>
+                      Paket değiştirildiğinde MRR otomatik güncellenir. Deneme durumunda MRR sıfırlanır.
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="px-6 pb-5">
+                {editError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setEditFirma(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
+                    İptal
+                  </button>
+                  <button type="submit" disabled={editLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
+                    {editLoading ? "Kaydediliyor..." : "Kaydet"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

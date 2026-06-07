@@ -17,6 +17,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const data: Record<string, unknown> = {};
   if (typeof body.ad === "string" && body.ad.trim()) data.ad = body.ad.trim();
   if (typeof body.email === "string" && body.email.trim()) data.email = body.email.trim();
+  if (typeof body.telefon === "string") data.telefon = body.telefon.trim();
+  if (typeof body.adres === "string") data.adres = body.adres.trim();
+  if (typeof body.website === "string") data.website = body.website.trim();
+  if (typeof body.sektor === "string") data.sektor = body.sektor.trim();
+  if (typeof body.temsilci === "string") data.temsilci = body.temsilci.trim();
   if (typeof body.durum === "string" && DURUMLAR.includes(body.durum)) data.durum = body.durum;
   if (typeof body.paket === "string" && PAKETLER.includes(body.paket)) {
     data.paket = body.paket;
@@ -24,6 +29,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (lic) data.mrr = body.durum === "DENEME" || f.durum === "DENEME" ? 0 : lic.aylikFiyat;
   }
   if (typeof body.mrr === "number") data.mrr = body.mrr;
+  if (typeof body.paketBaslangic === "string" && body.paketBaslangic) data.paketBaslangic = new Date(body.paketBaslangic);
+  if (typeof body.paketBitis === "string") data.paketBitis = body.paketBitis ? new Date(body.paketBitis) : null;
 
   const updated = await prisma.firma.update({ where: { id }, data });
   const { passwordHash, ...safe } = updated;
