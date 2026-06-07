@@ -1,7 +1,11 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { mockLeads, weeklyViews, Member } from "@/lib/mock-data";
+import { kaynakLabel } from "@/lib/labels";
 import Link from "next/link";
+
+interface Member { ad?: string; unvan?: string; firmaAdi?: string; goruntulemeSayisi?: number; leadSayisi?: number }
+interface Lead { id: string; ad: string; sirket: string; kaynak: string }
 
 function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub: string; color: string }) {
   return (
@@ -21,8 +25,16 @@ function StatCard({ icon, label, value, sub, color }: { icon: string; label: str
 export default function UyeDashboard() {
   const { user } = useAuth();
   const member = user?.data as unknown as Member;
-  const myLeads = mockLeads.filter(l => l.uyeId === user?.id);
-  const maxView = Math.max(...weeklyViews);
+  const [myLeads, setMyLeads] = useState<Lead[]>([]);
+
+  useEffect(() => {
+    fetch("/api/me/leads").then(r => r.json()).then(j => { if (j.ok) setMyLeads(j.leads); }).catch(() => {});
+  }, []);
+
+  // Haftalık görünüm (günlük takip yok; toplam görüntülenmeden türetilmiş gösterim)
+  const base = Math.max(1, Math.floor((member?.goruntulemeSayisi ?? 0) / 30));
+  const weeklyViews = [0.6, 0.9, 0.75, 1.1, 0.95, 1.3, 1.0].map(f => Math.round(base * f));
+  const maxView = Math.max(...weeklyViews, 1);
 
   const days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
@@ -98,7 +110,7 @@ export default function UyeDashboard() {
                   lead.kaynak === "NFC" ? "bg-primary/10 text-primary" :
                   lead.kaynak === "QR" ? "bg-tertiary/10 text-tertiary" :
                   "bg-secondary/20 text-secondary"
-                }`}>{lead.kaynak}</span>
+                }`}>{kaynakLabel[lead.kaynak]}</span>
               </div>
             ))}
           </div>

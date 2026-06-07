@@ -35,6 +35,28 @@ enum AdminRol {
   DESTEK
 }
 
+enum SiparisDurum {
+  HAZIRLANIYOR
+  URETIMDE
+  KARGODA
+  TESLIM
+  IPTAL
+}
+
+enum BatchDurum {
+  URETIMDE
+  STOKTA
+  TAHSIS
+  BITTI
+}
+
+enum BasvuruDurum {
+  YENI
+  ILETISIMDE
+  DONUSUM
+  KAYIP
+}
+
 model Firma {
   id             String     @id @default(cuid())
   ad             String
@@ -125,4 +147,64 @@ model Lead {
   sirket    String     @default("")
   kaynak    LeadKaynak @default(LINK)
   createdAt DateTime   @default(now())
+}
+
+// ---- Platform Admin varlıkları ----
+
+model License {
+  id          String   @id @default(cuid())
+  ad          Paket    @unique
+  aylikFiyat  Int
+  yillikFiyat Int
+  maxUye      Int // -1 = sınırsız
+  maxTemplate Int // -1 = sınırsız
+  ozellikler  String[]
+  renk        String   @default("#00d4ff")
+}
+
+model CardBatch {
+  id           String     @id @default(cuid())
+  kod          String     @unique
+  miktar       Int
+  uretici      String     @default("")
+  uretimTarihi DateTime   @default(now())
+  durum        BatchDurum @default(URETIMDE)
+  tahsisFirma  String?
+  seriPrefix   String     @default("")
+  createdAt    DateTime   @default(now())
+}
+
+model Order {
+  id        String       @id @default(cuid())
+  siparisNo String       @unique
+  firma     String
+  firmaId   String?
+  urun      String
+  adet      Int
+  tutar     Int
+  durum     SiparisDurum @default(HAZIRLANIYOR)
+  kargoNo   String?
+  createdAt DateTime     @default(now())
+}
+
+model Application {
+  id        String       @id @default(cuid())
+  firmaAdi  String
+  yetkili   String       @default("")
+  email     String       @default("")
+  telefon   String       @default("")
+  uyeSayisi String       @default("")
+  mesaj     String       @default("")
+  durum     BasvuruDurum @default(YENI)
+  createdAt DateTime     @default(now())
+}
+
+model RevenueSnapshot {
+  id        String @id @default(cuid())
+  sira      Int    @unique
+  ay        String
+  yil       Int    @default(2026)
+  mrr       Int
+  yeniFirma Int    @default(0)
+  iptal     Int    @default(0)
 }

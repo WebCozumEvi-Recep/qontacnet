@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail, htmlLayout, row } from "@/lib/mailer";
+import { prisma } from "@/lib/prisma";
 
 interface Payload {
   ad?: string;
@@ -18,6 +19,19 @@ export async function POST(req: NextRequest) {
     if (!ad || !email || !firma) {
       return NextResponse.json({ ok: false, error: "Zorunlu alanlar eksik." }, { status: 400 });
     }
+
+    // Başvuruyu DB'ye kaydet (admin panelinde görünsün)
+    await prisma.application.create({
+      data: {
+        firmaAdi: firma,
+        yetkili: ad,
+        email,
+        telefon: telefon ?? "",
+        uyeSayisi: uyeSayisi ?? "",
+        mesaj: mesaj ?? "",
+        durum: "YENI",
+      },
+    }).catch((e) => console.error("[demo-talep] db", e));
 
     const bodyHtml = `
       <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">

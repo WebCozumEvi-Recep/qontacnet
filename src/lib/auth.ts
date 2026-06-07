@@ -17,7 +17,15 @@ export async function getCurrentUser(): Promise<
 
   let data: Record<string, unknown> | null = null;
   if (session.role === "uye") {
-    data = strip(await prisma.member.findUnique({ where: { id: session.sub } }));
+    const m = await prisma.member.findUnique({
+      where: { id: session.sub },
+      include: { firma: { select: { ad: true } } },
+    });
+    if (m) {
+      const { passwordHash, firma, ...rest } = m;
+      void passwordHash;
+      data = { ...rest, firmaAdi: firma?.ad ?? "" };
+    }
   } else if (session.role === "firma") {
     data = strip(await prisma.firma.findUnique({ where: { id: session.sub } }));
   } else if (session.role === "admin") {
