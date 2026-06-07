@@ -341,7 +341,7 @@ export default function AdminKartlarPage() {
                       <option value="URETIMDE">Üretimde</option>
                       <option value="STOKTA">Stokta</option>
                       <option value="TAHSIS">Tahsis Edildi</option>
-                      <option value="IPTAL">İptal</option>
+                      <option value="BITTI">Bitti</option>
                     </select>
                   </div>
                   <div>
@@ -423,7 +423,7 @@ export default function AdminKartlarPage() {
                       <option value="URETIMDE">Üretimde</option>
                       <option value="STOKTA">Stokta</option>
                       <option value="TAHSIS">Tahsis Edildi</option>
-                      <option value="IPTAL">İptal</option>
+                      <option value="BITTI">Bitti</option>
                     </select>
                   </div>
                   <div>

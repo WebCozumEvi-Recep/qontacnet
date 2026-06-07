@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.cardBatch.findUnique({ where: { kod: kod.trim() } });
   if (existing) return NextResponse.json({ ok: false, error: "Bu batch kodu zaten kullanılıyor." }, { status: 400 });
 
-  const DURUMLAR = ["URETIMDE", "STOKTA", "TAHSIS", "IPTAL"];
+  const DURUMLAR = ["URETIMDE", "STOKTA", "TAHSIS", "BITTI"];
   const batch = await prisma.cardBatch.create({
     data: {
       kod: kod.trim(),
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       seriPrefix: typeof seriPrefix === "string" ? seriPrefix.trim() : "",
       uretici: typeof uretici === "string" ? uretici.trim() : "",
       uretimTarihi: typeof uretimTarihi === "string" && uretimTarihi ? new Date(uretimTarihi) : new Date(),
-      durum: typeof durum === "string" && DURUMLAR.includes(durum) ? (durum as "URETIMDE" | "STOKTA" | "TAHSIS" | "IPTAL") : "URETIMDE",
+      durum: typeof durum === "string" && DURUMLAR.includes(durum) ? (durum as "URETIMDE" | "STOKTA" | "TAHSIS" | "BITTI") : "URETIMDE",
       tahsisFirma: typeof tahsisFirma === "string" && tahsisFirma ? tahsisFirma : null,
     },
   });

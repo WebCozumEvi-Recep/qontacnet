@@ -38,7 +38,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const batch = await prisma.cardBatch.findUnique({ where: { id } });
   if (!batch) return NextResponse.json({ ok: false, error: "Batch bulunamadı." }, { status: 404 });
 
-  const DURUMLAR = ["URETIMDE", "STOKTA", "TAHSIS", "IPTAL"];
+  const DURUMLAR = ["URETIMDE", "STOKTA", "TAHSIS", "BITTI"];
   const body = (await req.json()) as Record<string, unknown>;
   const data: Record<string, unknown> = {};
   if (typeof body.kod === "string" && body.kod.trim()) data.kod = body.kod.trim();
