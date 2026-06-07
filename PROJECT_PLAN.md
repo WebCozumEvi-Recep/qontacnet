@@ -114,7 +114,27 @@ Tüm akışları gerçek navigasyonla test ettim. Bulunan ve düzeltilen sorunla
 
 ---
 
-## AŞAMA 6 — Sonrası (henüz planlanmadı)
+## AŞAMA 6 — Production Deployment ✅ TAMAMLANDI (2026-06-07)
+
+Eski Laravel monorepo iptal edildi, bu Next.js sürümü qontac.net'e alındı.
+
+- [x] Sunucu: `root@157.180.121.96` (Ubuntu 24.04, Docker)
+- [x] GitHub repo `WebCozumEvi-Recep/qontacnet` main dalı yeni kodla sıfırlandı (force-push)
+- [x] Docker dağıtımı: `Dockerfile` (standalone) + `docker-compose.prod.yml` (app + nginx)
+- [x] nginx reverse proxy → `app:3000`, Cloudflare real-IP, letsencrypt TLS (`/etc/letsencrypt/live/qontac.net`)
+- [x] Eski stack yedeklendi (`/root/qontac_backup_*`: pg_dump + backend.env) ve durduruldu; volume'lar korundu
+- [x] `.env.production` sunucuda (SMTP) — **dikkat: `$` → `$$` kaçışı** (compose env_file interpolasyonu)
+- [x] Canlı doğrulama: qontac.net 200, www→apex 301, /api/demo-talep `{"ok":true}` (e-posta gidiyor)
+
+**Yeniden deploy:** `git push` sonrası sunucuda `bash scripts/deploy.sh` (yerelden) veya sunucuda
+`cd /var/www/qontac && git pull && docker compose -f docker-compose.prod.yml up -d --build`.
+
+**Geri dönüş (rollback):** eski volume'lar duruyor; eski repo geçmişi force-push ile gitti ama
+gerekirse `git reflog`/yedekten Laravel stack ayağa kaldırılabilir.
+
+---
+
+## AŞAMA 7 — Sonrası (henüz planlanmadı)
 
 - [ ] Gerçek backend (DB + auth + API)
 - [ ] Mobil uygulama (üye kart aktivasyon)
