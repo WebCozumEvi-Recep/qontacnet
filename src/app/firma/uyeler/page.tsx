@@ -13,9 +13,32 @@ export default function UyelerPage() {
   const [search, setSearch] = useState("");
   const [filterAktif, setFilterAktif] = useState<"Tümü" | "Aktif" | "Pasif">("Tümü");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [form, setForm] = useState({ ad: "", soyad: "", email: "", unvan: "", departman: "" });
+  const [saving, setSaving] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [createdPw, setCreatedPw] = useState<{ email: string; sifre: string } | null>(null);
 
   const load = () => fetch("/api/firma/members").then(r => r.json()).then(j => { if (j.ok) setMembers(j.members); }).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
+
+  const upd = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const createMember = async () => {
+    setAddError("");
+    setSaving(true);
+    try {
+      const res = await fetch("/api/firma/members", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const j = await res.json();
+      if (!res.ok || !j.ok) throw new Error(j.error ?? "Eklenemedi.");
+      setCreatedPw({ email: form.email, sifre: j.geciciSifre });
+      setForm({ ad: "", soyad: "", email: "", unvan: "", departman: "" });
+      await load();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Eklenemedi.");
+    } finally { setSaving(false); }
+  };
+
+  const closeAdd = () => { setShowAddModal(false); setCreatedPw(null); setAddError(""); setForm({ ad: "", soyad: "", email: "", unvan: "", departman: "" }); };
 
   const filtered = members.filter(m => {
     const ms = !search || `${m.ad} ${m.soyad} ${m.email} ${m.unvan} ${m.departman}`.toLowerCase().includes(search.toLowerCase());
@@ -72,11 +95,42 @@ export default function UyelerPage() {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={closeAdd}>
           <div className="glass-card rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6"><h3 className="text-base font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Yeni Üye Ekle</h3><button onClick={() => setShowAddModal(false)} className="text-on-surface-variant hover:text-on-surface transition-all"><span className="material-symbols-outlined">close</span></button></div>
-            <p className="text-sm text-on-surface-variant mb-4">Üye davet sistemi yakında. Şu an üyeler kayıt olduğunda firmanıza otomatik bağlanır.</p>
-            <button onClick={() => setShowAddModal(false)} className="w-full py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold">Tamam</button>
+            <div className="flex items-center justify-between mb-6"><h3 className="text-base font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Yeni Üye Ekle</h3><button onClick={closeAdd} className="text-on-surface-variant hover:text-on-surface transition-all"><span className="material-symbols-outlined">close</span></button></div>
+
+            {createdPw ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-tertiary text-sm"><span className="material-symbols-outlined">check_circle</span>Üye oluşturuldu!</div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 text-sm">
+                  <p className="text-on-surface-variant text-xs">Üye bu bilgilerle giriş yapabilir:</p>
+                  <p className="text-on-surface"><span className="text-on-surface-variant">E-posta:</span> {createdPw.email}</p>
+                  <p className="text-on-surface"><span className="text-on-surface-variant">Geçici şifre:</span> <span className="font-mono text-primary">{createdPw.sifre}</span></p>
+                  <p className="text-xs text-on-surface-variant">Bu şifreyi üyeyle paylaşın; üye girip profilini düzenleyebilir.</p>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setCreatedPw(null)} className="flex-1 py-3 glass-card rounded-xl text-on-surface-variant text-sm">Bir Üye Daha</button>
+                  <button onClick={closeAdd} className="flex-1 py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold">Bitti</button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={form.ad} onChange={upd("ad")} placeholder="Ad *" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
+                  <input value={form.soyad} onChange={upd("soyad")} placeholder="Soyad" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
+                </div>
+                <input value={form.email} onChange={upd("email")} type="email" placeholder="E-posta *" className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={form.unvan} onChange={upd("unvan")} placeholder="Unvan" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
+                  <input value={form.departman} onChange={upd("departman")} placeholder="Departman" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
+                </div>
+                {addError && <div className="flex items-center gap-2 text-red-400 text-sm"><span className="material-symbols-outlined text-base">error</span>{addError}</div>}
+                <div className="flex gap-3 pt-2">
+                  <button onClick={closeAdd} className="flex-1 py-3 glass-card rounded-xl text-on-surface-variant text-sm">İptal</button>
+                  <button onClick={createMember} disabled={saving || !form.ad || !form.email} className="flex-1 py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold disabled:opacity-50">{saving ? "Ekleniyor..." : "Üye Oluştur"}</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

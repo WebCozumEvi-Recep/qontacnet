@@ -12,10 +12,32 @@ export default function AdminBasvurularPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("tum");
   const [selected, setSelected] = useState<Application | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [converted, setConverted] = useState<{ email: string; sifre: string } | null>(null);
 
-  useEffect(() => {
-    fetch("/api/admin/applications").then(r => r.json()).then(j => { if (j.ok) setApps(j.applications); }).finally(() => setLoading(false));
-  }, []);
+  const load = () => fetch("/api/admin/applications").then(r => r.json()).then(j => { if (j.ok) setApps(j.applications); }).finally(() => setLoading(false));
+  useEffect(() => { load(); }, []);
+
+  const updateDurum = async (durum: string) => {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/applications/${selected.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ durum }) });
+      const j = await res.json();
+      if (j.ok) { setSelected({ ...selected, durum }); await load(); }
+    } finally { setBusy(false); }
+  };
+
+  const convert = async () => {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/applications/${selected.id}`, { method: "POST" });
+      const j = await res.json();
+      if (j.ok) { setConverted({ email: j.email, sifre: j.geciciSifre }); setSelected({ ...selected, durum: "DONUSUM" }); await load(); }
+      else alert(j.error ?? "Dönüştürülemedi.");
+    } finally { setBusy(false); }
+  };
 
   const filtered = tab === "tum" ? apps : apps.filter(a => a.durum === tab);
   const counts: Record<string, number> = { tum: apps.length };
@@ -54,21 +76,40 @@ export default function AdminBasvurularPage() {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setSelected(null); setConverted(null); }}>
           <div className="glass-card rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div><h3 className="text-lg font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{selected.firmaAdi}</h3><p className="text-xs text-on-surface-variant mt-1">Başvuru: {trDate(selected.createdAt)}</p></div>
-              <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center"><span className="material-symbols-outlined text-on-surface-variant">close</span></button>
+              <button onClick={() => { setSelected(null); setConverted(null); }} className="w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center"><span className="material-symbols-outlined text-on-surface-variant">close</span></button>
             </div>
             <div className="space-y-3 mb-5">
               <Row icon="person" label="Yetkili" value={selected.yetkili} /><Row icon="mail" label="E-posta" value={selected.email} />
               <Row icon="phone" label="Telefon" value={selected.telefon} /><Row icon="group" label="Üye Sayısı" value={selected.uyeSayisi} />
             </div>
             <div className="p-4 rounded-xl bg-white/3 mb-5"><p className="text-xs text-on-surface-variant mb-1">Mesaj</p><p className="text-sm text-on-surface">{selected.mesaj}</p></div>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">İletişime Geç</button>
-              <button className="py-3 glass-card rounded-xl text-sm text-on-surface-variant hover:text-tertiary transition-all">Firmaya Dönüştür</button>
-            </div>
+
+            {converted ? (
+              <div className="p-4 rounded-xl bg-tertiary/10 border border-tertiary/20 text-sm space-y-1">
+                <p className="text-tertiary flex items-center gap-2"><span className="material-symbols-outlined text-base">check_circle</span>Firma oluşturuldu!</p>
+                <p className="text-on-surface"><span className="text-on-surface-variant">Giriş:</span> {converted.email}</p>
+                <p className="text-on-surface"><span className="text-on-surface-variant">Geçici şifre:</span> <span className="font-mono text-primary">{converted.sifre}</span></p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className="text-xs text-on-surface-variant mb-1.5 block">Durum Güncelle</label>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(basvuruDurumMap).map(d => (
+                      <button key={d} onClick={() => updateDurum(d)} disabled={busy} className={`text-xs px-3 py-1.5 rounded-full border transition-all disabled:opacity-50 ${selected.durum === d ? "" : "opacity-60 hover:opacity-100"}`} style={{ background: `${basvuruDurumMap[d].color}15`, color: basvuruDurumMap[d].color, borderColor: `${basvuruDurumMap[d].color}30` }}>{basvuruDurumMap[d].label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <a href={`mailto:${selected.email}`} className="py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all text-center">İletişime Geç</a>
+                  <button onClick={convert} disabled={busy} className="py-3 glass-card rounded-xl text-sm text-on-surface-variant hover:text-tertiary transition-all disabled:opacity-50">{busy ? "..." : "Firmaya Dönüştür"}</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

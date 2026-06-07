@@ -17,11 +17,22 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  const [busy, setBusy] = useState(false);
+
   useEffect(() => {
     fetch(`/api/admin/firmalar/${id}`).then(r => r.json()).then(j => {
       if (j.ok) { setFirma(j.firma); setSiparisler(j.siparisler); } else setNotFound(true);
     }).finally(() => setLoading(false));
   }, [id]);
+
+  const patch = async (body: Record<string, unknown>) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/firmalar/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const j = await res.json();
+      if (j.ok) setFirma(f => (f ? { ...f, ...j.firma } : f));
+    } finally { setBusy(false); }
+  };
 
   if (loading) return <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant max-w-[1100px]">Yükleniyor...</div>;
   if (notFound || !firma) return (
@@ -49,8 +60,11 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm text-on-surface-variant hover:text-primary transition-all"><span className="material-symbols-outlined text-base">edit</span>Düzenle</button>
-            <button className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm text-on-surface-variant hover:text-red-400 transition-all"><span className="material-symbols-outlined text-base">block</span>Askıya Al</button>
+            {firma.durum === "ASKIDA" ? (
+              <button onClick={() => patch({ durum: "AKTIF" })} disabled={busy} className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm text-on-surface-variant hover:text-tertiary transition-all disabled:opacity-50"><span className="material-symbols-outlined text-base">check_circle</span>Aktif Et</button>
+            ) : (
+              <button onClick={() => patch({ durum: "ASKIDA" })} disabled={busy} className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm text-on-surface-variant hover:text-red-400 transition-all disabled:opacity-50"><span className="material-symbols-outlined text-base">block</span>Askıya Al</button>
+            )}
           </div>
         </div>
       </div>
@@ -79,8 +93,18 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
               <div className="flex items-center justify-between mb-2"><span className="text-primary font-semibold">{paketLabel[firma.paket]} Paketi</span><span className="text-xs text-on-surface-variant">{du.label}</span></div>
               <p className="text-2xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>₺{firma.mrr.toLocaleString("tr-TR")} <span className="text-sm text-on-surface-variant font-normal">/ ay</span></p>
             </div>
-            <button className="w-full py-3 glass-card rounded-xl text-sm text-on-surface hover:bg-white/5 transition-all">Paket Değiştir</button>
-            <button className="w-full py-3 glass-card rounded-xl text-sm text-on-surface hover:bg-white/5 transition-all">Faturalar</button>
+            <div>
+              <label className="text-xs text-on-surface-variant mb-1.5 block">Paket Değiştir</label>
+              <select value={firma.paket} onChange={e => patch({ paket: e.target.value })} disabled={busy} className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none">
+                <option value="BASLANGIC">Başlangıç</option><option value="PROFESYONEL">Profesyonel</option><option value="KURUMSAL">Kurumsal</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-on-surface-variant mb-1.5 block">Durum</label>
+              <select value={firma.durum} onChange={e => patch({ durum: e.target.value })} disabled={busy} className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none">
+                <option value="AKTIF">Aktif</option><option value="DENEME">Deneme</option><option value="ASKIDA">Askıda</option><option value="IPTAL">İptal</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

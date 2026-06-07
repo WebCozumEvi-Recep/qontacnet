@@ -18,10 +18,27 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [resetPw, setResetPw] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     fetch(`/api/firma/members/${id}`).then(r => r.json()).then(j => { if (j.ok) setMember(j.member); else setNotFound(true); }).finally(() => setLoading(false));
   }, [id]);
+
+  const patch = async (body: Record<string, unknown>) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/firma/members/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const j = await res.json();
+      if (j.ok) { setMember(m => (m ? { ...m, ...j.member } : m)); if (j.geciciSifre) setResetPw(j.geciciSifre); }
+    } finally { setBusy(false); }
+  };
+
+  const remove = async () => {
+    if (!confirm("Bu üye kalıcı olarak silinecek. Emin misiniz?")) return;
+    const res = await fetch(`/api/firma/members/${id}`, { method: "DELETE" });
+    if (res.ok) router.push("/firma/uyeler");
+  };
 
   if (loading) return <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant max-w-[900px]">Yükleniyor...</div>;
   if (notFound || !member) return (
@@ -100,6 +117,25 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
               ))}
               {contactItems.length === 0 && <p className="text-sm text-on-surface-variant">İletişim bilgisi yok.</p>}
             </div>
+          </div>
+
+          <div className="glass-card rounded-2xl p-5 space-y-2">
+            <h3 className="text-sm font-semibold text-on-surface mb-3" style={{ fontFamily: "Sora, sans-serif" }}>İşlemler</h3>
+            <button onClick={() => patch({ aktif: !member.aktif })} disabled={busy} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5 transition-all disabled:opacity-50">
+              <span className="material-symbols-outlined text-base">{member.aktif ? "toggle_off" : "toggle_on"}</span>{member.aktif ? "Pasife Al" : "Aktif Et"}
+            </button>
+            <button onClick={() => patch({ resetPassword: true })} disabled={busy} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-on-surface-variant hover:bg-white/5 transition-all disabled:opacity-50">
+              <span className="material-symbols-outlined text-base">lock_reset</span>Şifre Sıfırla
+            </button>
+            <button onClick={remove} disabled={busy} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-400/5 transition-all disabled:opacity-50">
+              <span className="material-symbols-outlined text-base">person_off</span>Üyeyi Sil
+            </button>
+            {resetPw && (
+              <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 text-xs">
+                <p className="text-on-surface-variant mb-1">Yeni geçici şifre:</p>
+                <p className="font-mono text-primary">{resetPw}</p>
+              </div>
+            )}
           </div>
 
           <div className="glass-card rounded-2xl p-4 text-xs space-y-2 text-on-surface-variant">
