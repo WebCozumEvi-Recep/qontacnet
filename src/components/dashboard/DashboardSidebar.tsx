@@ -52,14 +52,23 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
   const roleLabel = role === "uye" ? "Üye" : role === "firma" ? "Firma" : "Platform";
 
   useEffect(() => {
-    if (user?.data?.["ad"] && user?.data?.["soyad"]) {
-      setDisplayName(`${user.data["ad"]} ${user.data["soyad"]}`);
-    } else if (user?.data?.["ad"]) {
-      setDisplayName(String(user.data["ad"]));
-    } else if (user?.email) {
-      setDisplayName(user.email.split("@")[0]);
-    }
-  }, [user]);
+    const fetchUserData = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        const json = await res.json();
+        if (json.user?.data?.["ad"] && json.user?.data?.["soyad"]) {
+          setDisplayName(`${json.user.data["ad"]} ${json.user.data["soyad"]}`);
+        } else if (json.user?.data?.["ad"]) {
+          setDisplayName(String(json.user.data["ad"]));
+        } else if (user?.email) {
+          setDisplayName(user.email.split("@")[0]);
+        }
+      } catch {
+        if (user?.email) setDisplayName(user.email.split("@")[0]);
+      }
+    };
+    if (user) fetchUserData();
+  }, [user?.id]);
 
   const handleLogout = async () => {
     await logout();
