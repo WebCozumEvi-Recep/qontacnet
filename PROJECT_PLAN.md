@@ -150,11 +150,21 @@ Mock veriden gerçek persistence'a geçiş başladı.
 
 **Demo loginler (DB):** admin@qontac.net/qontac123 · firma@qontac.net/123456 · demo@qontac.net/123456
 
-**Bekleyen (Faz 2 — firma/admin sayfalarını DB'ye taşı):**
-- [ ] Firma paneli (üye listesi/detay, şablon, analitik, ayarlar) → DB (şu an hâlâ mock-data.ts)
-- [ ] Admin paneli (firmalar, kartlar, siparişler, lisanslar, gelir, başvurular) → DB
+**Faz 2 — firma/admin/üye sayfaları tamamen DB'ye taşındı ✅ (2026-06-07):**
+- [x] Şema genişletildi: License, CardBatch, Order, Application, RevenueSnapshot
+- [x] Seed: 6 firma, 45 üye, 3 lisans, 5 batch, 6 sipariş, 5 başvuru, 12 gelir kaydı
+- [x] Firma paneli (dashboard, üye listesi/detay, şablon CRUD, analitik) → DB
+- [x] Admin paneli (genel bakış, firmalar+detay, kartlar, siparişler, lisanslar, gelir, başvurular) → DB
+- [x] Üye dashboard + liderler → DB (gerçek lead'ler)
+- [x] demo-talep → Application tablosu (admin/basvurular gerçek başvuruları görür)
+- [x] Tüm sayfalardan mock-data veri bağımlılığı kaldırıldı (sadece 3 tip importu kaldı)
+- [x] 16 local + 7 canlı API testi geçti
+
+**Kalan (Faz 3 — opsiyonel):**
 - [ ] Üye davet/aktivasyon akışı (şu an register ilk firmaya bağlıyor)
-- [ ] CardBatch/Order/License/Application modelleri
+- [ ] Admin/firma için yazma işlemleri (sipariş/batch/lisans oluştur-düzenle; şu an çoğu okuma)
+- [ ] Başvuru durumu güncelleme, firmaya dönüştürme aksiyonları
+- [ ] mock-data.ts tamamen kaldır (3 tip importunu yerele taşı)
 
 **Dağıtım notları:**
 - nginx, app yeniden oluşturulunca eski IP'yi cache'ler → deploy.sh artık nginx'i restart eder.
