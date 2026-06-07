@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { AdminUser } from "@/lib/auth-context";
+
+interface AdminUser { id: string; ad: string; email: string; rol: string }
 
 export default function AdminAyarlarPage() {
   const { user } = useAuth();
-  const admin = user?.data as AdminUser;
+  const admin = user?.data as unknown as AdminUser;
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {

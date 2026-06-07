@@ -5,7 +5,7 @@ import { Firma } from "@/lib/mock-data";
 
 export default function AyarlarPage() {
   const { user } = useAuth();
-  const firma = user?.data as Firma;
+  const firma = user?.data as unknown as Firma;
   const [tab, setTab] = useState<"firma" | "bildirim" | "guvenlik">("firma");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);

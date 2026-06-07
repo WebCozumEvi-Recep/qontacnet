@@ -20,7 +20,7 @@ function StatCard({ icon, label, value, sub, color }: { icon: string; label: str
 
 export default function UyeDashboard() {
   const { user } = useAuth();
-  const member = user?.data as Member;
+  const member = user?.data as unknown as Member;
   const myLeads = mockLeads.filter(l => l.uyeId === user?.id);
   const maxView = Math.max(...weeklyViews);
 

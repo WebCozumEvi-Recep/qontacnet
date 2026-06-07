@@ -1,0 +1,128 @@
+// QONTAC.NET — Veritabanı şeması
+// learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Paket {
+  BASLANGIC
+  PROFESYONEL
+  KURUMSAL
+}
+
+enum FirmaDurum {
+  AKTIF
+  DENEME
+  ASKIDA
+  IPTAL
+}
+
+enum LeadKaynak {
+  NFC
+  QR
+  LINK
+}
+
+enum AdminRol {
+  SUPER_ADMIN
+  OPERASYON
+  DESTEK
+}
+
+model Firma {
+  id             String     @id @default(cuid())
+  ad             String
+  email          String     @unique
+  passwordHash   String
+  telefon        String     @default("")
+  adres          String     @default("")
+  website        String     @default("")
+  sektor         String     @default("")
+  logo           String     @default("")
+  temsilci       String     @default("")
+  paket          Paket      @default(BASLANGIC)
+  durum          FirmaDurum @default(DENEME)
+  paketBaslangic DateTime   @default(now())
+  paketBitis     DateTime?
+  mrr            Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  members   Member[]
+  templates CardTemplate[]
+}
+
+model Member {
+  id           String  @id @default(cuid())
+  firma        Firma   @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  firmaId      String
+  ad           String
+  soyad        String  @default("")
+  email        String  @unique
+  passwordHash String
+  telefon      String  @default("")
+  unvan        String  @default("")
+  departman    String  @default("")
+  avatar       String  @default("")
+  whatsapp     String  @default("")
+  linkedin     String  @default("")
+  instagram    String  @default("")
+  website      String  @default("")
+  biyografi    String  @default("")
+  aktif        Boolean @default(true)
+  kartRenk     String  @default("#00d4ff")
+  templateId   String?
+
+  // Kartta görünür alanlar (toggle'lar)
+  showWhatsapp  Boolean @default(true)
+  showLinkedin  Boolean @default(true)
+  showInstagram Boolean @default(true)
+  showWebsite   Boolean @default(true)
+  showBio       Boolean @default(true)
+
+  goruntulemeSayisi Int @default(0)
+  leadSayisi        Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads Lead[]
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  ad           String
+  email        String   @unique
+  passwordHash String
+  rol          AdminRol @default(SUPER_ADMIN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CardTemplate {
+  id        String   @id @default(cuid())
+  firma     Firma    @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  firmaId   String
+  ad        String
+  renk      String   @default("#00d4ff")
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id        String     @id @default(cuid())
+  member    Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+  ad        String
+  email     String     @default("")
+  telefon   String     @default("")
+  sirket    String     @default("")
+  kaynak    LeadKaynak @default(LINK)
+  createdAt DateTime   @default(now())
+}

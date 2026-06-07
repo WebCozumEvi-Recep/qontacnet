@@ -20,7 +20,7 @@ function StatCard({ icon, label, value, sub, color, href }: { icon: string; labe
 
 export default function FirmaDashboard() {
   const { user } = useAuth();
-  const firma = user?.data as Firma;
+  const firma = user?.data as unknown as Firma;
   const aktifUye = mockMembers.filter(m => m.aktif).length;
   const totalViews = mockMembers.reduce((a, m) => a + m.goruntulemeSayisi, 0);
   const totalLeads = mockMembers.reduce((a, m) => a + m.leadSayisi, 0);

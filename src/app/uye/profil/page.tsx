@@ -4,8 +4,8 @@ import { useAuth } from "@/lib/auth-context";
 import { Member } from "@/lib/mock-data";
 
 export default function ProfilPage() {
-  const { user } = useAuth();
-  const member = user?.data as Member;
+  const { user, updateUserData } = useAuth();
+  const member = user?.data as unknown as Member;
 
   const [form, setForm] = useState({
     ad: member?.ad ?? "",
@@ -24,13 +24,28 @@ export default function ProfilPage() {
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
+  const [error, setError] = useState("");
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setSaving(true);
-    await new Promise(r => setTimeout(r, 700));
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      const res = await fetch("/api/me/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error ?? "Kaydedilemedi.");
+      updateUserData(json.member);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kaydedilemedi.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const inputClass = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:border-primary outline-none transition-all";
@@ -132,6 +147,12 @@ export default function ProfilPage() {
             <div className="flex items-center gap-1.5 text-tertiary text-sm">
               <span className="material-symbols-outlined text-base">check_circle</span>
               Kaydedildi!
+            </div>
+          )}
+          {error && (
+            <div className="flex items-center gap-1.5 text-red-400 text-sm">
+              <span className="material-symbols-outlined text-base">error</span>
+              {error}
             </div>
           )}
         </div>

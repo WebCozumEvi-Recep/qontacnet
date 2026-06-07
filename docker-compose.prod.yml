@@ -1,4 +1,37 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qontac
+      POSTGRES_USER: qontac
+      POSTGRES_PASSWORD: qontac_db_2026
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qontac -d qontac"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - qontac
+
+  # Migration'ları uygular (her deploy'da idempotent), sonra çıkar.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    env_file:
+      - .env.production
+    command: npx prisma migrate deploy
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - qontac
+
   app:
     build:
       context: .
@@ -10,6 +43,11 @@ services:
       - NODE_ENV=production
     expose:
       - "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - qontac
 
@@ -26,6 +64,9 @@ services:
       - app
     networks:
       - qontac
+
+volumes:
+  pgdata:
 
 networks:
   qontac:

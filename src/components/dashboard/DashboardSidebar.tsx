@@ -49,8 +49,8 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
   const nav = role === "uye" ? uyeNav : role === "firma" ? firmaNav : adminNav;
   const roleLabel = role === "uye" ? "Üye" : role === "firma" ? "Firma" : "Platform";
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/auth/login");
   };
 

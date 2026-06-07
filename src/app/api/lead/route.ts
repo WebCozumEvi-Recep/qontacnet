@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail, htmlLayout, row } from "@/lib/mailer";
-import { mockMembers } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 interface Payload {
   uyeId?: string;
@@ -8,20 +8,38 @@ interface Payload {
   sirket?: string;
   email?: string;
   telefon?: string;
+  kaynak?: "NFC" | "QR" | "LINK";
 }
 
 export async function POST(req: NextRequest) {
   try {
     const data = (await req.json()) as Payload;
-    const { uyeId, ad, sirket, email, telefon } = data;
+    const { uyeId, ad, sirket, email, telefon, kaynak } = data;
 
     if (!ad || !email) {
       return NextResponse.json({ ok: false, error: "Ad ve e-posta zorunlu." }, { status: 400 });
     }
 
-    const uye = mockMembers.find(m => m.id === uyeId);
+    const uye = uyeId
+      ? await prisma.member.findUnique({ where: { id: uyeId }, include: { firma: { select: { ad: true } } } })
+      : null;
     const uyeAdi = uye ? `${uye.ad} ${uye.soyad}` : "Üye";
-    const firmaAdi = uye?.firmaAdi ?? "QONTAC";
+    const firmaAdi = uye?.firma.ad ?? "QONTAC";
+
+    // Lead'i veritabanına kaydet + üye sayacını artır
+    if (uye) {
+      await prisma.lead.create({
+        data: {
+          memberId: uye.id,
+          ad,
+          email,
+          telefon: telefon ?? "",
+          sirket: sirket ?? "",
+          kaynak: kaynak === "NFC" || kaynak === "QR" ? kaynak : "LINK",
+        },
+      });
+      await prisma.member.update({ where: { id: uye.id }, data: { leadSayisi: { increment: 1 } } }).catch(() => {});
+    }
 
     const bodyHtml = `
       <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">

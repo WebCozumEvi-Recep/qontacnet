@@ -4,7 +4,7 @@ import { Member } from "@/lib/mock-data";
 
 export default function QRPage() {
   const { user } = useAuth();
-  const member = user?.data as Member;
+  const member = user?.data as unknown as Member;
   const cardUrl = `https://qontac.net/kart/${user?.id}`;
 
   const copyLink = () => {
