@@ -178,7 +178,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
 
       {showLeadForm && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center p-0" onClick={() => setShowLeadForm(false)}>
-          <div className="w-full max-w-sm glass-card rounded-t-3xl p-6 pb-8" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-t-3xl p-6 pb-8" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", borderBottom: "none" }} onClick={e => e.stopPropagation()}>
             {leadSaved ? (
               <div className="text-center py-6">
                 <span className="material-symbols-outlined text-tertiary text-5xl block mb-3">check_circle</span>
