@@ -67,8 +67,8 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
         if (user?.email) setDisplayName(user.email.split("@")[0]);
       }
     };
-    if (user) fetchUserData();
-  }, [user?.id]);
+    fetchUserData();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
