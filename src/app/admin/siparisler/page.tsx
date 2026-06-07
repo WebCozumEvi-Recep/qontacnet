@@ -16,16 +16,15 @@ interface OrderForm {
   durum: string; kargoNo: string;
 }
 
-const URUNLER = ["NFC Kart (Standart)", "NFC Kart (Premium)", "NFC Kart (Metalik)", "NFC Kart (Özel Baskı)", "NFC Sticker", "NFC Kart (Şeffaf)"];
-
 export default function AdminSiparislerPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>("tum");
   const [firmalar, setFirmalar] = useState<{ id: string; ad: string }[]>([]);
+  const [urunler, setUrunler] = useState<{ id: string; ad: string; fiyat: number }[]>([]);
 
 
-  const emptyForm: OrderForm = { firma: "", urun: URUNLER[0], adet: "", tutar: "", birimFiyat: "", kdvOrani: "20", indirim: "0", notlar: "", durum: "HAZIRLANIYOR", kargoNo: "" };
+  const emptyForm: OrderForm = { firma: "", urun: "", adet: "", tutar: "", birimFiyat: "", kdvOrani: "20", indirim: "0", notlar: "", durum: "HAZIRLANIYOR", kargoNo: "" };
   const [newModal, setNewModal] = useState(false);
   const [newForm, setNewForm] = useState<OrderForm>(emptyForm);
   const [newLoading, setNewLoading] = useState(false);
@@ -42,6 +41,7 @@ export default function AdminSiparislerPage() {
   useEffect(() => {
     fetch("/api/admin/orders").then(r => r.json()).then(j => { if (j.ok) setOrders(j.orders); }).finally(() => setLoading(false));
     fetch("/api/admin/firmalar").then(r => r.json()).then(j => { if (j.ok) setFirmalar(j.firmalar.map((f: { id: string; ad: string }) => ({ id: f.id, ad: f.ad }))); });
+    fetch("/api/admin/urunler").then(r => r.json()).then(j => { if (j.ok) setUrunler(j.urunler); });
   }, []);
 
   const counts = useMemo(() => {
@@ -181,9 +181,12 @@ export default function AdminSiparislerPage() {
                 </div>
                 <div>
                   <label className="text-xs text-on-surface-variant mb-1 block">Ürün *</label>
-                  <select required value={newForm.urun} onChange={e => setNewForm(p => ({ ...p, urun: e.target.value }))}
-                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                    {URUNLER.map(u => <option key={u} value={u}>{u}</option>)}
+                  <select required value={newForm.urun} onChange={e => {
+                    const u = urunler.find(x => x.ad === e.target.value);
+                    setNewForm(p => ({ ...p, urun: e.target.value, birimFiyat: u ? String(u.fiyat) : p.birimFiyat }));
+                  }} className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                    <option value="">Ürün seçin...</option>
+                    {urunler.map(u => <option key={u.id} value={u.ad}>{u.ad}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -270,8 +273,9 @@ export default function AdminSiparislerPage() {
                   <label className="text-xs text-on-surface-variant mb-1 block">Ürün *</label>
                   <select required value={editForm.urun} onChange={e => setEditForm(p => ({ ...p, urun: e.target.value }))}
                     className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                    {URUNLER.map(u => <option key={u} value={u}>{u}</option>)}
-                    {!URUNLER.includes(editForm.urun) && <option value={editForm.urun}>{editForm.urun}</option>}
+                    <option value="">Ürün seçin...</option>
+                    {urunler.map(u => <option key={u.id} value={u.ad}>{u.ad}</option>)}
+                    {editForm.urun && !urunler.find(u => u.ad === editForm.urun) && <option value={editForm.urun}>{editForm.urun}</option>}
                   </select>
                 </div>
                 <div className="grid grid-cols-3 gap-3">

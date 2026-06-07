@@ -191,6 +191,19 @@ model Order {
   createdAt  DateTime     @default(now())
 }
 
+model Product {
+  id        String   @id @default(cuid())
+  ad        String
+  aciklama  String   @default("")
+  fiyat     Int      @default(0)
+  gorsel    String   @default("")
+  aktif     Boolean  @default(true)
+  tip       String   @default("NFC_KART")
+  sira      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Application {
   id        String       @id @default(cuid())
   firmaAdi  String

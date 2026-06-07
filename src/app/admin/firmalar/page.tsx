@@ -32,6 +32,12 @@ export default function AdminFirmalarPage() {
   const [deleteFirma, setDeleteFirma] = useState<AdminFirma | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [newModal, setNewModal] = useState(false);
+  interface NewForm { ad: string; email: string; sifre: string; telefon: string; temsilci: string; paket: string; }
+  const [newForm, setNewForm] = useState<NewForm>({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", paket: "DENEME" });
+  const [newLoading, setNewLoading] = useState(false);
+  const [newError, setNewError] = useState("");
+
   useEffect(() => {
     fetch("/api/admin/firmalar").then(r => r.json()).then(j => { if (j.ok) setFirmalar(j.firmalar); }).finally(() => setLoading(false));
   }, []);
@@ -79,6 +85,22 @@ export default function AdminFirmalarPage() {
     setEditFirma(null);
   }
 
+  async function handleNew(e: React.FormEvent) {
+    e.preventDefault();
+    setNewLoading(true); setNewError("");
+    const res = await fetch("/api/admin/firmalar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ad: newForm.ad, email: newForm.email, passwordHash: newForm.sifre, telefon: newForm.telefon, temsilci: newForm.temsilci, paket: "BASLANGIC", durum: newForm.paket }),
+    });
+    const j = await res.json();
+    setNewLoading(false);
+    if (!j.ok) { setNewError(j.error || "Eklenemedi."); return; }
+    setFirmalar(prev => [...prev, j.firma]);
+    setNewModal(false);
+    setNewForm({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", paket: "DENEME" });
+  }
+
   async function handleDelete() {
     if (!deleteFirma) return;
     setDeleteLoading(true);
@@ -107,7 +129,8 @@ export default function AdminFirmalarPage() {
           <option value="tum">Tüm Paketler</option>
           <option value="BASLANGIC">Başlangıç</option><option value="PROFESYONEL">Profesyonel</option><option value="KURUMSAL">Kurumsal</option>
         </select>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
+        <button onClick={() => { setNewForm({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", paket: "DENEME" }); setNewError(""); setNewModal(true); }}
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
           <span className="material-symbols-outlined text-base">add</span>Yeni Firma
         </button>
       </div>
@@ -175,7 +198,7 @@ export default function AdminFirmalarPage() {
             {/* Başlık */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <h3 className="font-semibold text-on-surface text-base">Firmayı Düzenle</h3>
-              <button className="text-on-surface-variant hover:text-on-surface transition-all">
+              <button type="button" onClick={() => setEditFirma(null)} className="text-on-surface-variant hover:text-on-surface transition-all">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -284,13 +307,77 @@ export default function AdminFirmalarPage() {
               <div className="px-6 pb-5">
                 {editError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
                 <div className="flex gap-3">
-                  <button type="button" className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
+                  <button type="button" onClick={() => setEditFirma(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
                     İptal
                   </button>
                   <button type="submit" disabled={editLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
                     {editLoading ? "Kaydediliyor..." : "Kaydet"}
                   </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Yeni Firma Modal */}
+      {newModal && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
+              <h3 className="font-semibold text-on-surface">Yeni Firma Ekle</h3>
+              <button type="button" onClick={() => setNewModal(false)} className="text-on-surface-variant hover:text-on-surface transition-all">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleNew} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs text-on-surface-variant mb-1 block">Firma Adı *</label>
+                  <input required value={newForm.ad} onChange={e => setNewForm(p => ({ ...p, ad: e.target.value }))}
+                    placeholder="Örnek A.Ş."
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">E-Posta *</label>
+                  <input required type="email" value={newForm.email} onChange={e => setNewForm(p => ({ ...p, email: e.target.value }))}
+                    placeholder="firma@ornek.com"
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Şifre *</label>
+                  <input required type="password" value={newForm.sifre} onChange={e => setNewForm(p => ({ ...p, sifre: e.target.value }))}
+                    placeholder="••••••••"
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Telefon</label>
+                  <input value={newForm.telefon} onChange={e => setNewForm(p => ({ ...p, telefon: e.target.value }))}
+                    placeholder="+90 5xx xxx xx xx"
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Temsilci</label>
+                  <input value={newForm.temsilci} onChange={e => setNewForm(p => ({ ...p, temsilci: e.target.value }))}
+                    placeholder="Sorumlu kişi"
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs text-on-surface-variant mb-1 block">Başlangıç Durumu</label>
+                  <select value={newForm.paket} onChange={e => setNewForm(p => ({ ...p, paket: e.target.value }))}
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                    <option value="DENEME">Deneme</option>
+                    <option value="AKTIF">Aktif</option>
+                    <option value="ASKIDA">Askıda</option>
+                  </select>
+                </div>
+              </div>
+              {newError && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{newError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setNewModal(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">İptal</button>
+                <button type="submit" disabled={newLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] transition-all disabled:opacity-60">
+                  {newLoading ? "Ekleniyor..." : "Ekle"}
+                </button>
               </div>
             </form>
           </div>
@@ -309,7 +396,7 @@ export default function AdminFirmalarPage() {
               <span className="text-on-surface font-medium">{deleteFirma.ad}</span> firması ve tüm verisi kalıcı olarak silinecek. Bu işlem geri alınamaz.
             </p>
             <div className="flex gap-3">
-              <button className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
+              <button onClick={() => setDeleteFirma(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
                 İptal
               </button>
               <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
