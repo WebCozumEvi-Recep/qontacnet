@@ -3,13 +3,14 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { kaynakLabel, trDate } from "@/lib/labels";
+import Image from "next/image";
 
 interface Lead { id: string; ad: string; sirket: string; kaynak: string; createdAt: string }
 interface Member {
   id: string; ad: string; soyad: string; email: string; telefon: string; unvan: string; departman: string;
   whatsapp: string; linkedin: string; biyografi: string; aktif: boolean; kartRenk: string;
   goruntulemeSayisi: number; leadSayisi: number; createdAt: string; leads: Lead[];
-  firma?: { ad: string };
+  firma?: { ad: string }; avatar?: string;
 }
 
 export default function UyeDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,7 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
   const [notFound, setNotFound] = useState(false);
   const [resetPw, setResetPw] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     fetch(`/api/firma/members/${id}`).then(r => r.json()).then(j => { if (j.ok) setMember(j.member); else setNotFound(true); }).finally(() => setLoading(false));
@@ -38,6 +40,23 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
     if (!confirm("Bu üye kalıcı olarak silinecek. Emin misiniz?")) return;
     const res = await fetch(`/api/firma/members/${id}`, { method: "DELETE" });
     if (res.ok) router.push("/firma/uyeler");
+  };
+
+  const uploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("Lütfen bir resim dosyası seçiniz."); return; }
+    if (file.size > 5 * 1024 * 1024) { alert("Dosya boyutu 5MB'dan küçük olmalıdır."); return; }
+
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/firma/members/${id}/photo`, { method: "POST", body: formData });
+      const j = await res.json();
+      if (j.ok) setMember(m => (m ? { ...m, avatar: j.photoUrl } : m));
+      else alert(j.error ?? "Fotoğraf yüklenemedi.");
+    } finally { setUploadingPhoto(false); }
   };
 
   if (loading) return <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant max-w-[900px]">Yükleniyor...</div>;
@@ -61,12 +80,24 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
       <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary transition-all"><span className="material-symbols-outlined text-base">arrow_back</span>Üye Listesine Dön</button>
 
       <div className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-5">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 border-2" style={{ background: `${member.kartRenk}20`, borderColor: `${member.kartRenk}40` }}><span className="material-symbols-outlined text-4xl" style={{ color: member.kartRenk }}>person</span></div>
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 border-2 overflow-hidden" style={{ background: `${member.kartRenk}20`, borderColor: `${member.kartRenk}40` }}>
+            {member.avatar ? (
+              <Image src={member.avatar} alt={`${member.ad} ${member.soyad}`} width={80} height={80} className="w-full h-full object-cover" />
+            ) : (
+              <span className="material-symbols-outlined text-4xl" style={{ color: member.kartRenk }}>person</span>
+            )}
+          </div>
+          <label className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+            <span className="material-symbols-outlined text-sm text-on-primary">add</span>
+            <input type="file" accept="image/*" onChange={uploadPhoto} disabled={uploadingPhoto} className="hidden" />
+          </label>
+        </div>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{member.ad} {member.soyad}</h2>
-              <p className="text-on-surface-variant text-sm mt-0.5">{member.unvan || "—"} · {member.departman || "—"}</p>
+              <p className="text-on-surface-variant text-sm mt-0.5">{member.unvan || "—"} · {member.departman ? `Takım: ${member.departman}` : "—"}</p>
               {member.firma && <p className="text-primary text-xs mt-1">{member.firma.ad}</p>}
             </div>
             <div className="flex gap-2">

@@ -106,7 +106,11 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-on-surface truncate">
-                {user?.email?.split("@")[0]}
+                {user?.data?.["ad"] && user?.data?.["soyad"]
+                  ? `${user.data["ad"]} ${user.data["soyad"]}`
+                  : user?.data?.["ad"]
+                  ? String(user.data["ad"])
+                  : user?.email?.split("@")[0]}
               </p>
               <p className="text-xs text-on-surface-variant truncate">{user?.email}</p>
             </div>
