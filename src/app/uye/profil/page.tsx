@@ -86,11 +86,11 @@ export default function ProfilPage() {
               <input value={form.soyad} onChange={e => set("soyad", e.target.value)} className={inputClass} placeholder="Soyadınız" />
             </div>
             <div>
-              <label className={labelClass}>Unvan</label>
+              <label className={labelClass}>Ünvan / Kariyer</label>
               <input value={form.unvan} onChange={e => set("unvan", e.target.value)} className={inputClass} placeholder="Satış Müdürü" />
             </div>
             <div>
-              <label className={labelClass}>Departman</label>
+              <label className={labelClass}>Takım</label>
               <input value={form.departman} onChange={e => set("departman", e.target.value)} className={inputClass} placeholder="Satış" />
             </div>
             <div className="col-span-2">
