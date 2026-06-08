@@ -6,7 +6,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const member = await prisma.member.findUnique({
     where: { id },
-    include: { firma: { select: { ad: true, website: true, logo: true } } },
+    include: {
+      firma: {
+        select: {
+          ad: true, website: true, logo: true,
+          templates: { where: { aktif: true }, take: 1, select: { renk: true } },
+        },
+      },
+    },
   });
 
   if (!member || !member.aktif) {
@@ -15,6 +22,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   // Görüntülenme sayacı (await etmeden)
   prisma.member.update({ where: { id }, data: { goruntulemeSayisi: { increment: 1 } } }).catch(() => {});
+
+  // Firma aktif teması varsa onu kullan, yoksa üyenin rengi
+  const firmaRenk = member.firma.templates[0]?.renk ?? null;
 
   return NextResponse.json({
     ok: true,
@@ -25,7 +35,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       unvan: member.unvan,
       firmaAdi: member.firma.ad,
       avatar: member.avatar,
-      kartRenk: member.kartRenk,
+      kartRenk: firmaRenk ?? member.kartRenk,
       telefon: member.telefon,
       email: member.email,
       whatsapp: member.showWhatsapp ? member.whatsapp : "",

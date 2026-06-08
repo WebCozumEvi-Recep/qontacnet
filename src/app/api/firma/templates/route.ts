@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
   const { ad, renk } = (await req.json()) as { ad?: string; renk?: string };
   if (!ad) return NextResponse.json({ ok: false, error: "Şablon adı gerekli." }, { status: 400 });
+
+  // Yeni oluşturulunca diğerlerini pasife al
+  await prisma.cardTemplate.updateMany({ where: { firmaId: session.sub }, data: { aktif: false } });
   const tpl = await prisma.cardTemplate.create({
     data: { firmaId: session.sub, ad, renk: renk || "#00d4ff", aktif: true },
   });
@@ -29,15 +32,34 @@ export async function PUT(req: NextRequest) {
   const { id, ad, renk, aktif } = (await req.json()) as { id?: string; ad?: string; renk?: string; aktif?: boolean };
   if (!id) return NextResponse.json({ ok: false, error: "id gerekli." }, { status: 400 });
 
-  // sadece kendi firmasının şablonu
   const existing = await prisma.cardTemplate.findFirst({ where: { id, firmaId: session.sub } });
   if (!existing) return NextResponse.json({ ok: false, error: "Şablon bulunamadı." }, { status: 404 });
 
   const data: Record<string, unknown> = {};
   if (typeof ad === "string") data.ad = ad;
   if (typeof renk === "string") data.renk = renk;
-  if (typeof aktif === "boolean") data.aktif = aktif;
+
+  // Aktif edilince diğerleri pasife alınır — tek aktif tema kuralı
+  if (aktif === true) {
+    await prisma.cardTemplate.updateMany({ where: { firmaId: session.sub, id: { not: id } }, data: { aktif: false } });
+    data.aktif = true;
+  } else if (aktif === false) {
+    data.aktif = false;
+  }
 
   const tpl = await prisma.cardTemplate.update({ where: { id }, data });
   return NextResponse.json({ ok: true, template: tpl });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await requireRole("firma");
+  if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
+  const { id } = (await req.json()) as { id?: string };
+  if (!id) return NextResponse.json({ ok: false, error: "id gerekli." }, { status: 400 });
+
+  const existing = await prisma.cardTemplate.findFirst({ where: { id, firmaId: session.sub } });
+  if (!existing) return NextResponse.json({ ok: false, error: "Şablon bulunamadı." }, { status: 404 });
+
+  await prisma.cardTemplate.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }
