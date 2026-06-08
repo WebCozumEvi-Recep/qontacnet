@@ -154,6 +154,13 @@ export default function LoginPage() {
             Kayıt Ol
           </Link>
         </p>
+        {role === "firma" && (
+          <p className="text-center text-sm text-on-surface-variant mt-2">
+            <Link href="/auth/forgot-password" className="text-on-surface-variant/60 hover:text-primary transition-all text-xs">
+              Şifremi Unuttum
+            </Link>
+          </p>
+        )}
         <p className="text-center mt-3">
           <Link href="/" className="text-xs text-on-surface-variant/60 hover:text-on-surface-variant transition-all">
             ← Ana Sayfaya Dön

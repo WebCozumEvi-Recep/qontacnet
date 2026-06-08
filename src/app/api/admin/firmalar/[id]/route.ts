@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
@@ -31,6 +32,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.mrr === "number") data.mrr = body.mrr;
   if (typeof body.paketBaslangic === "string" && body.paketBaslangic) data.paketBaslangic = new Date(body.paketBaslangic);
   if (typeof body.paketBitis === "string") data.paketBitis = body.paketBitis ? new Date(body.paketBitis) : null;
+  if (typeof body.newPassword === "string" && body.newPassword.length >= 6) {
+    data.passwordHash = bcrypt.hashSync(body.newPassword as string, 10);
+  }
 
   const updated = await prisma.firma.update({ where: { id }, data });
   const { passwordHash, ...safe } = updated;

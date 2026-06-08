@@ -18,6 +18,9 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
   const [notFound, setNotFound] = useState(false);
 
   const [busy, setBusy] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     fetch(`/api/admin/firmalar/${id}`).then(r => r.json()).then(j => {
@@ -32,6 +35,21 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
       const j = await res.json();
       if (j.ok) setFirma(f => (f ? { ...f, ...j.firma } : f));
     } finally { setBusy(false); }
+  };
+
+  const handlePwSet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPw.length < 6) { setPwMsg({ ok: false, text: "Şifre en az 6 karakter olmalı." }); return; }
+    setPwBusy(true);
+    setPwMsg(null);
+    const res = await fetch(`/api/admin/firmalar/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newPassword: newPw }),
+    });
+    const j = await res.json();
+    setPwBusy(false);
+    if (j.ok) { setPwMsg({ ok: true, text: "Şifre güncellendi." }); setNewPw(""); }
+    else setPwMsg({ ok: false, text: j.error ?? "Şifre güncellenemedi." });
   };
 
   if (loading) return <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant max-w-[1100px]">Yükleniyor...</div>;
@@ -107,6 +125,27 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="glass-card rounded-2xl p-6">
+        <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Giriş Şifresi</h3>
+        <form onSubmit={handlePwSet} className="flex gap-3 items-end">
+          <div className="flex-1">
+            <label className="text-xs text-on-surface-variant block mb-1.5">Yeni Şifre Belirle</label>
+            <input type="password" value={newPw} onChange={e => { setNewPw(e.target.value); setPwMsg(null); }}
+              placeholder="En az 6 karakter" minLength={6}
+              className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+          </div>
+          <button type="submit" disabled={pwBusy || newPw.length < 6}
+            className="px-5 py-3 bg-primary-container text-on-primary-container text-sm font-semibold rounded-xl hover:scale-[1.02] transition-all disabled:opacity-50 whitespace-nowrap">
+            {pwBusy ? "Kaydediliyor..." : "Şifreyi Kaydet"}
+          </button>
+        </form>
+        {pwMsg && (
+          <p className={`text-xs mt-2 flex items-center gap-1 ${pwMsg.ok ? "text-tertiary" : "text-red-400"}`}>
+            <span className="material-symbols-outlined text-sm">{pwMsg.ok ? "check_circle" : "error"}</span>{pwMsg.text}
+          </p>
+        )}
       </div>
 
       <div className="glass-card rounded-2xl p-6">
