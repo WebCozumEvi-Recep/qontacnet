@@ -25,11 +25,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const app = await prisma.application.findUnique({ where: { id } });
   if (!app) return NextResponse.json({ ok: false, error: "Başvuru bulunamadı." }, { status: 404 });
 
-  const body = (await req.json()) as { durum?: string };
-  if (!body.durum || !DURUMLAR.includes(body.durum)) return NextResponse.json({ ok: false, error: "Geçersiz durum." }, { status: 400 });
+  const body = (await req.json()) as { durum?: string; firmaAdi?: string; yetkili?: string; email?: string; telefon?: string; uyeSayisi?: string; mesaj?: string };
 
-  const updated = await prisma.application.update({ where: { id }, data: { durum: body.durum as "YENI" | "ILETISIMDE" | "DONUSUM" | "KAYIP" } });
+  const data: Record<string, string> = {};
+  if (body.durum !== undefined) {
+    if (!DURUMLAR.includes(body.durum)) return NextResponse.json({ ok: false, error: "Geçersiz durum." }, { status: 400 });
+    data.durum = body.durum;
+  }
+  if (body.firmaAdi !== undefined) data.firmaAdi = body.firmaAdi;
+  if (body.yetkili !== undefined) data.yetkili = body.yetkili;
+  if (body.email !== undefined) data.email = body.email;
+  if (body.telefon !== undefined) data.telefon = body.telefon;
+  if (body.uyeSayisi !== undefined) data.uyeSayisi = body.uyeSayisi;
+  if (body.mesaj !== undefined) data.mesaj = body.mesaj;
+
+  if (Object.keys(data).length === 0) return NextResponse.json({ ok: false, error: "Güncellenecek alan yok." }, { status: 400 });
+
+  const updated = await prisma.application.update({ where: { id }, data: data as Parameters<typeof prisma.application.update>[0]["data"] });
   return NextResponse.json({ ok: true, application: updated });
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await requireRole("admin");
+  if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
+  const { id } = await params;
+  const app = await prisma.application.findUnique({ where: { id } });
+  if (!app) return NextResponse.json({ ok: false, error: "Başvuru bulunamadı." }, { status: 404 });
+  await prisma.applicationNote.deleteMany({ where: { applicationId: id } });
+  await prisma.application.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }
 
 // Başvuruyu firmaya dönüştür

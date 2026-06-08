@@ -10,6 +10,8 @@ interface Application {
   notlar: Note[];
 }
 
+interface EditForm { firmaAdi: string; yetkili: string; email: string; telefon: string; uyeSayisi: string; mesaj: string; }
+
 export default function BasvuruDetayPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -19,6 +21,9 @@ export default function BasvuruDetayPage() {
   const [noteText, setNoteText] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
   const [converted, setConverted] = useState<{ email: string; sifre: string } | null>(null);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,6 +64,44 @@ export default function BasvuruDetayPage() {
     }
   }
 
+  function openEdit() {
+    if (!app) return;
+    setEditForm({ firmaAdi: app.firmaAdi, yetkili: app.yetkili, email: app.email, telefon: app.telefon, uyeSayisi: app.uyeSayisi, mesaj: app.mesaj ?? "" });
+    setShowEdit(true);
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editForm) return;
+    setEditLoading(true);
+    const res = await fetch(`/api/admin/applications/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    const j = await res.json();
+    setEditLoading(false);
+    if (j.ok) {
+      setApp(prev => prev ? { ...prev, ...editForm } : prev);
+      setShowEdit(false);
+    } else {
+      alert(j.error ?? "Güncellenemedi.");
+    }
+  }
+
+  async function deleteApp() {
+    if (!app) return;
+    if (!confirm(`"${app.firmaAdi}" başvurusunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) return;
+    setBusy(true);
+    const res = await fetch(`/api/admin/applications/${id}`, { method: "DELETE" });
+    const j = await res.json();
+    setBusy(false);
+    if (j.ok) {
+      router.push("/admin/basvurular");
+    } else {
+      alert(j.error ?? "Silinemedi.");
+    }
+  }
+
   async function convert() {
     if (!app) return;
     if (!confirm(`"${app.firmaAdi}" başvurusunu firmaya dönüştürmek istediğinize emin misiniz?`)) return;
@@ -86,11 +129,79 @@ export default function BasvuruDetayPage() {
         <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-all">
           <span className="material-symbols-outlined text-base">arrow_back</span>Başvurular
         </button>
-        <span className="text-xs px-3 py-1.5 rounded-full font-medium"
-          style={{ background: `${durum.color}15`, color: durum.color, border: `1px solid ${durum.color}30` }}>
-          {durum.label}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs px-3 py-1.5 rounded-full font-medium"
+            style={{ background: `${durum.color}15`, color: durum.color, border: `1px solid ${durum.color}30` }}>
+            {durum.label}
+          </span>
+          <button onClick={openEdit} disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-on-surface-variant hover:text-on-surface hover:bg-white/8 transition-all disabled:opacity-40">
+            <span className="material-symbols-outlined text-sm">edit</span>Düzenle
+          </button>
+          <button onClick={deleteApp} disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-40">
+            <span className="material-symbols-outlined text-sm">delete</span>Sil
+          </button>
+        </div>
       </div>
+
+      {/* Düzenle Modal */}
+      {showEdit && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="glass-card rounded-2xl w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Başvuruyu Düzenle</h2>
+              <button onClick={() => setShowEdit(false)} className="text-on-surface-variant hover:text-on-surface transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={saveEdit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="space-y-1">
+                  <span className="text-xs text-on-surface-variant">Firma Adı</span>
+                  <input value={editForm.firmaAdi} onChange={e => setEditForm(f => f ? { ...f, firmaAdi: e.target.value } : f)}
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary outline-none transition-all" required />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-xs text-on-surface-variant">Yetkili</span>
+                  <input value={editForm.yetkili} onChange={e => setEditForm(f => f ? { ...f, yetkili: e.target.value } : f)}
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary outline-none transition-all" required />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-xs text-on-surface-variant">E-posta</span>
+                  <input type="email" value={editForm.email} onChange={e => setEditForm(f => f ? { ...f, email: e.target.value } : f)}
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary outline-none transition-all" required />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-xs text-on-surface-variant">Telefon</span>
+                  <input value={editForm.telefon} onChange={e => setEditForm(f => f ? { ...f, telefon: e.target.value } : f)}
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+                </label>
+              </div>
+              <label className="space-y-1 block">
+                <span className="text-xs text-on-surface-variant">Üye Sayısı</span>
+                <input value={editForm.uyeSayisi} onChange={e => setEditForm(f => f ? { ...f, uyeSayisi: e.target.value } : f)}
+                  className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+              </label>
+              <label className="space-y-1 block">
+                <span className="text-xs text-on-surface-variant">Mesaj</span>
+                <textarea value={editForm.mesaj} onChange={e => setEditForm(f => f ? { ...f, mesaj: e.target.value } : f)} rows={3}
+                  className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary outline-none transition-all resize-none" />
+              </label>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setShowEdit(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-sm text-on-surface-variant hover:bg-white/5 transition-all">
+                  İptal
+                </button>
+                <button type="submit" disabled={editLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-black text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-40">
+                  {editLoading ? "Kaydediliyor..." : "Kaydet"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[1fr_380px] gap-5">
         {/* Sol: notlar / yazışma geçmişi */}
