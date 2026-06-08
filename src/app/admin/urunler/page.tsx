@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Product {
   id: string; ad: string; aciklama: string; fiyat: number;
@@ -21,6 +21,65 @@ const TIP_OPTIONS = [
   { value: "DIJITAL_PAKET", label: "Dijital Paket" },
   { value: "DIGER", label: "Diğer" },
 ];
+
+function GorselYukle({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true); setUploadError("");
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const j = await res.json();
+      if (!j.ok) { setUploadError(j.error || "Yükleme başarısız."); return; }
+      onChange(j.url);
+    } catch {
+      setUploadError("Yükleme başarısız.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs text-on-surface-variant block">Görsel</label>
+      {value ? (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/8">
+          <img src={value} alt="önizleme" className="w-14 h-14 rounded-lg object-cover border border-white/10 flex-shrink-0"
+            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-on-surface-variant truncate">{value}</p>
+          </div>
+          <button type="button" onClick={() => onChange("")}
+            className="p-1 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400 transition-all flex-shrink-0">
+            <span className="material-symbols-outlined text-base">close</span>
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input value={value} onChange={e => onChange(e.target.value)}
+            placeholder="https://... veya bilgisayardan yükle"
+            className="flex-1 bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading}
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all disabled:opacity-50 whitespace-nowrap flex-shrink-0">
+            {uploading
+              ? <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+              : <span className="material-symbols-outlined text-base">upload_file</span>}
+            {uploading ? "Yükleniyor..." : "Gözat"}
+          </button>
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      {uploadError && <p className="text-xs text-red-400">{uploadError}</p>}
+    </div>
+  );
+}
 
 export default function AdminUrunlerPage() {
   const [urunler, setUrunler] = useState<Product[]>([]);
@@ -222,12 +281,7 @@ export default function AdminUrunlerPage() {
                   rows={2} placeholder="Ürün hakkında kısa açıklama"
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all resize-none" />
               </div>
-              <div>
-                <label className="text-xs text-on-surface-variant mb-1 block">Görsel URL</label>
-                <input value={newForm.gorsel} onChange={e => setNewForm(p => ({ ...p, gorsel: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-              </div>
+              <GorselYukle value={newForm.gorsel} onChange={url => setNewForm(p => ({ ...p, gorsel: url }))} />
               {newError && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{newError}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setNewModal(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">İptal</button>
@@ -288,18 +342,7 @@ export default function AdminUrunlerPage() {
                   rows={2}
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all resize-none" />
               </div>
-              <div>
-                <label className="text-xs text-on-surface-variant mb-1 block">Görsel URL</label>
-                <input value={editForm.gorsel} onChange={e => setEditForm(p => ({ ...p, gorsel: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-              </div>
-              {editForm.gorsel && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/8">
-                  <img src={editForm.gorsel} alt="preview" className="w-12 h-12 rounded-lg object-cover border border-white/10" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  <span className="text-xs text-on-surface-variant">Görsel önizleme</span>
-                </div>
-              )}
+              <GorselYukle value={editForm.gorsel} onChange={url => setEditForm(p => ({ ...p, gorsel: url }))} />
               {editError && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setEditUrun(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">İptal</button>
