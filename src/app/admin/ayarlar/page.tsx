@@ -1,24 +1,71 @@
 "use client";
-import { useState } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useEffect, useState } from "react";
 
 interface AdminUser { id: string; ad: string; email: string; rol: string }
 
 export default function AdminAyarlarPage() {
-  const { user } = useAuth();
-  const admin = user?.data as unknown as AdminUser;
-  const [saved, setSaved] = useState(false);
+  const [admin, setAdmin] = useState<AdminUser | null>(null);
+  const [ad, setAd] = useState("");
+  const [email, setEmail] = useState("");
+  const [profSaving, setProfSaving] = useState(false);
+  const [profMsg, setProfMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  const [mevcutSifre, setMevcutSifre] = useState("");
+  const [yeniSifre, setYeniSifre] = useState("");
+  const [sifreSaving, setSifreSaving] = useState(false);
+  const [sifreMsg, setSifreMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then(r => r.json()).then(j => {
+      if (j.user?.data) {
+        const d = j.user.data as AdminUser;
+        setAdmin(d);
+        setAd(d.ad ?? "");
+        setEmail(j.user.email ?? "");
+      }
+    });
+  }, []);
+
+  async function handleProfil(e: React.FormEvent) {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+    setProfSaving(true); setProfMsg(null);
+    const res = await fetch("/api/admin/ayarlar", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ad, email }),
+    });
+    const j = await res.json();
+    setProfSaving(false);
+    if (j.ok) {
+      setAdmin(prev => prev ? { ...prev, ad: j.admin.ad, email: j.admin.email } : prev);
+      setProfMsg({ ok: true, text: "Profil güncellendi." });
+    } else {
+      setProfMsg({ ok: false, text: j.error || "Kaydedilemedi." });
+    }
+  }
+
+  async function handleSifre(e: React.FormEvent) {
+    e.preventDefault();
+    setSifreSaving(true); setSifreMsg(null);
+    const res = await fetch("/api/admin/ayarlar", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mevcutSifre, yeniSifre }),
+    });
+    const j = await res.json();
+    setSifreSaving(false);
+    if (j.ok) {
+      setSifreMsg({ ok: true, text: "Şifre değiştirildi." });
+      setMevcutSifre(""); setYeniSifre("");
+    } else {
+      setSifreMsg({ ok: false, text: j.error || "Şifre değiştirilemedi." });
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-[900px]">
       {/* Profil */}
-      <form onSubmit={handleSave} className="glass-card rounded-2xl p-6">
+      <form onSubmit={handleProfil} className="glass-card rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Yönetici Profili</h3>
         <p className="text-xs text-on-surface-variant mb-5">Platform yöneticisi bilgileriniz</p>
 
@@ -33,16 +80,56 @@ export default function AdminAyarlarPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 mb-5">
-          <Field label="Ad Soyad" defaultValue={admin?.ad} />
-          <Field label="E-posta" defaultValue={admin?.email} type="email" />
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">Ad Soyad</label>
+            <input value={ad} onChange={e => setAd(e.target.value)}
+              className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all" />
+          </div>
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">E-posta</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all" />
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button type="submit" className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
-            Kaydet
-          </button>
-          {saved && <span className="text-sm text-tertiary flex items-center gap-1"><span className="material-symbols-outlined text-base">check_circle</span>Kaydedildi</span>}
+        {profMsg && (
+          <p className={`text-xs flex items-center gap-1 mb-3 ${profMsg.ok ? "text-green-400" : "text-red-400"}`}>
+            <span className="material-symbols-outlined text-sm">{profMsg.ok ? "check_circle" : "error"}</span>{profMsg.text}
+          </p>
+        )}
+        <button type="submit" disabled={profSaving}
+          className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
+          {profSaving ? "Kaydediliyor..." : "Kaydet"}
+        </button>
+      </form>
+
+      {/* Şifre Değiştir */}
+      <form onSubmit={handleSifre} className="glass-card rounded-2xl p-6">
+        <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Şifre Değiştir</h3>
+        <p className="text-xs text-on-surface-variant mb-5">Hesap güvenliği için güçlü bir şifre kullanın</p>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-5">
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">Mevcut Şifre</label>
+            <input type="password" value={mevcutSifre} onChange={e => setMevcutSifre(e.target.value)} required
+              className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all" />
+          </div>
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">Yeni Şifre</label>
+            <input type="password" value={yeniSifre} onChange={e => setYeniSifre(e.target.value)} required minLength={6}
+              className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all" />
+          </div>
         </div>
+
+        {sifreMsg && (
+          <p className={`text-xs flex items-center gap-1 mb-3 ${sifreMsg.ok ? "text-green-400" : "text-red-400"}`}>
+            <span className="material-symbols-outlined text-sm">{sifreMsg.ok ? "check_circle" : "error"}</span>{sifreMsg.text}
+          </p>
+        )}
+        <button type="submit" disabled={sifreSaving}
+          className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
+          {sifreSaving ? "Değiştiriliyor..." : "Şifreyi Değiştir"}
+        </button>
       </form>
 
       {/* Platform Ayarları */}
@@ -58,55 +145,6 @@ export default function AdminAyarlarPage() {
           <Toggle label="Bakım modu" desc="Tüm panelleri geçici olarak kapatır." />
         </div>
       </div>
-
-      {/* Güvenlik */}
-      <div className="glass-card rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Güvenlik</h3>
-        <p className="text-xs text-on-surface-variant mb-5">Hesap güvenliği</p>
-
-        <div className="space-y-3">
-          <button className="w-full flex items-center justify-between p-4 rounded-xl glass-card hover:border-primary/20 transition-all text-left">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary">lock_reset</span>
-              <div>
-                <p className="text-sm text-on-surface font-medium">Şifre Değiştir</p>
-                <p className="text-xs text-on-surface-variant">Mevcut şifre ile yeni şifre belirle</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-on-surface-variant">chevron_right</span>
-          </button>
-          <button className="w-full flex items-center justify-between p-4 rounded-xl glass-card hover:border-primary/20 transition-all text-left">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary">verified_user</span>
-              <div>
-                <p className="text-sm text-on-surface font-medium">İki Faktörlü Kimlik Doğrulama</p>
-                <p className="text-xs text-on-surface-variant">Authenticator uygulaması ile koruma ekle</p>
-              </div>
-            </div>
-            <span className="text-xs px-2 py-1 rounded-full bg-on-surface-variant/10 text-on-surface-variant border border-white/10">Pasif</span>
-          </button>
-          <button className="w-full flex items-center justify-between p-4 rounded-xl glass-card hover:border-red-400/20 transition-all text-left">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-red-400">history</span>
-              <div>
-                <p className="text-sm text-on-surface font-medium">Oturum Geçmişi</p>
-                <p className="text-xs text-on-surface-variant">Aktif oturumları görüntüle ve sonlandır</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-on-surface-variant">chevron_right</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, defaultValue, type = "text" }: { label: string; defaultValue?: string; type?: string }) {
-  return (
-    <div>
-      <label className="block text-xs text-on-surface-variant mb-1.5">{label}</label>
-      <input type={type} defaultValue={defaultValue}
-        className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-0 outline-none transition-all" />
     </div>
   );
 }
@@ -120,7 +158,7 @@ function Toggle({ label, desc, defaultChecked = false }: { label: string; desc: 
         <p className="text-xs text-on-surface-variant">{desc}</p>
       </div>
       <div className={`w-11 h-6 rounded-full relative transition-all flex-shrink-0 ${on ? "bg-primary" : "bg-white/10"}`}>
-        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${on ? "left-5" : "left-0.5"}`}></div>
+        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${on ? "left-5" : "left-0.5"}`} />
       </div>
     </button>
   );

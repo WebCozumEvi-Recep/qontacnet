@@ -214,6 +214,17 @@ model Application {
   mesaj     String       @default("")
   durum     BasvuruDurum @default(YENI)
   createdAt DateTime     @default(now())
+
+  notlar ApplicationNote[]
+}
+
+model ApplicationNote {
+  id            String      @id @default(cuid())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
+  icerik        String
+  adminAd       String      @default("")
+  createdAt     DateTime    @default(now())
 }
 
 model RevenueSnapshot {

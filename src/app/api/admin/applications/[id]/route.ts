@@ -3,6 +3,18 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await requireRole("admin");
+  if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
+  const { id } = await params;
+  const app = await prisma.application.findUnique({
+    where: { id },
+    include: { notlar: { orderBy: { createdAt: "asc" } } },
+  });
+  if (!app) return NextResponse.json({ ok: false, error: "Bulunamadı." }, { status: 404 });
+  return NextResponse.json({ ok: true, application: app });
+}
+
 const DURUMLAR = ["YENI", "ILETISIMDE", "DONUSUM", "KAYIP"];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

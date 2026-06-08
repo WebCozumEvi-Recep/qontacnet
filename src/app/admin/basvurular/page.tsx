@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { basvuruDurumMap, trDate } from "@/lib/labels";
 
@@ -11,118 +12,123 @@ export default function AdminBasvurularPage() {
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("tum");
-  const [selected, setSelected] = useState<Application | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [converted, setConverted] = useState<{ email: string; sifre: string } | null>(null);
+  const [q, setQ] = useState("");
 
-  const load = () => fetch("/api/admin/applications").then(r => r.json()).then(j => { if (j.ok) setApps(j.applications); }).finally(() => setLoading(false));
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    fetch("/api/admin/applications").then(r => r.json()).then(j => { if (j.ok) setApps(j.applications); }).finally(() => setLoading(false));
+  }, []);
 
-  const updateDurum = async (durum: string) => {
-    if (!selected) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/admin/applications/${selected.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ durum }) });
-      const j = await res.json();
-      if (j.ok) { setSelected({ ...selected, durum }); await load(); }
-    } finally { setBusy(false); }
-  };
+  const filtered = apps.filter(a => {
+    if (tab !== "tum" && a.durum !== tab) return false;
+    if (q && !a.firmaAdi.toLowerCase().includes(q.toLowerCase()) && !a.email.toLowerCase().includes(q.toLowerCase()) && !a.yetkili.toLowerCase().includes(q.toLowerCase())) return false;
+    return true;
+  });
 
-  const convert = async () => {
-    if (!selected) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/admin/applications/${selected.id}`, { method: "POST" });
-      const j = await res.json();
-      if (j.ok) { setConverted({ email: j.email, sifre: j.geciciSifre }); setSelected({ ...selected, durum: "DONUSUM" }); await load(); }
-      else alert(j.error ?? "Dönüştürülemedi.");
-    } finally { setBusy(false); }
-  };
-
-  const filtered = tab === "tum" ? apps : apps.filter(a => a.durum === tab);
   const counts: Record<string, number> = { tum: apps.length };
   Object.keys(basvuruDurumMap).forEach(k => counts[k] = apps.filter(a => a.durum === k).length);
 
   return (
     <div className="space-y-6 max-w-[1200px]">
+      {/* İstatistik kartları */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.keys(basvuruDurumMap).map(d => (
-          <Stat key={d} icon={d === "YENI" ? "mark_email_unread" : d === "ILETISIMDE" ? "forum" : d === "DONUSUM" ? "task_alt" : "block"} label={basvuruDurumMap[d].label} value={counts[d]} color={basvuruDurumMap[d].color} />
+        {Object.entries(basvuruDurumMap).map(([d, v]) => (
+          <button key={d} onClick={() => setTab(d)}
+            className={`glass-card rounded-2xl p-5 text-left transition-all hover:border-primary/20 ${tab === d ? "border-primary/30" : ""}`}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+              style={{ background: `${v.color}20`, border: `1px solid ${v.color}30` }}>
+              <span className="material-symbols-outlined text-xl"
+                style={{ color: v.color }}>
+                {d === "YENI" ? "mark_email_unread" : d === "ILETISIMDE" ? "forum" : d === "DONUSUM" ? "task_alt" : "block"}
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{counts[d] ?? 0}</p>
+            <p className="text-sm text-on-surface-variant mt-0.5">{v.label}</p>
+          </button>
         ))}
       </div>
 
-      <div className="glass-card rounded-2xl p-2 flex flex-wrap gap-1">
-        <TabButton active={tab === "tum"} onClick={() => setTab("tum")} label="Tümü" count={counts.tum} />
-        {Object.keys(basvuruDurumMap).map(d => <TabButton key={d} active={tab === d} onClick={() => setTab(d)} label={basvuruDurumMap[d].label} count={counts[d]} color={basvuruDurumMap[d].color} />)}
+      {/* Filtre çubuğu */}
+      <div className="glass-card rounded-2xl p-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <div className="relative flex-1">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Firma, yetkili veya e-posta ara..."
+            className="w-full bg-surface-dim border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:border-primary outline-none transition-all" />
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <TabBtn active={tab === "tum"} onClick={() => setTab("tum")} label="Tümü" count={counts.tum} />
+          {Object.entries(basvuruDurumMap).map(([d, v]) => (
+            <TabBtn key={d} active={tab === d} onClick={() => setTab(d)} label={v.label} count={counts[d]} color={v.color} />
+          ))}
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        {loading ? <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant lg:col-span-2">Yükleniyor...</div> : filtered.map(a => (
-          <div key={a.id} onClick={() => setSelected(a)} className="glass-card rounded-2xl p-5 cursor-pointer hover:border-primary/20 transition-all">
-            <div className="flex items-start justify-between mb-3">
-              <div><p className="text-on-surface font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>{a.firmaAdi}</p><p className="text-xs text-on-surface-variant mt-0.5">{a.yetkili}</p></div>
-              <span className="text-xs px-2 py-1 rounded-full whitespace-nowrap" style={{ background: `${basvuruDurumMap[a.durum].color}15`, color: basvuruDurumMap[a.durum].color, border: `1px solid ${basvuruDurumMap[a.durum].color}30` }}>{basvuruDurumMap[a.durum].label}</span>
-            </div>
-            <div className="space-y-1 text-xs text-on-surface-variant mb-3">
-              <p className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">mail</span>{a.email}</p>
-              <p className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">phone</span>{a.telefon}</p>
-              <p className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">group</span>{a.uyeSayisi} üye</p>
-            </div>
-            <p className="text-sm text-on-surface-variant line-clamp-2 mb-3">{a.mesaj}</p>
-            <div className="flex items-center justify-between pt-3 border-t border-white/5"><span className="text-xs text-on-surface-variant">{trDate(a.createdAt)}</span><span className="text-xs text-primary">Detay →</span></div>
-          </div>
-        ))}
-        {!loading && filtered.length === 0 && <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant lg:col-span-2">Bu durumda başvuru yok.</div>}
-      </div>
-
-      {selected && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setSelected(null); setConverted(null); }}>
-          <div className="glass-card rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
-              <div><h3 className="text-lg font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{selected.firmaAdi}</h3><p className="text-xs text-on-surface-variant mt-1">Başvuru: {trDate(selected.createdAt)}</p></div>
-              <button onClick={() => { setSelected(null); setConverted(null); }} className="w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center"><span className="material-symbols-outlined text-on-surface-variant">close</span></button>
-            </div>
-            <div className="space-y-3 mb-5">
-              <Row icon="person" label="Yetkili" value={selected.yetkili} /><Row icon="mail" label="E-posta" value={selected.email} />
-              <Row icon="phone" label="Telefon" value={selected.telefon} /><Row icon="group" label="Üye Sayısı" value={selected.uyeSayisi} />
-            </div>
-            <div className="p-4 rounded-xl bg-white/3 mb-5"><p className="text-xs text-on-surface-variant mb-1">Mesaj</p><p className="text-sm text-on-surface">{selected.mesaj}</p></div>
-
-            {converted ? (
-              <div className="p-4 rounded-xl bg-tertiary/10 border border-tertiary/20 text-sm space-y-1">
-                <p className="text-tertiary flex items-center gap-2"><span className="material-symbols-outlined text-base">check_circle</span>Firma oluşturuldu!</p>
-                <p className="text-on-surface"><span className="text-on-surface-variant">Giriş:</span> {converted.email}</p>
-                <p className="text-on-surface"><span className="text-on-surface-variant">Geçici şifre:</span> <span className="font-mono text-primary">{converted.sifre}</span></p>
-              </div>
-            ) : (
-              <>
-                <div className="mb-4">
-                  <label className="text-xs text-on-surface-variant mb-1.5 block">Durum Güncelle</label>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.keys(basvuruDurumMap).map(d => (
-                      <button key={d} onClick={() => updateDurum(d)} disabled={busy} className={`text-xs px-3 py-1.5 rounded-full border transition-all disabled:opacity-50 ${selected.durum === d ? "" : "opacity-60 hover:opacity-100"}`} style={{ background: `${basvuruDurumMap[d].color}15`, color: basvuruDurumMap[d].color, borderColor: `${basvuruDurumMap[d].color}30` }}>{basvuruDurumMap[d].label}</button>
-                    ))}
+      {/* Liste */}
+      {loading ? (
+        <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant">Yükleniyor...</div>
+      ) : filtered.length === 0 ? (
+        <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant">
+          <span className="material-symbols-outlined text-4xl block mb-2 opacity-30">inbox</span>
+          Bu durumda başvuru yok.
+        </div>
+      ) : (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {filtered.map(a => {
+            const d = basvuruDurumMap[a.durum];
+            return (
+              <Link key={a.id} href={`/admin/basvurular/${a.id}`}
+                className="glass-card rounded-2xl p-5 hover:border-primary/20 transition-all block group">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-on-surface font-semibold group-hover:text-primary transition-all" style={{ fontFamily: "Sora, sans-serif" }}>
+                      {a.firmaAdi}
+                    </p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">{a.yetkili}</p>
                   </div>
+                  <span className="text-xs px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0"
+                    style={{ background: `${d.color}15`, color: d.color, border: `1px solid ${d.color}30` }}>
+                    {d.label}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <a href={`mailto:${selected.email}`} className="py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all text-center">İletişime Geç</a>
-                  <button onClick={convert} disabled={busy} className="py-3 glass-card rounded-xl text-sm text-on-surface-variant hover:text-tertiary transition-all disabled:opacity-50">{busy ? "..." : "Firmaya Dönüştür"}</button>
+
+                <div className="space-y-1 text-xs text-on-surface-variant mb-3">
+                  <p className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm">mail</span>{a.email}
+                  </p>
+                  {a.telefon && (
+                    <p className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm">phone</span>{a.telefon}
+                    </p>
+                  )}
+                  <p className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm">group</span>{a.uyeSayisi} üye
+                  </p>
                 </div>
-              </>
-            )}
-          </div>
+
+                {a.mesaj && <p className="text-sm text-on-surface-variant line-clamp-2 mb-3">{a.mesaj}</p>}
+
+                <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                  <span className="text-xs text-on-surface-variant">{trDate(a.createdAt)}</span>
+                  <span className="text-xs text-primary flex items-center gap-1">
+                    Detay <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
+      <p className="text-xs text-on-surface-variant text-right">{filtered.length} başvuru listeleniyor.</p>
     </div>
   );
 }
 
-function TabButton({ active, onClick, label, count, color }: { active: boolean; onClick: () => void; label: string; count: number; color?: string }) {
-  return (<button onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${active ? "bg-primary-container/20 text-primary border border-primary/20" : "text-on-surface-variant hover:text-on-surface hover:bg-white/5"}`}>{color && <span className="w-2 h-2 rounded-full" style={{ background: color }} />}{label}<span className="text-xs text-on-surface-variant">({count})</span></button>);
-}
-function Stat({ icon, label, value, color }: { icon: string; label: string; value: number; color: string }) {
-  return (<div className="glass-card rounded-2xl p-5"><div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: `${color}20`, border: `1px solid ${color}30` }}><span className="material-symbols-outlined text-xl" style={{ color }}>{icon}</span></div><p className="text-2xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{value}</p><p className="text-sm text-on-surface-variant mt-0.5">{label}</p></div>);
-}
-function Row({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (<div className="flex items-center gap-3"><span className="material-symbols-outlined text-on-surface-variant text-base">{icon}</span><div className="flex-1 min-w-0"><p className="text-xs text-on-surface-variant">{label}</p><p className="text-on-surface text-sm">{value}</p></div></div>);
+function TabBtn({ active, onClick, label, count, color }: { active: boolean; onClick: () => void; label: string; count: number; color?: string }) {
+  return (
+    <button onClick={onClick}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${active ? "bg-primary-container/20 text-primary border border-primary/20" : "text-on-surface-variant hover:text-on-surface hover:bg-white/5"}`}>
+      {color && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />}
+      {label}
+      <span className="text-on-surface-variant">({count})</span>
+    </button>
+  );
 }
