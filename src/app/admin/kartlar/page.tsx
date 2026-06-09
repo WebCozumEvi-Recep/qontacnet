@@ -4,7 +4,7 @@ import { batchDurumMap, trDate } from "@/lib/labels";
 
 interface Batch {
   id: string; kod: string; miktar: number; uretici: string; uretimTarihi: string;
-  durum: string; tahsisFirma: string | null; seriPrefix: string; createdAt: string;
+  durum: string; tahsisFirma: string | null; tahsisFirmaId: string | null; seriPrefix: string; createdAt: string;
 }
 
 interface PhysicalCardRow { id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; memberId: string | null; }
@@ -55,7 +55,7 @@ export default function AdminKartlarPage() {
     setEditForm({
       kod: b.kod, miktar: String(b.miktar), seriPrefix: b.seriPrefix,
       uretici: b.uretici, uretimTarihi: toDateInput(b.uretimTarihi),
-      durum: b.durum, tahsisFirma: b.tahsisFirma ?? "",
+      durum: b.durum, tahsisFirma: b.tahsisFirmaId ?? "",
     });
     setEditError("");
   }
@@ -169,10 +169,10 @@ export default function AdminKartlarPage() {
                 <div><p className="text-xs text-on-surface-variant">Üretici</p><p className="text-on-surface text-sm">{b.uretici}</p></div>
                 <div><p className="text-xs text-on-surface-variant">Üretim Tarihi</p><p className="text-on-surface text-sm">{trDate(b.uretimTarihi)}</p></div>
               </div>
-              {b.tahsisFirma && (
+              {b.tahsisFirmaId && (
                 <div className="pt-3 border-t border-white/5">
                   <p className="text-xs text-on-surface-variant">Tahsis Edilen Firma</p>
-                  <p className="text-primary text-sm font-medium">{b.tahsisFirma}</p>
+                  <p className="text-primary text-sm font-medium">{firmalar.find(f => f.id === b.tahsisFirmaId)?.ad ?? b.tahsisFirma ?? b.tahsisFirmaId}</p>
                 </div>
               )}
               <div className="flex gap-2 mt-4 pt-3 border-t border-white/5">
@@ -215,7 +215,7 @@ export default function AdminKartlarPage() {
                     { label: "Üretici", value: detayBatch.uretici },
                     { label: "Üretim Tarihi", value: trDate(detayBatch.uretimTarihi) },
                     { label: "Kayıt Tarihi", value: trDate(detayBatch.createdAt) },
-                    { label: "Tahsis Firması", value: detayBatch.tahsisFirma ?? "—" },
+                    { label: "Tahsis Firması", value: firmalar.find(f => f.id === detayBatch.tahsisFirmaId)?.ad ?? detayBatch.tahsisFirma ?? "—" },
                   ].map(({ label, value, mono }) => (
                     <div key={label}>
                       <p className="text-xs text-on-surface-variant mb-0.5">{label}</p>
@@ -366,7 +366,7 @@ export default function AdminKartlarPage() {
                     <select value={newForm.tahsisFirma} onChange={e => setNewForm(p => ({ ...p, tahsisFirma: e.target.value }))}
                       className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
                       <option value="">— Seçilmedi —</option>
-                      {firmalar.map(f => <option key={f.id} value={f.ad}>{f.ad}</option>)}
+                      {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
                     </select>
                   </div>
                 </div>
@@ -448,7 +448,7 @@ export default function AdminKartlarPage() {
                     <select value={editForm.tahsisFirma} onChange={e => setEditForm(p => ({ ...p, tahsisFirma: e.target.value }))}
                       className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
                       <option value="">— Seçilmedi —</option>
-                      {firmalar.map(f => <option key={f.id} value={f.ad}>{f.ad}</option>)}
+                      {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
                     </select>
                   </div>
                 </div>

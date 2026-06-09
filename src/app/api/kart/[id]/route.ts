@@ -23,8 +23,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   // Görüntülenme sayacı (await etmeden)
   prisma.member.update({ where: { id }, data: { goruntulemeSayisi: { increment: 1 } } }).catch(() => {});
 
-  // Firma aktif teması varsa onu kullan, yoksa üyenin rengi
-  const firmaRenk = member.firma.templates[0]?.renk ?? null;
+  // Firma aktif teması varsa onu kullan; firma yoksa üyenin varsayılan rengi
+  const firmaRenk = member.firma?.templates[0]?.renk ?? null;
 
   return NextResponse.json({
     ok: true,
@@ -33,7 +33,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       ad: member.ad,
       soyad: member.soyad,
       unvan: member.unvan,
-      firmaAdi: member.firma.ad,
+      firmaAdi: member.firma?.ad ?? "",
       avatar: member.avatar,
       kartRenk: firmaRenk ?? member.kartRenk,
       telefon: member.telefon,

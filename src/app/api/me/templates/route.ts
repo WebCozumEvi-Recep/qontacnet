@@ -12,6 +12,8 @@ export async function GET() {
   });
   if (!member) return NextResponse.json({ ok: false, error: "Bulunamadı." }, { status: 404 });
 
+  if (!member.firmaId) return NextResponse.json({ ok: true, templates: [] });
+
   const templates = await prisma.cardTemplate.findMany({
     where: { firmaId: member.firmaId },
     orderBy: { createdAt: "asc" },

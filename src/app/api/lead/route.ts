@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       ? await prisma.member.findUnique({ where: { id: uyeId }, include: { firma: { select: { ad: true } } } })
       : null;
     const uyeAdi = uye ? `${uye.ad} ${uye.soyad}` : "Üye";
-    const firmaAdi = uye?.firma.ad ?? "QONTAC";
+    const firmaAdi = uye?.firma?.ad ?? "QONTAC";
 
     // Lead'i veritabanına kaydet + üye sayacını artır
     if (uye) {

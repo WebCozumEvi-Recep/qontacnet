@@ -77,7 +77,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (typeof body.uretici === "string") data.uretici = body.uretici.trim();
   if (typeof body.uretimTarihi === "string" && body.uretimTarihi) data.uretimTarihi = new Date(body.uretimTarihi);
   if (typeof body.durum === "string" && DURUMLAR.includes(body.durum)) data.durum = body.durum;
-  if (typeof body.tahsisFirma === "string") data.tahsisFirma = body.tahsisFirma || null;
+  if (typeof body.tahsisFirma === "string") data.tahsisFirmaId = body.tahsisFirma || null;
 
   const updated = await prisma.cardBatch.update({ where: { id }, data });
   return NextResponse.json({ ok: true, batch: updated });

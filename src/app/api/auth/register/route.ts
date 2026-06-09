@@ -37,18 +37,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, role: "firma" });
     }
 
-    // role === "uye": kayıt için bir firmaya bağlanması gerekir.
-    // Demo amaçlı: ilk firmaya bağla (gerçek akışta davet/kod ile olur).
+    // role === "uye": firmasız kayıt — kart aktivasyonunda firma atanır.
     const exists = await prisma.member.findUnique({ where: { email: lower } });
     if (exists) return NextResponse.json({ ok: false, error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
 
-    const firma = await prisma.firma.findFirst({ orderBy: { createdAt: "asc" } });
-    if (!firma) {
-      return NextResponse.json({ ok: false, error: "Henüz kayıtlı firma yok. Önce firma başvurusu gerekir." }, { status: 400 });
-    }
-
     const member = await prisma.member.create({
-      data: { firmaId: firma.id, ad, soyad: soyad || "", email: lower, passwordHash },
+      data: { ad, soyad: soyad || "", email: lower, passwordHash },
     });
     await createSession({ sub: member.id, role: "uye", email: member.email });
     return NextResponse.json({ ok: true, role: "uye" });

@@ -24,7 +24,7 @@ export async function getCurrentUser(): Promise<
     if (m) {
       const { passwordHash, firma, ...rest } = m;
       void passwordHash;
-      data = { ...rest, firmaAdi: firma?.ad ?? "" };
+      data = { ...rest, firmaAdi: firma?.ad ?? "", firmaId: m.firmaId };
     }
   } else if (session.role === "firma") {
     data = strip(await prisma.firma.findUnique({ where: { id: session.sub } }));

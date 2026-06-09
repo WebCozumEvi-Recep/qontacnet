@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
-const COLORS = ["#00d4ff", "#6001d1", "#42faba", "#ff6b6b", "#ffd93d", "#a29bfe"];
-
 interface MemberData {
   id: string;
   ad: string;
@@ -12,8 +10,8 @@ interface MemberData {
   unvan: string;
   firmaAdi?: string;
   kartRenk: string;
-  templateId: string | null;
   aktif: boolean;
+  kartAktif?: boolean;
   whatsapp: string;
   linkedin: string;
   instagram: string;
@@ -26,9 +24,7 @@ interface MemberData {
   showBio: boolean;
 }
 
-interface Template { id: string; ad: string; renk: string; aktif: boolean }
-
-function CardPreview({ member, color }: { member: { ad: string; soyad: string; unvan: string; firmaAdi?: string }; color: string }) {
+function CardPreview({ member, color }: { member: Pick<MemberData, "ad" | "soyad" | "unvan" | "firmaAdi">; color: string }) {
   return (
     <div className="relative w-full max-w-xs mx-auto">
       <div className="w-full aspect-[1.586/1] rounded-2xl glass-card border-white/20 p-6 flex flex-col justify-between shadow-2xl overflow-hidden"
@@ -69,9 +65,8 @@ export default function KartimPage() {
   const { user, updateUserData } = useAuth();
   const member = user?.data as unknown as MemberData;
 
-  const [color, setColor] = useState("#00d4ff");
-  const [templateId, setTemplateId] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  // Firma temasını API'den çek (gerçek public card rengi)
+  const [firmaColor, setFirmaColor] = useState("#00d4ff");
   const [toggles, setToggles] = useState({
     showWhatsapp: true, showLinkedin: true, showInstagram: true, showWebsite: true, showBio: true,
   });
@@ -79,11 +74,8 @@ export default function KartimPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  // Üye verisi yüklenince state'i doldur
   useEffect(() => {
     if (!member) return;
-    setColor(member.kartRenk ?? "#00d4ff");
-    setTemplateId(member.templateId ?? null);
     setToggles({
       showWhatsapp: member.showWhatsapp ?? true,
       showLinkedin: member.showLinkedin ?? true,
@@ -93,9 +85,14 @@ export default function KartimPage() {
     });
   }, [member]);
 
+  // Firma temasını public kart API'sinden al
   useEffect(() => {
-    fetch("/api/me/templates").then(r => r.json()).then(j => { if (j.ok) setTemplates(j.templates); }).catch(() => {});
-  }, []);
+    if (!user?.id) return;
+    fetch(`/api/kart/${user.id}`)
+      .then(r => r.json())
+      .then(j => { if (j.ok) setFirmaColor(j.card.kartRenk); })
+      .catch(() => {});
+  }, [user?.id]);
 
   const toggle = (k: keyof typeof toggles) => setToggles(t => ({ ...t, [k]: !t[k] }));
 
@@ -106,7 +103,7 @@ export default function KartimPage() {
       const res = await fetch("/api/me/card", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kartRenk: color, templateId, ...toggles }),
+        body: JSON.stringify({ ...toggles }),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Kaydedilemedi.");
@@ -133,12 +130,13 @@ export default function KartimPage() {
   return (
     <div className="max-w-[900px] space-y-6">
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left: Preview */}
+        {/* Sol: Önizleme */}
         <div className="space-y-4">
           <div className="glass-card rounded-2xl p-6">
             <h3 className="text-sm font-semibold text-on-surface mb-5" style={{ fontFamily: "Sora, sans-serif" }}>Kart Önizlemesi</h3>
-            <CardPreview member={member} color={color} />
-            <div className="mt-6 flex gap-3 justify-center">
+            <CardPreview member={member} color={firmaColor} />
+            <p className="text-xs text-on-surface-variant/60 text-center mt-3">Kart rengi ve teması firma tarafından belirlenir</p>
+            <div className="mt-4 flex gap-3 justify-center">
               <Link href={`/kart/${user?.id}`} target="_blank"
                 className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl text-sm text-on-surface-variant hover:text-primary transition-all">
                 <span className="material-symbols-outlined text-base">open_in_new</span>
@@ -163,14 +161,16 @@ export default function KartimPage() {
                 <span className={`font-medium ${member.aktif ? "text-tertiary" : "text-red-400"}`}>{member.aktif ? "✓ Aktif" : "✗ Pasif"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-on-surface-variant">NFC Bağlantısı</span>
-                <span className="text-tertiary font-medium">✓ Bağlı</span>
+                <span className="text-on-surface-variant">NFC Aktivasyon</span>
+                <span className={`font-medium ${member.kartAktif ? "text-tertiary" : "text-amber-400"}`}>
+                  {member.kartAktif ? "✓ Aktive Edildi" : "⚠ Bekliyor"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-on-surface-variant">Kart URL</span>
                 <div className="flex gap-2">
                   <button onClick={() => {
-                    const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://qontac.net'}/kart/${user?.id}`;
+                    const url = `${typeof window !== "undefined" ? window.location.origin : "https://qontac.net"}/kart/${user?.id}`;
                     navigator.clipboard.writeText(url).then(() => alert("Kopyalandı!"));
                   }} className="flex items-center gap-1.5 px-2 py-1 text-xs glass-card rounded-lg text-on-surface-variant hover:text-primary transition-all">
                     <span className="material-symbols-outlined text-sm">content_copy</span>Kopyala
@@ -184,44 +184,11 @@ export default function KartimPage() {
           </div>
         </div>
 
-        {/* Right: Settings */}
+        {/* Sağ: Görünür alanlar */}
         <div className="space-y-4">
           <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Kart Rengi</h3>
-            <div className="flex gap-3 flex-wrap">
-              {COLORS.map(c => (
-                <button key={c} onClick={() => setColor(c)} className="w-10 h-10 rounded-full transition-all hover:scale-110"
-                  style={{ background: c, boxShadow: color === c ? `0 0 0 3px #0f1321, 0 0 0 5px ${c}` : "none" }} />
-              ))}
-              <label className="w-10 h-10 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-primary/40 transition-all">
-                <span className="material-symbols-outlined text-on-surface-variant text-sm">palette</span>
-                <input type="color" value={color} onChange={e => setColor(e.target.value)} className="sr-only" />
-              </label>
-            </div>
-          </div>
-
-          {templates.length > 0 && (
-            <div className="glass-card rounded-2xl p-6">
-              <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Firma Şablonu</h3>
-              <div className="space-y-2">
-                {templates.map(t => (
-                  <button key={t.id} onClick={() => { setTemplateId(t.id); setColor(t.renk); }} disabled={!t.aktif}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                      templateId === t.id ? "bg-primary/10 border border-primary/30" : "border border-white/5 hover:bg-white/5"
-                    } ${!t.aktif ? "opacity-40 cursor-not-allowed" : ""}`}>
-                    <div className="w-6 h-6 rounded-full flex-shrink-0" style={{ background: t.renk }} />
-                    <span className="text-sm text-on-surface flex-1 text-left">{t.ad}</span>
-                    {!t.aktif && <span className="text-xs text-on-surface-variant">Pasif</span>}
-                    {templateId === t.id && <span className="material-symbols-outlined text-primary text-base">check</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Visible Sections — gerçek toggle'lar */}
-          <div className="glass-card rounded-2xl p-6">
             <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Profilde Görünen Alanlar</h3>
+            <p className="text-xs text-on-surface-variant mb-4">Hangi bilgilerin kartında görüneceğini seç</p>
             <div className="space-y-3">
               {fields.map(item => (
                 <div key={item.key} className="flex items-center justify-between">

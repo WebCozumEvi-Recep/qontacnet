@@ -10,8 +10,7 @@ export async function PUT(req: NextRequest) {
     const body = (await req.json()) as Record<string, unknown>;
     const data: Record<string, unknown> = {};
 
-    if (typeof body.kartRenk === "string") data.kartRenk = body.kartRenk;
-    if (typeof body.templateId === "string") data.templateId = body.templateId;
+    // kartRenk ve templateId artık firma tarafından belirlenir, üye değiştiremez
     for (const f of ["showWhatsapp", "showLinkedin", "showInstagram", "showWebsite", "showBio"]) {
       if (typeof body[f] === "boolean") data[f] = body[f];
     }

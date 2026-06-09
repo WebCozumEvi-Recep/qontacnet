@@ -84,8 +84,8 @@ model Firma {
 
 model Member {
   id           String  @id @default(cuid())
-  firma        Firma   @relation(fields: [firmaId], references: [id], onDelete: Cascade)
-  firmaId      String
+  firma        Firma?  @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  firmaId      String?
   ad           String
   soyad        String  @default("")
   email        String  @unique
@@ -173,9 +173,10 @@ model CardBatch {
   miktar       Int
   uretici      String     @default("")
   uretimTarihi DateTime   @default(now())
-  durum        BatchDurum @default(URETIMDE)
-  tahsisFirma  String?
-  seriPrefix   String     @default("")
+  durum          BatchDurum @default(URETIMDE)
+  tahsisFirma    String?    // görüntüleme için firma adı
+  tahsisFirmaId  String?    // gerçek FK — aktivasyonda kullanılır
+  seriPrefix     String     @default("")
   createdAt    DateTime   @default(now())
 
   physicalCards PhysicalCard[]
