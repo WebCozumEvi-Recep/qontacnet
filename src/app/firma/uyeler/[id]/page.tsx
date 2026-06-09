@@ -83,7 +83,8 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
         <div className="relative">
           <div className="w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 border-2 overflow-hidden" style={{ background: `${member.kartRenk}20`, borderColor: `${member.kartRenk}40` }}>
             {member.avatar ? (
-              <Image src={member.avatar} alt={`${member.ad} ${member.soyad}`} width={80} height={80} className="w-full h-full object-cover" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={member.avatar} alt={`${member.ad} ${member.soyad}`} className="w-full h-full object-cover object-center" />
             ) : (
               <span className="material-symbols-outlined text-4xl" style={{ color: member.kartRenk }}>person</span>
             )}
