@@ -45,7 +45,7 @@ export async function GET() {
     orderBy: { createdAt: "asc" },
     select: {
       id: true, ad: true, soyad: true, email: true, unvan: true, departman: true,
-      aktif: true, kartRenk: true, goruntulemeSayisi: true, leadSayisi: true,
+      aktif: true, kartRenk: true, goruntulemeSayisi: true, leadSayisi: true, avatar: true,
     },
   });
 

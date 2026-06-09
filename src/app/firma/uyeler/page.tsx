@@ -4,7 +4,7 @@ import Link from "next/link";
 
 interface Member {
   id: string; ad: string; soyad: string; email: string; unvan: string; departman: string;
-  aktif: boolean; kartRenk: string; goruntulemeSayisi: number; leadSayisi: number;
+  aktif: boolean; kartRenk: string; goruntulemeSayisi: number; leadSayisi: number; avatar?: string;
 }
 
 export default function UyelerPage() {
@@ -77,7 +77,12 @@ export default function UyelerPage() {
           {loading ? <div className="py-16 text-center text-on-surface-variant text-sm">Yükleniyor...</div> : filtered.map(m => (
             <div key={m.id} className="grid md:grid-cols-[2fr_1.5fr_1fr_1fr_1fr_auto] gap-4 px-5 py-4 hover:bg-white/3 transition-all items-center">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border" style={{ background: `${m.kartRenk}15`, borderColor: `${m.kartRenk}30` }}><span className="material-symbols-outlined text-sm" style={{ color: m.kartRenk }}>person</span></div>
+                <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 border" style={{ background: `${m.kartRenk}15`, borderColor: `${m.kartRenk}30` }}>
+                  {m.avatar
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={m.avatar} alt={`${m.ad} ${m.soyad}`} className="w-full h-full object-cover object-center" />
+                    : <span className="material-symbols-outlined text-sm" style={{ color: m.kartRenk }}>person</span>}
+                </div>
                 <div><p className="text-sm font-medium text-on-surface">{m.ad} {m.soyad}</p><p className="text-xs text-on-surface-variant">{m.email}</p></div>
               </div>
               <div><p className="text-sm text-on-surface">{m.unvan || "—"}</p></div>
