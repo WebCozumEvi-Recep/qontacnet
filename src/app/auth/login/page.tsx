@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
@@ -9,6 +9,8 @@ const REMEMBER_KEY = "qontac_remember";
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next");
   const [role, setRole] = useState<"uye" | "firma" | "admin">("uye");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +42,8 @@ export default function LoginPage() {
       } else {
         localStorage.removeItem(REMEMBER_KEY);
       }
-      router.push(role === "firma" ? "/firma" : role === "admin" ? "/admin" : "/uye");
+      const dest = nextUrl ?? (role === "firma" ? "/firma" : role === "admin" ? "/admin" : "/uye");
+      router.push(dest);
     } else {
       setError("E-posta veya şifre hatalı.");
     }

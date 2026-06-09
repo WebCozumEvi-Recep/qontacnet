@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { kaynakLabel } from "@/lib/labels";
 import Link from "next/link";
 
-interface Member { ad?: string; unvan?: string; firmaAdi?: string; goruntulemeSayisi?: number; leadSayisi?: number }
+interface Member { ad?: string; soyad?: string; unvan?: string; firmaAdi?: string; goruntulemeSayisi?: number; leadSayisi?: number; kartAktif?: boolean }
 interface Lead { id: string; ad: string; sirket: string; kaynak: string }
 
 function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub: string; color: string }) {
@@ -40,6 +40,34 @@ export default function UyeDashboard() {
 
   return (
     <div className="space-y-6 max-w-[1100px]">
+
+      {/* Kart aktivasyon banner — kart henüz aktive edilmemişse */}
+      {member?.kartAktif === false && (
+        <div className="glass-card rounded-2xl p-5 border border-amber-400/20 bg-amber-400/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-amber-400 text-xl">nfc</span>
+            </div>
+            <div>
+              <p className="font-semibold text-on-surface text-sm" style={{ fontFamily: "Sora, sans-serif" }}>
+                NFC Kartın Henüz Aktive Edilmedi
+              </p>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                Fiziksel kartını aktive etmek için kartın üzerindeki QR kodu oku.
+              </p>
+            </div>
+          </div>
+          <a
+            href="#"
+            onClick={e => { e.preventDefault(); alert("Fiziksel kartınızın üzerindeki QR kodu telefonunuzla okutun."); }}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-400/15 border border-amber-400/30 text-amber-400 rounded-xl text-xs font-medium hover:bg-amber-400/25 transition-all whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+            Nasıl Aktive Edilir?
+          </a>
+        </div>
+      )}
+
       {/* Welcome */}
       <div className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>

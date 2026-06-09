@@ -7,7 +7,8 @@ interface Batch {
   durum: string; tahsisFirma: string | null; seriPrefix: string; createdAt: string;
 }
 
-interface BatchDetail extends Batch { seriNumaralari: string[]; }
+interface PhysicalCardRow { id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; memberId: string | null; }
+interface BatchDetail extends Batch { seriNumaralari: string[]; physicalCards?: PhysicalCardRow[]; }
 
 interface EditForm {
   kod: string; miktar: string; seriPrefix: string; uretici: string;
@@ -108,7 +109,7 @@ export default function AdminKartlarPage() {
     setSeriModal(null);
     const res = await fetch(`/api/admin/batches/${batch.id}`);
     const j = await res.json();
-    if (j.ok) setSeriModal({ ...j.batch, seriNumaralari: j.seriNumaralari });
+    if (j.ok) setSeriModal({ ...j.batch, seriNumaralari: (j.physicalCards ?? []).map((c: PhysicalCardRow) => c.seriNo), physicalCards: j.physicalCards ?? [] });
   }
 
   async function handleDelete() {
@@ -120,6 +121,9 @@ export default function AdminKartlarPage() {
     if (j.ok) { setBatches(prev => prev.filter(b => b.id !== deleteBatch.id)); setDeleteBatch(null); }
   }
 
+  const filteredCards = (seriModal?.physicalCards ?? []).filter(c =>
+    !seriSearch || c.seriNo.toUpperCase().includes(seriSearch.toUpperCase()) || c.token.includes(seriSearch)
+  );
   const filteredSeri = seriModal?.seriNumaralari.filter(s => s.includes(seriSearch.toUpperCase())) ?? [];
 
   return (
@@ -259,30 +263,43 @@ export default function AdminKartlarPage() {
                   className="w-full bg-surface-dim border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm focus:border-primary outline-none" />
               </div>
             </div>
-            <div className="overflow-y-auto flex-1 p-4">
-              <div className="grid grid-cols-2 gap-1.5">
-                {filteredSeri.slice(0, 200).map(s => (
-                  <div key={s} className="px-3 py-1.5 rounded-lg bg-white/3 border border-white/5 text-xs font-mono text-on-surface">{s}</div>
-                ))}
-              </div>
-              {filteredSeri.length > 200 && (
-                <p className="text-xs text-on-surface-variant text-center mt-3">... ve {(filteredSeri.length - 200).toLocaleString("tr-TR")} adet daha. Aramayı daraltın.</p>
+            <div className="overflow-y-auto flex-1 p-4 space-y-1.5">
+              {/* PhysicalCard kayıtları varsa onları göster, yoksa eski seri listesi */}
+              {filteredCards.length > 0 ? filteredCards.slice(0, 200).map(c => (
+                <div key={c.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
+                  <span className="text-xs font-mono text-on-surface flex-shrink-0 w-32">{c.seriNo}</span>
+                  <span className="text-xs font-mono text-on-surface-variant flex-1 truncate">{c.token}</span>
+                  {c.aktif
+                    ? <span className="text-xs text-tertiary flex-shrink-0">Aktif</span>
+                    : <span className="text-xs text-on-surface-variant/40 flex-shrink-0">Bekliyor</span>}
+                </div>
+              )) : filteredSeri.slice(0, 200).map(s => (
+                <div key={s} className="px-3 py-1.5 rounded-lg bg-white/3 border border-white/5 text-xs font-mono text-on-surface">{s}</div>
+              ))}
+              {(filteredCards.length > 200 || filteredSeri.length > 200) && (
+                <p className="text-xs text-on-surface-variant text-center mt-3">... ve daha fazlası. Aramayı daraltın.</p>
               )}
-              {filteredSeri.length === 0 && (
+              {filteredCards.length === 0 && filteredSeri.length === 0 && (
                 <p className="text-xs text-on-surface-variant text-center mt-4">Sonuç bulunamadı.</p>
               )}
             </div>
-            <div className="px-6 py-4 border-t border-white/8 flex-shrink-0 flex items-center justify-between">
-              <span className="text-xs text-on-surface-variant">{filteredSeri.length.toLocaleString("tr-TR")} sonuç</span>
-              <button onClick={() => {
-                const txt = seriModal.seriNumaralari.join("\n");
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(new Blob([txt], { type: "text/plain" }));
-                a.download = `${seriModal.kod}-seri-numaralari.txt`;
-                a.click();
-              }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all">
-                <span className="material-symbols-outlined text-sm">download</span>TXT İndir
-              </button>
+            <div className="px-6 py-4 border-t border-white/8 flex-shrink-0 flex items-center justify-between gap-2">
+              <span className="text-xs text-on-surface-variant">{(filteredCards.length || filteredSeri.length).toLocaleString("tr-TR")} sonuç</span>
+              <div className="flex gap-2">
+                {filteredCards.length > 0 && (
+                  <button onClick={() => {
+                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\thttps://qontac.net/k/${c.token}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
+                    const txt = "Seri No\tQR URL\tDurum\n" + rows.join("\n");
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
+                    a.download = `${seriModal?.kod}-kartlar.tsv`;
+                    a.click();
+                  }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all">
+                    <span className="material-symbols-outlined text-sm">download</span>TSV İndir
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

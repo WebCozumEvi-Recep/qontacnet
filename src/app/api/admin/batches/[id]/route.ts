@@ -1,21 +1,51 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { randomBytes } from "crypto";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireRole("admin");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
   const { id } = await params;
 
-  const batch = await prisma.cardBatch.findUnique({ where: { id } });
+  const batch = await prisma.cardBatch.findUnique({
+    where: { id },
+    include: {
+      physicalCards: {
+        orderBy: { seriNo: "asc" },
+        select: { id: true, seriNo: true, token: true, aktif: true, aktivasyonAt: true, firmaId: true, memberId: true },
+      },
+    },
+  });
   if (!batch) return NextResponse.json({ ok: false, error: "Batch bulunamadı." }, { status: 404 });
 
-  // Seri numaraları: prefix + 1..miktar
-  const seriNumaralari = Array.from({ length: batch.miktar }, (_, i) =>
-    `${batch.seriPrefix}-${String(i + 1).padStart(4, "0")}`
-  );
+  return NextResponse.json({ ok: true, batch, physicalCards: batch.physicalCards });
+}
 
-  return NextResponse.json({ ok: true, batch, seriNumaralari });
+// Mevcut batch'e eksik PhysicalCard kayıtlarını oluştur (backfill)
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await requireRole("admin");
+  if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
+  const { id } = await params;
+
+  const batch = await prisma.cardBatch.findUnique({ where: { id }, include: { physicalCards: { select: { seriNo: true } } } });
+  if (!batch) return NextResponse.json({ ok: false, error: "Batch bulunamadı." }, { status: 404 });
+
+  const existing = new Set(batch.physicalCards.map(c => c.seriNo));
+  const toCreate = Array.from({ length: batch.miktar }, (_, i) => {
+    const seriNo = `${batch.seriPrefix}-${String(i + 1).padStart(4, "0")}`;
+    return existing.has(seriNo) ? null : {
+      seriNo,
+      token: randomBytes(12).toString("base64url"),
+      batchId: id,
+      firmaId: batch.tahsisFirma ?? null,
+    };
+  }).filter(Boolean) as { seriNo: string; token: string; batchId: string; firmaId: string | null }[];
+
+  if (toCreate.length === 0) return NextResponse.json({ ok: true, created: 0, message: "Tüm kartlar zaten oluşturulmuş." });
+
+  await prisma.physicalCard.createMany({ data: toCreate });
+  return NextResponse.json({ ok: true, created: toCreate.length });
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {

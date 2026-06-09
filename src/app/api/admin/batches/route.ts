@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { randomBytes } from "crypto";
 
 export async function GET() {
   const session = await requireRole("admin");
@@ -23,15 +24,24 @@ export async function POST(req: NextRequest) {
   if (existing) return NextResponse.json({ ok: false, error: "Bu batch kodu zaten kullanılıyor." }, { status: 400 });
 
   const DURUMLAR = ["URETIMDE", "STOKTA", "TAHSIS", "BITTI"];
+  const prefix = typeof seriPrefix === "string" ? seriPrefix.trim() : "";
+
   const batch = await prisma.cardBatch.create({
     data: {
       kod: kod.trim(),
       miktar,
-      seriPrefix: typeof seriPrefix === "string" ? seriPrefix.trim() : "",
+      seriPrefix: prefix,
       uretici: typeof uretici === "string" ? uretici.trim() : "",
       uretimTarihi: typeof uretimTarihi === "string" && uretimTarihi ? new Date(uretimTarihi) : new Date(),
       durum: typeof durum === "string" && DURUMLAR.includes(durum) ? (durum as "URETIMDE" | "STOKTA" | "TAHSIS" | "BITTI") : "URETIMDE",
       tahsisFirma: typeof tahsisFirma === "string" && tahsisFirma ? tahsisFirma : null,
+      physicalCards: {
+        create: Array.from({ length: miktar }, (_, i) => ({
+          seriNo: `${prefix}-${String(i + 1).padStart(4, "0")}`,
+          token: randomBytes(12).toString("base64url"), // 16 URL-safe karakter, seri numarasıyla ilgisiz
+          firmaId: typeof tahsisFirma === "string" && tahsisFirma ? tahsisFirma : null,
+        })),
+      },
     },
   });
 

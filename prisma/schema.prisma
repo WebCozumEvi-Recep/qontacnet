@@ -100,8 +100,11 @@ model Member {
   website      String  @default("")
   biyografi    String  @default("")
   aktif        Boolean @default(true)
+  kartAktif    Boolean @default(false)  // fiziksel kart aktive edildi mi
   kartRenk     String  @default("#00d4ff")
   templateId   String?
+
+  physicalCard PhysicalCard?
 
   // Kartta görünür alanlar (toggle'lar)
   showWhatsapp  Boolean @default(true)
@@ -174,6 +177,22 @@ model CardBatch {
   tahsisFirma  String?
   seriPrefix   String     @default("")
   createdAt    DateTime   @default(now())
+
+  physicalCards PhysicalCard[]
+}
+
+model PhysicalCard {
+  id           String    @id @default(cuid())
+  seriNo       String    @unique  // WQR-2026-0001 — üretim seri numarası
+  token        String    @unique  // QR URL'deki opak token, seri no içermez
+  batch        CardBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchId      String
+  firmaId      String?            // hangi firmaya tahsis edildi
+  member       Member?   @relation(fields: [memberId], references: [id])
+  memberId     String?   @unique
+  aktif        Boolean   @default(false)
+  aktivasyonAt DateTime?
+  createdAt    DateTime  @default(now())
 }
 
 model Order {
