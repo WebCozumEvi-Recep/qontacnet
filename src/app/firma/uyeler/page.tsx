@@ -71,7 +71,7 @@ export default function UyelerPage() {
 
       <div className="glass-card rounded-2xl overflow-hidden">
         <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-white/5 text-xs text-on-surface-variant font-medium uppercase tracking-wider">
-          <span>Üye</span><span>Unvan</span><span>Departman</span><span>Görüntülenme</span><span>Durum</span><span>İşlem</span>
+          <span>Üye</span><span>Ünvan / Kariyer</span><span>Takım</span><span>Görüntülenme</span><span>Durum</span><span>İşlem</span>
         </div>
         <div className="divide-y divide-white/5">
           {loading ? <div className="py-16 text-center text-on-surface-variant text-sm">Yükleniyor...</div> : filtered.map(m => (
@@ -100,7 +100,7 @@ export default function UyelerPage() {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={closeAdd}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeAdd}>
           <div className="glass-card rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6"><h3 className="text-base font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Yeni Üye Ekle</h3><button onClick={closeAdd} className="text-on-surface-variant hover:text-on-surface transition-all"><span className="material-symbols-outlined">close</span></button></div>
 
@@ -126,8 +126,8 @@ export default function UyelerPage() {
                 </div>
                 <input value={form.email} onChange={upd("email")} type="email" placeholder="E-posta *" className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
                 <div className="grid grid-cols-2 gap-3">
-                  <input value={form.unvan} onChange={upd("unvan")} placeholder="Unvan" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
-                  <input value={form.departman} onChange={upd("departman")} placeholder="Departman" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
+                  <input value={form.unvan} onChange={upd("unvan")} placeholder="Ünvan / Kariyer" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
+                  <input value={form.departman} onChange={upd("departman")} placeholder="Takım" className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none" />
                 </div>
                 {addError && <div className="flex items-center gap-2 text-red-400 text-sm"><span className="material-symbols-outlined text-base">error</span>{addError}</div>}
                 <div className="flex gap-3 pt-2">

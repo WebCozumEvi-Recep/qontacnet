@@ -253,7 +253,7 @@ export default function TemplatePage() {
 
       {/* Modal: Yeni / Düzenle */}
       {modal !== null && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={closeModal}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeModal}>
           <div className="glass-card rounded-2xl p-6 w-full max-w-sm space-y-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>

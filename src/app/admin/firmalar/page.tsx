@@ -193,7 +193,7 @@ export default function AdminFirmalarPage() {
 
       {/* Düzenle Modal */}
       {editFirma && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             {/* Başlık */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
@@ -322,7 +322,7 @@ export default function AdminFirmalarPage() {
 
       {/* Yeni Firma Modal */}
       {newModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <h3 className="font-semibold text-on-surface">Yeni Firma Ekle</h3>
@@ -386,7 +386,7 @@ export default function AdminFirmalarPage() {
 
       {/* Sil Onay Dialog */}
       {deleteFirma && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-red-400 text-2xl">delete_forever</span>
