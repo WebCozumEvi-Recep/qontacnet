@@ -101,7 +101,7 @@ export default function AdminKartlarPage() {
     const res = await fetch(`/api/admin/batches/${batch.id}`);
     const j = await res.json();
     setDetayLoading(false);
-    if (j.ok) setDetayBatch({ ...j.batch, seriNumaralari: j.seriNumaralari });
+    if (j.ok) setDetayBatch({ ...j.batch, seriNumaralari: (j.physicalCards ?? []).map((c: PhysicalCardRow) => c.seriNo), physicalCards: j.physicalCards ?? [] });
   }
 
   async function openSeri(batch: Batch) {
