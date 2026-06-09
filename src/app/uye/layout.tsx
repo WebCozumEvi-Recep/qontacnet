@@ -10,7 +10,7 @@ const pageTitles: Record<string, string> = {
   "/uye/kartim": "Kartım",
   "/uye/profil": "Profilim",
   "/uye/qr": "QR Kodum",
-  "/uye/liderler": "Bağlantılarım",
+  "/uye/baglantilar": "Bağlantılarım",
 };
 
 export default function UyeLayout({ children }: { children: React.ReactNode }) {

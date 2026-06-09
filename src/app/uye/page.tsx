@@ -94,7 +94,7 @@ export default function UyeDashboard() {
         <div className="glass-card rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Son Bağlantılar</h3>
-            <Link href="/uye/liderler" className="text-xs text-primary hover:underline">Tümü →</Link>
+            <Link href="/uye/baglantilar" className="text-xs text-primary hover:underline">Tümü →</Link>
           </div>
           <div className="space-y-3">
             {myLeads.slice(0, 3).map(lead => (

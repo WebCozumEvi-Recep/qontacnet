@@ -15,7 +15,7 @@ const uyeNav: NavItem[] = [
   { href: "/uye/kartim", icon: "credit_card", label: "Kartım" },
   { href: "/uye/profil", icon: "manage_accounts", label: "Profilim" },
   { href: "/uye/qr", icon: "qr_code_2", label: "QR Kodum" },
-  { href: "/uye/liderler", icon: "group_add", label: "Bağlantılarım" },
+  { href: "/uye/baglantilar", icon: "group_add", label: "Bağlantılarım" },
 ];
 
 const firmaNav: NavItem[] = [
