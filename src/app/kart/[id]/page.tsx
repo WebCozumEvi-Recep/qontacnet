@@ -16,6 +16,7 @@ interface Card {
   instagram: string;
   website: string;
   biyografi: string;
+  avatar?: string;
 }
 
 export default function KartPage({ params }: { params: Promise<{ id: string }> }) {
@@ -105,8 +106,13 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% -20%, ${color}15 0%, transparent 60%)` }} />
           <div className="absolute inset-0 shimmer opacity-10" />
           <div className="relative inline-block mb-4">
-            <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center mx-auto" style={{ borderColor: `${color}50`, background: `${color}15` }}>
-              <span className="material-symbols-outlined text-5xl" style={{ color }}>person</span>
+            <div className="w-24 h-24 rounded-full border-4 overflow-hidden flex items-center justify-center mx-auto" style={{ borderColor: `${color}50`, background: `${color}15` }}>
+              {card.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={card.avatar} alt={`${card.ad} ${card.soyad}`} className="w-full h-full object-cover object-center" />
+              ) : (
+                <span className="material-symbols-outlined text-5xl" style={{ color }}>person</span>
+              )}
             </div>
             <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full border-2 border-background flex items-center justify-center" style={{ background: color }}>
               <span className="material-symbols-outlined text-sm text-black">verified</span>
