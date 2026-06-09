@@ -1,18 +1,49 @@
 "use client";
 import { useAuth } from "@/lib/auth-context";
 import { Member } from "@/lib/mock-data";
+import { QRCodeSVG } from "qrcode.react";
+import { useRef, useCallback } from "react";
 
 export default function QRPage() {
   const { user } = useAuth();
   const member = user?.data as unknown as Member;
   const cardUrl = `https://qontac.net/kart/${user?.id}`;
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  const fullName = `${member?.ad ?? ""} ${member?.soyad ?? ""}`.trim();
 
   const copyLink = () => {
     navigator.clipboard.writeText(cardUrl);
   };
 
-  // Generate QR using a public API URL
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(cardUrl)}&bgcolor=0f1321&color=00d4ff&format=png`;
+  const downloadQR = useCallback(() => {
+    if (!qrRef.current) return;
+    const svg = qrRef.current.querySelector("svg");
+    if (!svg) return;
+
+    const size = 400;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Serialize SVG → data URL
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svg);
+    const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      const a = document.createElement("a");
+      a.download = `qontac-qr-${user?.id}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    };
+    img.src = url;
+  }, [user?.id]);
 
   return (
     <div className="max-w-lg space-y-6">
@@ -25,41 +56,45 @@ export default function QRPage() {
           Bu QR kodu taratıldığında dijital profiliniz açılır.
         </p>
 
-        <div className="inline-block p-4 rounded-2xl border border-white/10 bg-[#0f1321] mb-6">
-          {/* QR Visual — grid pattern */}
-          <div className="w-48 h-48 relative">
-            <svg viewBox="0 0 200 200" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              {/* QR code decorative pattern */}
-              <rect width="200" height="200" fill="#0f1321"/>
-              {/* Top-left finder */}
-              <rect x="10" y="10" width="50" height="50" rx="4" fill="none" stroke="#00d4ff" strokeWidth="6"/>
-              <rect x="22" y="22" width="26" height="26" rx="2" fill="#00d4ff"/>
-              {/* Top-right finder */}
-              <rect x="140" y="10" width="50" height="50" rx="4" fill="none" stroke="#00d4ff" strokeWidth="6"/>
-              <rect x="152" y="22" width="26" height="26" rx="2" fill="#00d4ff"/>
-              {/* Bottom-left finder */}
-              <rect x="10" y="140" width="50" height="50" rx="4" fill="none" stroke="#00d4ff" strokeWidth="6"/>
-              <rect x="22" y="152" width="26" height="26" rx="2" fill="#00d4ff"/>
-              {/* Data modules (decorative) */}
-              {[70,80,90,100,110,120,130].map((x, i) =>
-                [10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180].map((y, j) =>
-                  (i + j) % 3 === 0 ? <rect key={`${x}-${y}`} x={x} y={y} width="7" height="7" rx="1" fill="#00d4ff" opacity={(i*j)%5 === 0 ? 1 : 0.4}/> : null
-                )
-              )}
-              {[10,20,30,40,50,60].map((x, i) =>
-                [70,80,90,100,110,120,130,140,150,160,170,180].map((y, j) =>
-                  (i + j) % 2 === 0 ? <rect key={`l-${x}-${y}`} x={x} y={y} width="7" height="7" rx="1" fill="#00d4ff" opacity={0.5}/> : null
-                )
-              )}
-              {[140,150,160,170,180].map((x, i) =>
-                [70,80,90,100,110,120,130].map((y, j) =>
-                  (i + j) % 2 === 0 ? <rect key={`r-${x}-${y}`} x={x} y={y} width="7" height="7" rx="1" fill="#00d4ff" opacity={0.5}/> : null
-                )
-              )}
-              {/* Center logo area */}
-              <rect x="85" y="85" width="30" height="30" rx="6" fill="#0f1321"/>
-              <text x="100" y="106" textAnchor="middle" fill="#00d4ff" fontSize="14" fontWeight="bold" fontFamily="Sora">Q</text>
-            </svg>
+        {/* QR Code */}
+        <div className="flex justify-center mb-6">
+          <div ref={qrRef} className="relative inline-flex items-center justify-center p-4 rounded-2xl border border-white/10 bg-[#0f1321]">
+            <QRCodeSVG
+              value={cardUrl}
+              size={200}
+              bgColor="#0f1321"
+              fgColor="#00d4ff"
+              level="H"
+              style={{ borderRadius: 8 }}
+            />
+            {/* El yazısı isim — QR ortasına overlay */}
+            {fullName && (
+              <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                <div
+                  style={{
+                    background: "rgba(15,19,33,0.82)",
+                    borderRadius: 8,
+                    padding: "4px 10px",
+                    backdropFilter: "blur(2px)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Dancing Script', 'Pacifico', cursive",
+                      fontSize: 15,
+                      color: "#00d4ff",
+                      letterSpacing: 0.5,
+                      whiteSpace: "nowrap",
+                      textShadow: "0 0 8px rgba(0,212,255,0.6)",
+                    }}
+                  >
+                    {fullName}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -105,7 +140,10 @@ export default function QRPage() {
       </div>
 
       {/* Download QR */}
-      <button className="w-full flex items-center justify-center gap-2 py-3 glass-card rounded-xl text-on-surface-variant hover:text-primary transition-all text-sm">
+      <button
+        onClick={downloadQR}
+        className="w-full flex items-center justify-center gap-2 py-3 glass-card rounded-xl text-on-surface-variant hover:text-primary transition-all text-sm"
+      >
         <span className="material-symbols-outlined text-base">download</span>
         QR Kodu İndir (PNG)
       </button>
