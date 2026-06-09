@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
@@ -9,8 +9,7 @@ const REMEMBER_KEY = "qontac_remember";
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextUrl = searchParams.get("next");
+  const [nextUrl, setNextUrl] = useState<string | null>(null);
   const [role, setRole] = useState<"uye" | "firma" | "admin">("uye");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Kayıtlı bilgileri yükle
+  // Kayıtlı bilgileri yükle + ?next= parametresini oku
   useEffect(() => {
     try {
       const saved = localStorage.getItem(REMEMBER_KEY);
@@ -28,6 +27,9 @@ export default function LoginPage() {
         setRole(r); setEmail(e); setPassword(p); setRemember(true);
       }
     } catch { /* ignore */ }
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (next) setNextUrl(next);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
