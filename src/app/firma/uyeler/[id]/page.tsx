@@ -115,7 +115,7 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
           <div className="grid grid-cols-2 gap-4">
             {[
               { icon: "visibility", label: "Görüntülenme", value: member.goruntulemeSayisi, color: "#00d4ff" },
-              { icon: "group_add", label: "Lead", value: member.leadSayisi, color: "#42faba" },
+              { icon: "group_add", label: "Bağlantı", value: member.leadSayisi, color: "#42faba" },
               { icon: "nfc", label: "NFC Dokunma", value: Math.floor(member.goruntulemeSayisi * 0.6), color: "#6001d1" },
               { icon: "qr_code_2", label: "QR Tarama", value: Math.floor(member.goruntulemeSayisi * 0.4), color: "#a8e8ff" },
             ].map(s => (
@@ -124,8 +124,8 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
           </div>
 
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Liderler ({leads.length})</h3>
-            {leads.length === 0 ? <p className="text-sm text-on-surface-variant text-center py-6">Henüz lead yok</p> : (
+            <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Bağlantılar ({leads.length})</h3>
+            {leads.length === 0 ? <p className="text-sm text-on-surface-variant text-center py-6">Henüz bağlantı yok</p> : (
               <div className="space-y-2">
                 {leads.map(l => (
                   <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/3 transition-all">

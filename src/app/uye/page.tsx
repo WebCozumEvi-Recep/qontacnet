@@ -65,7 +65,7 @@ export default function UyeDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon="visibility" label="Toplam Görüntülenme" value={member?.goruntulemeSayisi ?? 0} sub="+12% bu hafta" color="#00d4ff" />
-        <StatCard icon="group_add" label="Toplam Lead" value={member?.leadSayisi ?? 0} sub="+5 bu ay" color="#42faba" />
+        <StatCard icon="group_add" label="Bağlantılar" value={member?.leadSayisi ?? 0} sub="+5 bu ay" color="#42faba" />
         <StatCard icon="nfc" label="NFC Dokunma" value={Math.floor((member?.goruntulemeSayisi ?? 0) * 0.6)} sub="Son 30 gün" color="#6001d1" />
         <StatCard icon="qr_code_2" label="QR Tarama" value={Math.floor((member?.goruntulemeSayisi ?? 0) * 0.4)} sub="Son 30 gün" color="#a8e8ff" />
       </div>
@@ -93,7 +93,7 @@ export default function UyeDashboard() {
         {/* Recent Leads */}
         <div className="glass-card rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Son Liderler</h3>
+            <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Son Bağlantılar</h3>
             <Link href="/uye/liderler" className="text-xs text-primary hover:underline">Tümü →</Link>
           </div>
           <div className="space-y-3">
