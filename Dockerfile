@@ -24,7 +24,9 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs
+  && adduser --system --uid 1001 nextjs \
+  && mkdir -p /app/public/uploads/members \
+  && chown -R nextjs:nodejs /app/public/uploads
 
 # Standalone çıktı: minimal node_modules + server.js
 COPY --from=builder /app/public ./public
