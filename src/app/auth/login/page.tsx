@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+
+const REMEMBER_KEY = "qontac_remember";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -10,8 +12,21 @@ export default function LoginPage() {
   const [role, setRole] = useState<"uye" | "firma" | "admin">("uye");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Kayıtlı bilgileri yükle
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(REMEMBER_KEY);
+      if (saved) {
+        const { role: r, email: e, password: p } = JSON.parse(saved);
+        setRole(r); setEmail(e); setPassword(p); setRemember(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +35,11 @@ export default function LoginPage() {
     const ok = await login(email, password, role);
     setLoading(false);
     if (ok) {
+      if (remember) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ role, email, password }));
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
       router.push(role === "firma" ? "/firma" : role === "admin" ? "/admin" : "/uye");
     } else {
       setError("E-posta veya şifre hatalı.");
@@ -104,15 +124,34 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="text-xs text-on-surface-variant mb-1.5 block">Şifre</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:border-primary focus:ring-0 outline-none transition-all"
-              />
+              <div className="relative">
+                <input
+                  type={showPw ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 pr-11 text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:border-primary focus:ring-0 outline-none transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+                  tabIndex={-1}
+                >
+                  <span className="material-symbols-outlined text-lg">{showPw ? "visibility_off" : "visibility"}</span>
+                </button>
+              </div>
             </div>
+
+            {/* Beni Hatırla */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div onClick={() => setRemember(v => !v)}
+                className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${remember ? "bg-primary border-primary" : "bg-surface-dim border-white/20 hover:border-white/40"}`}>
+                {remember && <span className="material-symbols-outlined text-black text-sm">check</span>}
+              </div>
+              <span className="text-sm text-on-surface-variant">Beni Hatırla</span>
+            </label>
 
             {error && (
               <div className="flex items-center gap-2 text-red-400 text-sm">
