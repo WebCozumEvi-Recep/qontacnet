@@ -10,7 +10,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) return NextResponse.json({ ok: false, error: "Sipariş bulunamadı." }, { status: 404 });
-  return NextResponse.json({ ok: true, order });
+  // Ürün kataloğundaki açıklamayı da ekle (sipariş ürün adıyla eşleşirse)
+  const product = await prisma.product.findFirst({ where: { ad: order.urun }, select: { aciklama: true } });
+  return NextResponse.json({ ok: true, order: { ...order, urunAciklama: product?.aciklama ?? "" } });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

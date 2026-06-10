@@ -10,6 +10,7 @@ interface Order {
   kaynak?: string; musteriAd?: string; email?: string; telefon?: string; adres?: string;
   odemeDurum?: string; odemeRef?: string;
   faturaTip?: string; tcKimlik?: string; vergiNo?: string; vergiDairesi?: string; firmaUnvan?: string;
+  urunAciklama?: string;
 }
 
 export default function SiparisDetayPage() {
@@ -24,9 +25,43 @@ export default function SiparisDetayPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
 
+  const [durumSel, setDurumSel] = useState("");
+  const [kargoNoInput, setKargoNoInput] = useState("");
+  const [kargoSaving, setKargoSaving] = useState(false);
+  const [kargoMsg, setKargoMsg] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   useEffect(() => {
-    fetch(`/api/admin/orders/${id}`).then(r => r.json()).then(j => { if (j.ok) setOrder(j.order); }).finally(() => setLoading(false));
+    fetch(`/api/admin/orders/${id}`).then(r => r.json()).then(j => {
+      if (j.ok) {
+        setOrder(j.order);
+        setDurumSel(j.order.durum);
+        setKargoNoInput(j.order.kargoNo ?? "");
+      }
+    }).finally(() => setLoading(false));
   }, [id]);
+
+  async function handleKargoSave() {
+    setKargoSaving(true); setKargoMsg("");
+    const res = await fetch(`/api/admin/orders/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ durum: durumSel, kargoNo: kargoNoInput }),
+    });
+    const j = await res.json();
+    setKargoSaving(false);
+    if (j.ok) { setOrder(j.order ? { ...order, ...j.order } : order); setKargoMsg("✓ Güncellendi"); setTimeout(() => setKargoMsg(""), 2500); }
+    else setKargoMsg(j.error || "Kaydedilemedi");
+  }
+
+  async function handleDelete() {
+    setDeleteLoading(true);
+    const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
+    const j = await res.json();
+    setDeleteLoading(false);
+    if (j.ok) router.push("/admin/siparisler");
+    else { setDeleteConfirm(false); alert(j.error || "Silinemedi."); }
+  }
 
   function handlePrint() {
     window.print();
@@ -53,6 +88,9 @@ export default function SiparisDetayPage() {
   const genelToplam = order.birimFiyat > 0 ? araToplam + kdvTutar - order.indirim : order.tutar;
   const fmt = (n: number) => `₺${n.toLocaleString("tr-TR")}`;
   const durum = siparisDurumMap[order.durum] ?? { label: order.durum, color: "#aaa", icon: "receipt" };
+  // Site siparişlerinde müşteri = ad soyad; firma varsa ikinci satırda gösterilir
+  const musteriBaslik = order.kaynak === "SITE" && order.musteriAd ? order.musteriAd : order.firma;
+  const musteriAlt = order.kaynak === "SITE" && order.musteriAd && order.firma && order.firma !== order.musteriAd ? order.firma : "";
 
   return (
     <>
@@ -68,9 +106,13 @@ export default function SiparisDetayPage() {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 hover:text-on-surface transition-all">
               <span className="material-symbols-outlined text-base">print</span>PDF / Yazdır
             </button>
-            <button onClick={() => { setEmailTo(""); setEmailMsg(""); setEmailModal(true); }}
+            <button onClick={() => { setEmailTo(order?.email ?? ""); setEmailMsg(""); setEmailModal(true); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm bg-primary-container text-on-primary-container hover:scale-[1.02] transition-all">
               <span className="material-symbols-outlined text-base">mail</span>E-posta Gönder
+            </button>
+            <button onClick={() => setDeleteConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm border border-red-400/30 text-red-400 hover:bg-red-400/10 transition-all">
+              <span className="material-symbols-outlined text-base">delete</span>Sil
             </button>
           </div>
         </div>
@@ -94,13 +136,36 @@ export default function SiparisDetayPage() {
           <div className="grid grid-cols-2 gap-0 border-b border-white/8">
             <div className="p-6 border-r border-white/8">
               <p className="text-xs text-on-surface-variant mb-2 font-medium uppercase tracking-wide">Müşteri</p>
-              <p className="text-on-surface font-semibold text-base">{order.firma}</p>
+              <p className="text-on-surface font-semibold text-base">{musteriBaslik}</p>
+              {musteriAlt && <p className="text-xs text-on-surface-variant mt-0.5">{musteriAlt}</p>}
             </div>
             <div className="p-6">
               <p className="text-xs text-on-surface-variant mb-2 font-medium uppercase tracking-wide">Ürün</p>
               <p className="text-on-surface font-semibold text-base">{order.urun}</p>
+              {order.urunAciklama && <p className="text-xs text-on-surface-variant mt-1">{order.urunAciklama}</p>}
               {order.kargoNo && <p className="text-xs text-on-surface-variant mt-1 font-mono">Kargo: {order.kargoNo}</p>}
             </div>
+          </div>
+
+          {/* Gönderi durumu ve kargo yönetimi */}
+          <div className="flex flex-wrap items-end gap-3 p-6 border-b border-white/8 bg-white/2">
+            <div>
+              <label className="block text-xs text-on-surface-variant mb-1.5">Gönderi Durumu</label>
+              <select value={durumSel} onChange={e => setDurumSel(e.target.value)}
+                className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all">
+                {Object.entries(siparisDurumMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs text-on-surface-variant mb-1.5">Kargo Takip No</label>
+              <input value={kargoNoInput} onChange={e => setKargoNoInput(e.target.value)} placeholder="örn. 1234567890"
+                className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface font-mono focus:border-primary outline-none transition-all" />
+            </div>
+            <button onClick={handleKargoSave} disabled={kargoSaving}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary-container text-on-primary-container hover:scale-[1.02] transition-all disabled:opacity-60">
+              {kargoSaving ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+            {kargoMsg && <p className={`text-xs pb-2.5 ${kargoMsg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>{kargoMsg}</p>}
           </div>
 
           {/* Kalemler tablosu */}
@@ -116,7 +181,10 @@ export default function SiparisDetayPage() {
               </thead>
               <tbody>
                 <tr className="border-b border-white/5">
-                  <td className="py-3 text-on-surface">{order.urun}</td>
+                  <td className="py-3 text-on-surface">
+                    {order.urun}
+                    {order.urunAciklama && <span className="block text-xs text-on-surface-variant mt-0.5">{order.urunAciklama}</span>}
+                  </td>
                   <td className="py-3 text-right text-on-surface">{order.adet}</td>
                   <td className="py-3 text-right text-on-surface">{order.birimFiyat > 0 ? fmt(order.birimFiyat) : "—"}</td>
                   <td className="py-3 text-right text-on-surface">{order.birimFiyat > 0 ? fmt(araToplam) : fmt(order.tutar)}</td>
@@ -132,9 +200,15 @@ export default function SiparisDetayPage() {
                     <div className="flex justify-between text-sm text-on-surface-variant">
                       <span>Ara Toplam</span><span>{fmt(araToplam)}</span>
                     </div>
-                    <div className="flex justify-between text-sm text-on-surface-variant">
-                      <span>KDV (%{order.kdvOrani})</span><span>{fmt(kdvTutar)}</span>
-                    </div>
+                    {order.kdvOrani > 0 ? (
+                      <div className="flex justify-between text-sm text-on-surface-variant">
+                        <span>KDV (%{order.kdvOrani})</span><span>{fmt(kdvTutar)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-xs text-on-surface-variant">
+                        <span>KDV dahildir</span><span />
+                      </div>
+                    )}
                     {order.indirim > 0 && (
                       <div className="flex justify-between text-sm text-green-400">
                         <span>İndirim</span><span>- {fmt(order.indirim)}</span>
@@ -214,11 +288,14 @@ export default function SiparisDetayPage() {
         <div className="grid grid-cols-2 gap-8 mb-8 p-4 bg-gray-50 rounded-lg">
           <div>
             <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Müşteri</div>
-            <div className="font-semibold text-gray-900">{order.firma}</div>
+            <div className="font-semibold text-gray-900">{musteriBaslik}</div>
+            {musteriAlt && <div className="text-xs text-gray-500 mt-0.5">{musteriAlt}</div>}
+            {order.kaynak === "SITE" && order.adres && <div className="text-xs text-gray-500 mt-0.5">{order.adres}</div>}
           </div>
           <div>
             <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Ürün</div>
             <div className="font-semibold text-gray-900">{order.urun}</div>
+            {order.urunAciklama && <div className="text-xs text-gray-500 mt-0.5">{order.urunAciklama}</div>}
             {order.kargoNo && <div className="text-xs text-gray-500 mt-0.5 font-mono">Kargo: {order.kargoNo}</div>}
           </div>
         </div>
@@ -246,7 +323,9 @@ export default function SiparisDetayPage() {
           <div className="w-56 space-y-1.5">
             {order.birimFiyat > 0 && <>
               <div className="flex justify-between text-sm text-gray-500"><span>Ara Toplam</span><span>{fmt(araToplam)}</span></div>
-              <div className="flex justify-between text-sm text-gray-500"><span>KDV (%{order.kdvOrani})</span><span>{fmt(kdvTutar)}</span></div>
+              {order.kdvOrani > 0
+                ? <div className="flex justify-between text-sm text-gray-500"><span>KDV (%{order.kdvOrani})</span><span>{fmt(kdvTutar)}</span></div>
+                : <div className="text-xs text-gray-400">KDV dahildir</div>}
               {order.indirim > 0 && <div className="flex justify-between text-sm text-green-600"><span>İndirim</span><span>- {fmt(order.indirim)}</span></div>}
             </>}
             <div className="flex justify-between font-bold text-gray-900 text-base pt-2 border-t border-gray-200">
@@ -264,6 +343,27 @@ export default function SiparisDetayPage() {
           QONTAC.NET · admin@qontac.net · Bu belge QONTAC Platform tarafından oluşturulmuştur.
         </div>
       </div>
+
+      {/* Silme Onayı */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl p-6 text-center" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <span className="material-symbols-outlined text-red-400 text-5xl mb-3 block">warning</span>
+            <h3 className="font-semibold text-on-surface mb-2">Siparişi Sil</h3>
+            <p className="text-sm text-on-surface-variant mb-1"><span className="font-mono">{order.siparisNo}</span> kalıcı olarak silinecek.</p>
+            {order.odemeDurum === "ODENDI" && (
+              <p className="text-xs text-yellow-400 mb-2">Dikkat: Bu siparişin ödemesi alınmış!</p>
+            )}
+            <p className="text-xs text-on-surface-variant mb-5">Bu işlem geri alınamaz.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">İptal</button>
+              <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500/80 text-white hover:bg-red-500 transition-all disabled:opacity-60">
+                {deleteLoading ? "Siliniyor..." : "Evet, Sil"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* E-posta Modal */}
       {emailModal && (

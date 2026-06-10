@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { nextSiparisNo } from "@/lib/siparis-no";
 
 export async function GET() {
   const session = await requireRole("admin");
@@ -23,8 +24,7 @@ export async function POST(req: NextRequest) {
   const araToplam = Number(adet) * bp;
   const hesaplananTutar = bp > 0 ? Math.round(araToplam + araToplam * kv / 100 - ind) : Number(tutar) || 0;
 
-  const count = await prisma.order.count();
-  const siparisNo = `SIP-${new Date().getFullYear()}-${String(1300 + count + 1)}`;
+  const siparisNo = await nextSiparisNo();
   const order = await prisma.order.create({
     data: {
       siparisNo, firma: String(firma), urun: String(urun), adet: Number(adet),

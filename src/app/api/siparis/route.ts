@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildPaymentForm, qnbConfigured } from "@/lib/qnbpos";
+import { nextSiparisNo } from "@/lib/siparis-no";
 
 // Public: ana sayfadan ürün satın alma — sipariş ödeme beklemede oluşturulur,
 // QNB sanal POS 3D ödeme formu döner. Ödeme onayı /api/odeme/callback'te işlenir.
@@ -47,8 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Bu ürün için online ödeme yapılamıyor." }, { status: 400 });
     }
 
-    const count = await prisma.order.count();
-    const siparisNo = `SIP-${new Date().getFullYear()}-${String(1300 + count + 1)}`;
+    const siparisNo = await nextSiparisNo();
 
     const order = await prisma.order.create({
       data: {
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
         adet: adetNum,
         tutar,
         birimFiyat: urun.fiyat,
+        kdvOrani: 0, // site fiyatları KDV dahildir; üzerine KDV eklenmez
         durum: "HAZIRLANIYOR",
         kaynak: "SITE",
         odemeDurum: "BEKLIYOR",

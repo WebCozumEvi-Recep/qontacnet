@@ -32,7 +32,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     <p style="color:#4b5563;font-size:14px;margin:0 0 24px;">Aşağıda sipariş detaylarınızı bulabilirsiniz.</p>
     <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
       ${satir("Sipariş No", order.siparisNo)}
-      ${satir("Firma", order.firma)}
+      ${satir("Müşteri", order.kaynak === "SITE" && order.musteriAd ? order.musteriAd : order.firma)}
+      ${order.kaynak === "SITE" && order.firma && order.firma !== order.musteriAd ? satir("Firma", order.firma) : ""}
       ${satir("Ürün", order.urun)}
       ${satir("Durum", DURUM_LABEL[order.durum] ?? order.durum)}
       ${order.kargoNo ? satir("Kargo No", order.kargoNo) : ""}
@@ -41,7 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ${satir("Adet", `${order.adet} adet`)}
       ${order.birimFiyat > 0 ? satir("Birim Fiyat", fmt(order.birimFiyat)) : ""}
       ${order.birimFiyat > 0 ? satir("Ara Toplam", fmt(araToplam)) : ""}
-      ${order.birimFiyat > 0 ? satir(`KDV (%${order.kdvOrani})`, fmt(kdvTutar)) : ""}
+      ${order.birimFiyat > 0 && order.kdvOrani > 0 ? satir(`KDV (%${order.kdvOrani})`, fmt(kdvTutar)) : ""}
+      ${order.birimFiyat > 0 && order.kdvOrani === 0 ? satir("KDV", "Dahildir") : ""}
       ${order.indirim > 0 ? satir("İndirim", `- ${fmt(order.indirim)}`) : ""}
       ${satir("Genel Toplam", fmt(genelToplam), true)}
     </table>
