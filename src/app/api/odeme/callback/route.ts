@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/?odeme=hata`, 303);
   }
 
-  const oid = params.oid || params.ReturnOid || "";
+  const oid = params.OrderId || "";
   const order = oid ? await prisma.order.findUnique({ where: { siparisNo: oid } }) : null;
 
   if (!order || !verifyCallback(params)) {
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       where: { id: order.id },
       data: {
         odemeDurum: "ODENDI",
-        odemeRef: `${params.AuthCode || ""}/${params.TransId || ""}`.slice(0, 100),
+        odemeRef: `${params.AuthCode || ""}/${params.HostRefNum || ""}`.slice(0, 100),
       },
     });
     try { await sendOrderEmails(order); } catch { /* mail hatası ödemeyi etkilemesin */ }
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.order.update({
     where: { id: order.id },
-    data: { odemeDurum: "BASARISIZ", notlar: `${order.notlar ? order.notlar + " | " : ""}Ödeme hatası: ${params.ErrMsg || params.mdErrorMsg || "bilinmiyor"}`.slice(0, 1000) },
+    data: { odemeDurum: "BASARISIZ", notlar: `${order.notlar ? order.notlar + " | " : ""}Ödeme hatası: ${params.ErrMsg || params.ProcReturnCode || "bilinmiyor"}`.slice(0, 1000) },
   });
   return NextResponse.redirect(`${baseUrl}/?odeme=basarisiz&no=${encodeURIComponent(order.siparisNo)}`, 303);
 }

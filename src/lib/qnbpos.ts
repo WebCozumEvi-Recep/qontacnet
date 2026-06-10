@@ -1,32 +1,30 @@
 import { createHash, randomBytes } from "crypto";
 
-// QNB Finansbank Sanal POS (NestPay / Payten) — 3D Pay Hosting modeli.
-// Kart bilgisi bankanın güvenli sayfasında girilir; biz imzalı form POST'larız,
-// banka sonucu okUrl/failUrl'e POST eder ve HASH (ver3, SHA-512) ile doğrulanır.
+// QNB Finansbank Sanal POS — PayFor altyapısı, 3DHost modeli.
+// Kart bilgisi bankanın hosted ödeme sayfasında girilir; biz SHA-1 imzalı form
+// POST'larız, banka sonucu OkUrl/FailUrl'e POST eder ve ResponseHash doğrulanır.
 //
 // Gerekli env değişkenleri (.env.production):
-//   QNB_CLIENT_ID  — üye işyeri numarası (merchant ID)
-//   QNB_STORE_KEY  — 3D güvenlik anahtarı (store key)
-//   QNB_GATE_URL   — 3D gate adresi. Test: https://entegrasyon.asseco-see.com.tr/fim/est3Dgate
-//                    Canlı (QNB): https://www.fbwebpos.com.tr/fim/est3Dgate
+//   QNB_MERCHANT_ID   — Üye işyeri numarası (örn. 085300000021907)
+//   QNB_USER_CODE     — API kullanıcı adı (örn. wceapi)
+//   QNB_MERCHANT_PASS — Mağaza 3D anahtarı (MerchantPass / StoreKey; işyeri panelinden)
+//   QNB_MBR_ID        — Kurum kodu, QNB Finansbank için "5" (varsayılan)
+//   QNB_GATE_URL      — 3DHost gate. Canlı: https://vpos.qnbfinansbank.com/Gateway/3DHost.aspx
+//                       Test:  https://vpostest.qnbfinansbank.com/Gateway/3DHost.aspx
 //   NEXT_PUBLIC_BASE_URL — callback adresleri için site kökü (örn. https://qontac.net)
 
 export function qnbConfigured(): boolean {
-  return Boolean(process.env.QNB_CLIENT_ID && process.env.QNB_STORE_KEY && process.env.QNB_GATE_URL);
+  return Boolean(
+    process.env.QNB_MERCHANT_ID &&
+    process.env.QNB_USER_CODE &&
+    process.env.QNB_MERCHANT_PASS &&
+    process.env.QNB_GATE_URL
+  );
 }
 
-function escapeVal(v: string): string {
-  return v.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
-}
-
-// NestPay ver3 hash: alan adları doğal sıralamayla (case-insensitive) sıralanır,
-// değerler | ile birleştirilir, sona storeKey eklenir, SHA-512 base64 alınır.
-function hashVer3(fields: Record<string, string>, storeKey: string): string {
-  const keys = Object.keys(fields)
-    .filter((k) => k.toLowerCase() !== "hash" && k.toLowerCase() !== "encoding")
-    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase(), "en"));
-  const plain = keys.map((k) => escapeVal(fields[k] ?? "")).join("|") + "|" + escapeVal(storeKey);
-  return createHash("sha512").update(plain, "utf8").digest("base64");
+// PayFor hash: alanlar ayraçsız birleştirilir, SHA-1 base64 alınır
+function sha1b64(s: string): string {
+  return createHash("sha1").update(s, "utf8").digest("base64");
 }
 
 export interface PaymentForm {
@@ -40,41 +38,66 @@ export function buildPaymentForm(opts: {
   email: string;
   musteriAd: string;
 }): PaymentForm {
-  const clientId = process.env.QNB_CLIENT_ID!;
-  const storeKey = process.env.QNB_STORE_KEY!;
+  const mbrId = process.env.QNB_MBR_ID || "5";
+  const merchantId = process.env.QNB_MERCHANT_ID!;
+  const userCode = process.env.QNB_USER_CODE!;
+  const merchantPass = process.env.QNB_MERCHANT_PASS!;
   const gateUrl = process.env.QNB_GATE_URL!;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://qontac.net";
 
-  const fields: Record<string, string> = {
-    clientid: clientId,
-    storetype: "3d_pay_hosting",
-    hashAlgorithm: "ver3",
-    TranType: "Auth",
-    amount: `${opts.tutar}.00`,
-    currency: "949",
-    oid: opts.siparisNo,
-    okUrl: `${baseUrl}/api/odeme/callback`,
-    failUrl: `${baseUrl}/api/odeme/callback`,
-    lang: "tr",
-    rnd: randomBytes(12).toString("hex"),
-    BillToName: opts.musteriAd.slice(0, 100),
-    email: opts.email.slice(0, 100),
-    refreshtime: "5",
+  const okUrl = `${baseUrl}/api/odeme/callback`;
+  const failUrl = `${baseUrl}/api/odeme/callback`;
+  const purchAmount = `${opts.tutar}`; // TL, tam sayı (örn. "1500")
+  const txnType = "Auth";
+  const installment = "0";
+  const rnd = randomBytes(12).toString("hex");
+
+  // Hash = SHA1(MbrId + OrderId + PurchAmount + OkUrl + FailUrl + TxnType + InstallmentCount + Rnd + MerchantPass)
+  const hash = sha1b64(mbrId + opts.siparisNo + purchAmount + okUrl + failUrl + txnType + installment + rnd + merchantPass);
+
+  return {
+    url: gateUrl,
+    fields: {
+      MbrId: mbrId,
+      MerchantID: merchantId,
+      UserCode: userCode,
+      OrderId: opts.siparisNo,
+      Lang: "tr",
+      SecureType: "3DHost",
+      TxnType: txnType,
+      PurchAmount: purchAmount,
+      InstallmentCount: installment,
+      Currency: "949",
+      OkUrl: okUrl,
+      FailUrl: failUrl,
+      Rnd: rnd,
+      Hash: hash,
+    },
   };
-
-  fields.HASH = hashVer3(fields, storeKey);
-  return { url: gateUrl, fields };
 }
 
-// Banka callback'inin HASH'ini doğrular.
+// Banka callback'inin ResponseHash'ini doğrular:
+// SHA1(MerchantID + MerchantPass + OrderId + AuthCode + ProcReturnCode + 3DStatus + ResponseRnd + UserCode)
 export function verifyCallback(params: Record<string, string>): boolean {
-  const storeKey = process.env.QNB_STORE_KEY;
-  if (!storeKey || !params.HASH) return false;
-  return hashVer3(params, storeKey) === params.HASH;
+  const merchantId = process.env.QNB_MERCHANT_ID;
+  const merchantPass = process.env.QNB_MERCHANT_PASS;
+  const userCode = process.env.QNB_USER_CODE;
+  if (!merchantId || !merchantPass || !userCode || !params.ResponseHash) return false;
+
+  const expected = sha1b64(
+    merchantId +
+    merchantPass +
+    (params.OrderId ?? "") +
+    (params.AuthCode ?? "") +
+    (params.ProcReturnCode ?? "") +
+    (params["3DStatus"] ?? "") +
+    (params.ResponseRnd ?? "") +
+    userCode
+  );
+  return expected === params.ResponseHash;
 }
 
-// 3D doğrulama başarılı mı? (mdStatus 1-4 kabul, Response=Approved)
+// Ödeme onaylandı mı? 3DHost'ta banka tahsilatı tamamlar; 00 = başarılı.
 export function isPaymentApproved(params: Record<string, string>): boolean {
-  const md = params.mdStatus ?? "";
-  return params.Response === "Approved" && params.ProcReturnCode === "00" && ["1", "2", "3", "4"].includes(md);
+  return params.ProcReturnCode === "00";
 }
