@@ -216,6 +216,15 @@ model Order {
   email      String       @default("")
   telefon    String       @default("")
   adres      String       @default("")
+  // Fatura bilgileri
+  faturaTip    String     @default("BIREYSEL") // BIREYSEL | KURUMSAL
+  tcKimlik     String     @default("")
+  vergiNo      String     @default("")
+  vergiDairesi String     @default("")
+  firmaUnvan   String     @default("")
+  // Ödeme (QNB sanal POS): MANUEL (admin siparişi) | BEKLIYOR | ODENDI | BASARISIZ
+  odemeDurum   String     @default("MANUEL")
+  odemeRef     String     @default("") // banka AuthCode / TransId
   createdAt  DateTime     @default(now())
 }
 

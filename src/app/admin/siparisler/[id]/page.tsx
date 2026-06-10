@@ -8,6 +8,8 @@ interface Order {
   adet: number; tutar: number; birimFiyat: number; kdvOrani: number;
   indirim: number; notlar: string; durum: string; kargoNo: string | null; createdAt: string;
   kaynak?: string; musteriAd?: string; email?: string; telefon?: string; adres?: string;
+  odemeDurum?: string; odemeRef?: string;
+  faturaTip?: string; tcKimlik?: string; vergiNo?: string; vergiDairesi?: string; firmaUnvan?: string;
 }
 
 export default function SiparisDetayPage() {
@@ -158,6 +160,24 @@ export default function SiparisDetayPage() {
                   {order.telefon && <p><span className="text-on-surface-variant text-xs">Telefon: </span>{order.telefon}</p>}
                   {order.email && <p><span className="text-on-surface-variant text-xs">E-posta: </span>{order.email}</p>}
                   {order.adres && <p className="sm:col-span-2"><span className="text-on-surface-variant text-xs">Adres: </span>{order.adres}</p>}
+                </div>
+                <div className="mt-3 pt-3 border-t border-primary/10 grid sm:grid-cols-2 gap-2 text-sm text-on-surface">
+                  <p><span className="text-on-surface-variant text-xs">Ödeme: </span>
+                    <span className={order.odemeDurum === "ODENDI" ? "text-green-400 font-medium" : order.odemeDurum === "BASARISIZ" ? "text-red-400 font-medium" : "text-yellow-400 font-medium"}>
+                      {order.odemeDurum === "ODENDI" ? "Ödendi (Kredi Kartı)" : order.odemeDurum === "BASARISIZ" ? "Başarısız" : "Bekliyor"}
+                    </span>
+                  </p>
+                  {order.odemeRef && <p><span className="text-on-surface-variant text-xs">Banka Ref: </span><span className="font-mono text-xs">{order.odemeRef}</span></p>}
+                  <p><span className="text-on-surface-variant text-xs">Fatura Tipi: </span>{order.faturaTip === "KURUMSAL" ? "Kurumsal" : "Bireysel"}</p>
+                  {order.faturaTip === "KURUMSAL" ? (
+                    <>
+                      {order.firmaUnvan && <p><span className="text-on-surface-variant text-xs">Unvan: </span>{order.firmaUnvan}</p>}
+                      {order.vergiNo && <p><span className="text-on-surface-variant text-xs">Vergi No: </span>{order.vergiNo}</p>}
+                      {order.vergiDairesi && <p><span className="text-on-surface-variant text-xs">Vergi Dairesi: </span>{order.vergiDairesi}</p>}
+                    </>
+                  ) : (
+                    order.tcKimlik && <p><span className="text-on-surface-variant text-xs">T.C. Kimlik: </span>{order.tcKimlik}</p>
+                  )}
                 </div>
               </div>
             </div>

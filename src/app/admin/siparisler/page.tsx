@@ -9,7 +9,15 @@ interface Order {
   kdvOrani: number; indirim: number; notlar: string;
   durum: string; kargoNo: string | null; createdAt: string;
   kaynak?: string; musteriAd?: string; email?: string; telefon?: string; adres?: string;
+  odemeDurum?: string; odemeRef?: string;
+  faturaTip?: string; tcKimlik?: string; vergiNo?: string; vergiDairesi?: string; firmaUnvan?: string;
 }
+
+const odemeBadge: Record<string, { label: string; cls: string }> = {
+  ODENDI: { label: "Ödendi", cls: "bg-green-400/10 text-green-400 border-green-400/30" },
+  BEKLIYOR: { label: "Ödeme Bekliyor", cls: "bg-yellow-400/10 text-yellow-400 border-yellow-400/30" },
+  BASARISIZ: { label: "Ödeme Başarısız", cls: "bg-red-400/10 text-red-400 border-red-400/30" },
+};
 
 interface OrderForm {
   firma: string; urun: string; adet: string; tutar: string;
@@ -141,6 +149,11 @@ export default function AdminSiparislerPage() {
                 </span>
                 {o.kaynak === "SITE" && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">Site</span>
+                )}
+                {o.odemeDurum && odemeBadge[o.odemeDurum] && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${odemeBadge[o.odemeDurum].cls}`}>
+                    {odemeBadge[o.odemeDurum].label}
+                  </span>
                 )}
               </div>
               <p className="text-sm text-on-surface-variant">{o.firma} · {o.urun}</p>
