@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Member } from "@/lib/mock-data";
 
@@ -21,10 +21,35 @@ export default function ProfilPage() {
   });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [avatar, setAvatar] = useState<string>(member?.avatar ?? "");
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const [error, setError] = useState("");
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoError("");
+    setPhotoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/me/photo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error ?? "Yüklenemedi.");
+      setAvatar(json.photoUrl);
+      updateUserData({ ...user?.data, avatar: json.photoUrl });
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Yüklenemedi.");
+    } finally {
+      setPhotoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,13 +81,37 @@ export default function ProfilPage() {
       <form onSubmit={handleSave} className="space-y-6">
         {/* Avatar */}
         <div className="glass-card rounded-2xl p-6 flex items-center gap-5">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-4xl">person</span>
+          <div className="relative flex-shrink-0">
+            <div
+              className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 overflow-hidden flex items-center justify-center cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatar} alt="Profil fotoğrafı" className="w-full h-full object-cover object-center" />
+              ) : (
+                <span className="material-symbols-outlined text-primary text-4xl">person</span>
+              )}
+              {photoUploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                  <span className="material-symbols-outlined text-white text-xl animate-spin">progress_activity</span>
+                </div>
+              )}
             </div>
-            <button type="button" className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-container rounded-full flex items-center justify-center border-2 border-background">
-              <span className="material-symbols-outlined text-on-primary-container text-sm">edit</span>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-container rounded-full flex items-center justify-center border-2 border-background hover:scale-110 transition-all"
+            >
+              <span className="material-symbols-outlined text-on-primary-container text-sm">photo_camera</span>
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
           </div>
           <div>
             <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
@@ -70,6 +119,8 @@ export default function ProfilPage() {
             </p>
             <p className="text-sm text-on-surface-variant">{member?.email}</p>
             <p className="text-xs text-primary mt-1">{member?.firmaAdi}</p>
+            {photoError && <p className="text-xs text-red-400 mt-1">{photoError}</p>}
+            {!photoError && <p className="text-xs text-on-surface-variant/50 mt-1">Fotoğrafa tıkla veya kameraya bas</p>}
           </div>
         </div>
 
