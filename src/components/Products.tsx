@@ -96,7 +96,8 @@ function OdemeSonuc() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSonuc(null)}>
-      <div className="glass-card rounded-2xl p-8 w-full max-w-md bg-surface-container-low text-center" onClick={(e) => e.stopPropagation()}>
+      <div className="rounded-2xl p-8 w-full max-w-md text-center border border-white/12 shadow-2xl"
+        style={{ background: "#121626" }} onClick={(e) => e.stopPropagation()}>
         <span className={`material-symbols-outlined text-6xl mb-4 block ${ok ? "text-green-400" : "text-red-400"}`}>
           {ok ? "check_circle" : "error"}
         </span>
@@ -175,7 +176,8 @@ function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="glass-card rounded-2xl p-6 w-full max-w-lg bg-surface-container-low max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto border border-white/12 shadow-2xl"
+        style={{ background: "#121626" }} onClick={(e) => e.stopPropagation()}>
         <form onSubmit={handleSubmit}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-headline-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
