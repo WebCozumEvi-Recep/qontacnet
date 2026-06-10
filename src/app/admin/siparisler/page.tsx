@@ -60,7 +60,10 @@ export default function AdminSiparislerPage() {
   }, [orders]);
 
   const filtered = tab === "tum" ? orders : orders.filter(o => o.durum === tab);
-  const toplamCiro = filtered.filter(o => o.durum !== "IPTAL").reduce((a, o) => a + o.tutar, 0);
+  // İptaller ve ödemesi tamamlanmamış site siparişleri ciroya dahil edilmez
+  const toplamCiro = filtered
+    .filter(o => o.durum !== "IPTAL" && (!o.odemeDurum || o.odemeDurum === "MANUEL" || o.odemeDurum === "ODENDI"))
+    .reduce((a, o) => a + o.tutar, 0);
 
   function openEdit(o: Order) {
     setEditOrder(o);
