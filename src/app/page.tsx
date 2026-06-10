@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ProblemSolution from "@/components/ProblemSolution";
@@ -9,14 +10,38 @@ import Features from "@/components/Features";
 import Panels from "@/components/Panels";
 import UseCases from "@/components/UseCases";
 import Pricing from "@/components/Pricing";
+import Products from "@/components/Products";
 import DemoForm from "@/components/DemoForm";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+// Site ayarları (logo, doğrulama, kod enjeksiyonu) her istekte DB'den okunur
+export const dynamic = "force-dynamic";
+
+async function getSiteSettings() {
+  try {
+    return await prisma.siteSettings.findUnique({ where: { id: "site" } });
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const s = await getSiteSettings();
+  if (s?.googleSiteVerification) {
+    return { verification: { google: s.googleSiteVerification } };
+  }
+  return {};
+}
+
+export default async function Home() {
+  const s = await getSiteSettings();
+
   return (
     <>
-      <Header />
+      {s?.headKod ? <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: s.headKod }} /> : null}
+      <Header logoUrl={s?.logoUrl || ""} />
       <main className="pt-20">
         <Hero />
         <ProblemSolution />
@@ -27,11 +52,13 @@ export default function Home() {
         <Features />
         <Panels />
         <UseCases />
+        <Products />
         <Pricing />
         <DemoForm />
         <FAQ />
       </main>
       <Footer />
+      {s?.bodyKod ? <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: s.bodyKod }} /> : null}
     </>
   );
 }

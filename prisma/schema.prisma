@@ -210,7 +210,23 @@ model Order {
   kdvOrani   Int          @default(20)
   indirim    Int          @default(0)
   notlar     String       @default("")
+  // Site üzerinden gelen satın alımlar
+  kaynak     String       @default("ADMIN") // ADMIN | SITE
+  musteriAd  String       @default("")
+  email      String       @default("")
+  telefon    String       @default("")
+  adres      String       @default("")
   createdAt  DateTime     @default(now())
+}
+
+// Tekil satır: site kimliği ve kod enjeksiyon ayarları (id = "site")
+model SiteSettings {
+  id                     String   @id @default("site")
+  logoUrl                String   @default("")
+  googleSiteVerification String   @default("")
+  headKod                String   @default("") // <head> içine eklenecek kodlar (analytics vb.)
+  bodyKod                String   @default("") // <body> sonuna eklenecek kodlar (reklam vb.)
+  updatedAt              DateTime @updatedAt
 }
 
 model Product {

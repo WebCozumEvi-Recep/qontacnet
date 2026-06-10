@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface AdminUser { id: string; ad: string; email: string; rol: string }
+interface SiteSettings { logoUrl: string; googleSiteVerification: string; headKod: string; bodyKod: string }
 
 export default function AdminAyarlarPage() {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
@@ -132,6 +133,9 @@ export default function AdminAyarlarPage() {
         </button>
       </form>
 
+      {/* Site Kimliği */}
+      <SiteKimligi />
+
       {/* Platform Ayarları */}
       <div className="glass-card rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Platform Ayarları</h3>
@@ -146,6 +150,112 @@ export default function AdminAyarlarPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SiteKimligi() {
+  const [s, setS] = useState<SiteSettings>({ logoUrl: "", googleSiteVerification: "", headKod: "", bodyKod: "" });
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all";
+
+  useEffect(() => {
+    fetch("/api/admin/site-ayarlar").then(r => r.json()).then(j => {
+      if (j.ok && j.settings) setS({
+        logoUrl: j.settings.logoUrl ?? "",
+        googleSiteVerification: j.settings.googleSiteVerification ?? "",
+        headKod: j.settings.headKod ?? "",
+        bodyKod: j.settings.bodyKod ?? "",
+      });
+    });
+  }, []);
+
+  async function handleLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true); setMsg(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "site");
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const j = await res.json();
+    setUploading(false);
+    if (j.ok) setS(p => ({ ...p, logoUrl: j.url }));
+    else setMsg({ ok: false, text: j.error || "Logo yüklenemedi." });
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true); setMsg(null);
+    const res = await fetch("/api/admin/site-ayarlar", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(s),
+    });
+    const j = await res.json();
+    setSaving(false);
+    setMsg(j.ok ? { ok: true, text: "Site ayarları kaydedildi." } : { ok: false, text: j.error || "Kaydedilemedi." });
+  }
+
+  return (
+    <form onSubmit={handleSave} className="glass-card rounded-2xl p-6">
+      <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Site Kimliği</h3>
+      <p className="text-xs text-on-surface-variant mb-5">Logo, Google doğrulama ve reklam/analitik kodları — ana sayfada otomatik uygulanır.</p>
+
+      {/* Logo */}
+      <div className="mb-5">
+        <label className="block text-xs text-on-surface-variant mb-1.5">Site Logosu</label>
+        <div className="flex items-center gap-4">
+          {s.logoUrl ? (
+            <img src={s.logoUrl} alt="logo" className="h-12 max-w-[180px] object-contain rounded-lg border border-white/10 bg-white/5 px-2" />
+          ) : (
+            <div className="h-12 w-32 rounded-lg border border-dashed border-white/15 flex items-center justify-center text-xs text-on-surface-variant">Logo yok</div>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+            className="px-4 py-2 rounded-xl glass-card text-xs font-semibold hover:bg-white/10 transition-all disabled:opacity-60">
+            {uploading ? "Yükleniyor..." : "Logo Yükle"}
+          </button>
+          {s.logoUrl && (
+            <button type="button" onClick={() => setS(p => ({ ...p, logoUrl: "" }))}
+              className="px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-400/10 transition-all">Kaldır</button>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-xs text-on-surface-variant mb-1.5">Google Site Doğrulama Kodu</label>
+        <input value={s.googleSiteVerification} onChange={e => setS(p => ({ ...p, googleSiteVerification: e.target.value }))}
+          placeholder="google-site-verification meta içeriği (örn. AbC123...)" className={inputCls} />
+        <p className="text-[11px] text-on-surface-variant mt-1">Sadece content değerini girin; meta etiketi otomatik eklenir.</p>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-xs text-on-surface-variant mb-1.5">Head Kodları (Analytics, Tag Manager vb.)</label>
+        <textarea value={s.headKod} onChange={e => setS(p => ({ ...p, headKod: e.target.value }))} rows={4}
+          placeholder={'<script>...</script>'} className={`${inputCls} font-mono text-xs`} />
+      </div>
+
+      <div className="mb-5">
+        <label className="block text-xs text-on-surface-variant mb-1.5">Body Kodları (Reklam, remarketing vb.)</label>
+        <textarea value={s.bodyKod} onChange={e => setS(p => ({ ...p, bodyKod: e.target.value }))} rows={4}
+          placeholder={'<script>...</script>'} className={`${inputCls} font-mono text-xs`} />
+      </div>
+
+      {msg && (
+        <p className={`text-xs flex items-center gap-1 mb-3 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
+          <span className="material-symbols-outlined text-sm">{msg.ok ? "check_circle" : "error"}</span>{msg.text}
+        </p>
+      )}
+      <button type="submit" disabled={saving}
+        className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
+        {saving ? "Kaydediliyor..." : "Kaydet"}
+      </button>
+    </form>
   );
 }
 

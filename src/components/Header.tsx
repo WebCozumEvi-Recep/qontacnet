@@ -8,12 +8,13 @@ const navLinks = [
   { label: "Firmalar İçin", href: "#firmalar" },
   { label: "Üyeler İçin", href: "#uyeler" },
   { label: "Özellikler", href: "#ozellikler" },
+  { label: "Ürünler", href: "#urunler" },
   { label: "Paketler", href: "#paketler" },
   { label: "S.S.S.", href: "#sss" },
   { label: "İletişim", href: "#iletisim" },
 ];
 
-export default function Header() {
+export default function Header({ logoUrl = "" }: { logoUrl?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -21,9 +22,13 @@ export default function Header() {
       <nav className="flex justify-between items-center h-20 px-10 max-w-container-max mx-auto">
         {/* Logo */}
         <div className="flex items-center gap-xs">
-          <span className="text-headline-md font-bold text-primary tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>
-            QONTAC
-          </span>
+          {logoUrl ? (
+            <img src={logoUrl} alt="QONTAC" className="h-10 w-auto object-contain" />
+          ) : (
+            <span className="text-headline-md font-bold text-primary tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>
+              QONTAC
+            </span>
+          )}
         </div>
 
         {/* Desktop Nav */}

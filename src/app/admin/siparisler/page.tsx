@@ -8,6 +8,7 @@ interface Order {
   urun: string; adet: number; tutar: number; birimFiyat: number;
   kdvOrani: number; indirim: number; notlar: string;
   durum: string; kargoNo: string | null; createdAt: string;
+  kaynak?: string; musteriAd?: string; email?: string; telefon?: string; adres?: string;
 }
 
 interface OrderForm {
@@ -138,8 +139,16 @@ export default function AdminSiparislerPage() {
                   style={{ background: `${siparisDurumMap[o.durum].color}15`, color: siparisDurumMap[o.durum].color, border: `1px solid ${siparisDurumMap[o.durum].color}30` }}>
                   {siparisDurumMap[o.durum].label}
                 </span>
+                {o.kaynak === "SITE" && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">Site</span>
+                )}
               </div>
               <p className="text-sm text-on-surface-variant">{o.firma} · {o.urun}</p>
+              {o.kaynak === "SITE" && (o.musteriAd || o.telefon) && (
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  {o.musteriAd}{o.telefon && <span> · {o.telefon}</span>}{o.email && <span> · {o.email}</span>}
+                </p>
+              )}
               <p className="text-xs text-on-surface-variant mt-1">{trDate(o.createdAt)}{o.kargoNo && <span> · Kargo: <span className="font-mono">{o.kargoNo}</span></span>}</p>
             </div>
             <div className="text-left md:text-right"><p className="text-xs text-on-surface-variant">Adet</p><p className="text-on-surface font-medium">{o.adet}</p></div>

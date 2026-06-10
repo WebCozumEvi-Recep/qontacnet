@@ -7,6 +7,7 @@ interface Order {
   id: string; siparisNo: string; firma: string; urun: string;
   adet: number; tutar: number; birimFiyat: number; kdvOrani: number;
   indirim: number; notlar: string; durum: string; kargoNo: string | null; createdAt: string;
+  kaynak?: string; musteriAd?: string; email?: string; telefon?: string; adres?: string;
 }
 
 export default function SiparisDetayPage() {
@@ -146,6 +147,21 @@ export default function SiparisDetayPage() {
               </div>
             </div>
           </div>
+
+          {/* Site siparişi müşteri bilgileri */}
+          {order.kaynak === "SITE" && (
+            <div className="px-6 pb-6">
+              <div className="p-4 rounded-xl bg-primary/5 border border-primary/15">
+                <p className="text-xs text-primary mb-2 font-medium">Site Üzerinden Satın Alım — Müşteri Bilgileri</p>
+                <div className="grid sm:grid-cols-2 gap-2 text-sm text-on-surface">
+                  {order.musteriAd && <p><span className="text-on-surface-variant text-xs">Ad Soyad: </span>{order.musteriAd}</p>}
+                  {order.telefon && <p><span className="text-on-surface-variant text-xs">Telefon: </span>{order.telefon}</p>}
+                  {order.email && <p><span className="text-on-surface-variant text-xs">E-posta: </span>{order.email}</p>}
+                  {order.adres && <p className="sm:col-span-2"><span className="text-on-surface-variant text-xs">Adres: </span>{order.adres}</p>}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Notlar */}
           {order.notlar && (
