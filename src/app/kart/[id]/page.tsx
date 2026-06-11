@@ -138,9 +138,9 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           )}
         </div>
 
-        <div className="flex items-center justify-center gap-2.5 flex-wrap mb-5">
+        <div className="grid grid-cols-4 gap-x-4 gap-y-5 justify-items-center mb-5 px-2">
           {actions.map(a => {
-            const cls = "w-12 h-12 rounded-full flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform shadow-lg";
+            const cls = "w-14 h-14 rounded-full flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform shadow-lg";
             const style = { background: a.bg, color: a.bg === "#ffd93d" ? "#000" : "#fff" };
             return a.href ? (
               <a key={a.label} href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" aria-label={a.label} title={a.label} className={cls} style={style}>
