@@ -1,0 +1,376 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
+
+type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM";
+type Galeri = { url: string; baslik?: string; aciklama?: string };
+type Icerik = Record<string, unknown>;
+interface Modul {
+  id: string;
+  tip: Tip;
+  baslik: string;
+  aktif: boolean;
+  sira: number;
+  icerik: Icerik;
+}
+
+const TIP_META: Record<Tip, { etiket: string; ikon: string; renk: string }> = {
+  HAKKIMIZDA: { etiket: "Hakkımızda", ikon: "info", renk: "#00d4ff" },
+  GALERI: { etiket: "Kampanya Galerisi", ikon: "photo_library", renk: "#ff9f43" },
+  VIDEO: { etiket: "Kurumsal Video", ikon: "smart_display", renk: "#fd79a8" },
+  FORM: { etiket: "Başvuru Formu", ikon: "edit_note", renk: "#42faba" },
+};
+
+async function uploadFile(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const r = await fetch("/api/firma/upload", { method: "POST", body: fd });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error ?? "Yükleme hatası");
+  return j.url as string;
+}
+
+export default function SayfaModulleri() {
+  const [moduller, setModuller] = useState<Modul[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [showTipMenu, setShowTipMenu] = useState(false);
+
+  useEffect(() => { void load(); }, []);
+
+  async function load() {
+    setLoading(true);
+    const r = await fetch("/api/firma/moduller");
+    const j = await r.json();
+    if (j.ok) setModuller(j.moduller);
+    setLoading(false);
+  }
+
+  async function ekle(tip: Tip) {
+    setAdding(true); setShowTipMenu(false);
+    const r = await fetch("/api/firma/moduller", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tip }),
+    });
+    const j = await r.json();
+    if (j.ok) setModuller(prev => [...prev, j.modul]);
+    setAdding(false);
+  }
+
+  async function sil(id: string) {
+    if (!confirm("Bu modülü silmek istediğine emin misin?")) return;
+    const r = await fetch(`/api/firma/moduller/${id}`, { method: "DELETE" });
+    if ((await r.json()).ok) setModuller(prev => prev.filter(m => m.id !== id));
+  }
+
+  async function guncelle(id: string, patch: Partial<Modul>) {
+    setModuller(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
+    await fetch(`/api/firma/moduller/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+  }
+
+  async function sirala(yeni: Modul[]) {
+    setModuller(yeni);
+    await fetch("/api/firma/moduller/sira", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: yeni.map(m => m.id) }),
+    });
+  }
+
+  function tasi(id: string, yon: -1 | 1) {
+    const idx = moduller.findIndex(m => m.id === id);
+    const hedef = idx + yon;
+    if (idx < 0 || hedef < 0 || hedef >= moduller.length) return;
+    const yeni = [...moduller];
+    [yeni[idx], yeni[hedef]] = [yeni[hedef], yeni[idx]];
+    void sirala(yeni);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
+            Sayfa Modülleri
+          </h2>
+          <p className="text-sm text-on-surface-variant mt-1">
+            Üye kartının altında görünecek bölümleri sıralı şekilde yönet.
+          </p>
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => setShowTipMenu(s => !s)}
+            disabled={adding}
+            className="px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            Modül Ekle
+          </button>
+          {showTipMenu && (
+            <div className="absolute right-0 mt-2 z-20 w-60 glass-card rounded-xl p-2 space-y-1" style={{ background: "#1a1f2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+              {(Object.keys(TIP_META) as Tip[]).map(t => (
+                <button key={t} onClick={() => ekle(t)} className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/5 text-left">
+                  <span className="material-symbols-outlined text-base" style={{ color: TIP_META[t].renk }}>{TIP_META[t].ikon}</span>
+                  <span className="text-sm text-on-surface">{TIP_META[t].etiket}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12">
+          <span className="material-symbols-outlined text-primary text-3xl animate-spin">progress_activity</span>
+        </div>
+      ) : moduller.length === 0 ? (
+        <div className="glass-card rounded-2xl p-10 text-center">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 block mb-3">view_carousel</span>
+          <p className="text-sm text-on-surface-variant">Henüz modül eklenmemiş. Üst sağdaki butonla ilk modülünü ekle.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {moduller.map((m, idx) => (
+            <ModulKart
+              key={m.id}
+              modul={m}
+              ilk={idx === 0}
+              son={idx === moduller.length - 1}
+              onYukari={() => tasi(m.id, -1)}
+              onAsagi={() => tasi(m.id, 1)}
+              onSil={() => sil(m.id)}
+              onGuncelle={(p) => guncelle(m.id, p)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ModulKart({ modul, ilk, son, onYukari, onAsagi, onSil, onGuncelle }: {
+  modul: Modul;
+  ilk: boolean;
+  son: boolean;
+  onYukari: () => void;
+  onAsagi: () => void;
+  onSil: () => void;
+  onGuncelle: (p: Partial<Modul>) => void;
+}) {
+  const [acik, setAcik] = useState(false);
+  const meta = TIP_META[modul.tip];
+
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="p-4 flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col gap-1">
+          <button onClick={onYukari} disabled={ilk} className="text-on-surface-variant disabled:opacity-30 hover:text-primary">
+            <span className="material-symbols-outlined text-lg">expand_less</span>
+          </button>
+          <button onClick={onAsagi} disabled={son} className="text-on-surface-variant disabled:opacity-30 hover:text-primary">
+            <span className="material-symbols-outlined text-lg">expand_more</span>
+          </button>
+        </div>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${meta.renk}20` }}>
+          <span className="material-symbols-outlined text-xl" style={{ color: meta.renk }}>{meta.ikon}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-on-surface-variant">{meta.etiket}</p>
+          <input
+            value={modul.baslik}
+            onChange={e => onGuncelle({ baslik: e.target.value })}
+            placeholder={meta.etiket}
+            className="bg-transparent text-sm font-semibold text-on-surface outline-none w-full"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-xs text-on-surface-variant cursor-pointer">
+          <input type="checkbox" checked={modul.aktif} onChange={e => onGuncelle({ aktif: e.target.checked })} />
+          Aktif
+        </label>
+        <button onClick={() => setAcik(a => !a)} className="px-3 py-1.5 text-xs rounded-lg glass-card text-on-surface-variant hover:text-on-surface">
+          {acik ? "Kapat" : "Düzenle"}
+        </button>
+        <button onClick={onSil} className="text-red-400 hover:text-red-300">
+          <span className="material-symbols-outlined text-lg">delete</span>
+        </button>
+      </div>
+      {acik && (
+        <div className="px-4 pb-4 pt-2 border-t border-white/5">
+          {modul.tip === "HAKKIMIZDA" && (
+            <HakkimizdaEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
+          {modul.tip === "GALERI" && (
+            <GaleriEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
+          {modul.tip === "VIDEO" && (
+            <VideoEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
+          {modul.tip === "FORM" && (
+            <FormEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function fieldInput(label: string, value: string, onChange: (v: string) => void, opts: { area?: boolean; ph?: string } = {}) {
+  return (
+    <div>
+      <label className="text-xs text-on-surface-variant mb-1 block">{label}</label>
+      {opts.area ? (
+        <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={opts.ph}
+          rows={5}
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:border-primary outline-none transition-all" />
+      ) : (
+        <input value={value} onChange={e => onChange(e.target.value)} placeholder={opts.ph}
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:border-primary outline-none transition-all" />
+      )}
+    </div>
+  );
+}
+
+function GorselYukle({ url, onChange, label = "Görsel" }: { url: string; onChange: (u: string) => void; label?: string }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [yukleniyor, setYukleniyor] = useState(false);
+  return (
+    <div>
+      <label className="text-xs text-on-surface-variant mb-1 block">{label}</label>
+      <div className="flex items-center gap-3 flex-wrap">
+        {url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="w-20 h-20 rounded-xl object-cover border border-white/10" />
+        )}
+        <input ref={ref} type="file" accept="image/*" className="hidden"
+          onChange={async e => {
+            const f = e.target.files?.[0]; if (!f) return;
+            setYukleniyor(true);
+            try { onChange(await uploadFile(f)); } catch (err) { alert(err instanceof Error ? err.message : "Hata"); }
+            setYukleniyor(false);
+            if (ref.current) ref.current.value = "";
+          }} />
+        <button type="button" onClick={() => ref.current?.click()}
+          disabled={yukleniyor}
+          className="px-3 py-2 rounded-xl glass-card text-xs text-on-surface flex items-center gap-2 disabled:opacity-60">
+          <span className="material-symbols-outlined text-sm">{yukleniyor ? "progress_activity" : "upload"}</span>
+          {yukleniyor ? "Yükleniyor..." : url ? "Değiştir" : "Yükle"}
+        </button>
+        {url && (
+          <button type="button" onClick={() => onChange("")}
+            className="px-3 py-2 rounded-xl text-xs text-red-400 hover:text-red-300">
+            Kaldır
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HakkimizdaEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const metin = String(icerik.metin ?? "");
+  const gorsel = String(icerik.gorsel ?? "");
+  return (
+    <div className="space-y-3">
+      <GorselYukle url={gorsel} onChange={u => onChange({ ...icerik, gorsel: u })} label="Kapak görseli (opsiyonel)" />
+      {fieldInput("Metin", metin, v => onChange({ ...icerik, metin: v }), { area: true, ph: "Firmanızı tanıtın..." })}
+    </div>
+  );
+}
+
+function GaleriEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const gorseller = (Array.isArray(icerik.gorseller) ? icerik.gorseller : []) as Galeri[];
+  const ref = useRef<HTMLInputElement>(null);
+  const [yukleniyor, setYukleniyor] = useState(false);
+
+  const ekle = async (files: FileList | null) => {
+    if (!files) return;
+    setYukleniyor(true);
+    const yeni: Galeri[] = [];
+    for (const f of Array.from(files)) {
+      try { yeni.push({ url: await uploadFile(f), baslik: "", aciklama: "" }); } catch {}
+    }
+    onChange({ ...icerik, gorseller: [...gorseller, ...yeni] });
+    setYukleniyor(false);
+    if (ref.current) ref.current.value = "";
+  };
+
+  const sil = (i: number) => onChange({ ...icerik, gorseller: gorseller.filter((_, idx) => idx !== i) });
+  const guncelle = (i: number, p: Partial<Galeri>) => onChange({
+    ...icerik,
+    gorseller: gorseller.map((g, idx) => idx === i ? { ...g, ...p } : g),
+  });
+  const tasi = (i: number, yon: -1 | 1) => {
+    const hedef = i + yon;
+    if (hedef < 0 || hedef >= gorseller.length) return;
+    const arr = [...gorseller];
+    [arr[i], arr[hedef]] = [arr[hedef], arr[i]];
+    onChange({ ...icerik, gorseller: arr });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <input ref={ref} type="file" accept="image/*" multiple className="hidden" onChange={e => ekle(e.target.files)} />
+        <button type="button" onClick={() => ref.current?.click()} disabled={yukleniyor}
+          className="px-4 py-2.5 rounded-xl glass-card text-sm text-on-surface flex items-center gap-2 disabled:opacity-60">
+          <span className="material-symbols-outlined text-base">{yukleniyor ? "progress_activity" : "add_photo_alternate"}</span>
+          {yukleniyor ? "Yükleniyor..." : "Görsel ekle"}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {gorseller.map((g, i) => (
+          <div key={i} className="glass-card rounded-xl p-3 space-y-2">
+            <div className="flex items-start gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={g.url} alt="" className="w-20 h-20 rounded-lg object-cover" />
+              <div className="flex-1 space-y-2">
+                <input value={g.baslik ?? ""} onChange={e => guncelle(i, { baslik: e.target.value })}
+                  placeholder="Başlık" className="w-full bg-surface-dim border border-white/10 rounded-lg px-3 py-1.5 text-xs text-on-surface outline-none" />
+                <input value={g.aciklama ?? ""} onChange={e => guncelle(i, { aciklama: e.target.value })}
+                  placeholder="Açıklama" className="w-full bg-surface-dim border border-white/10 rounded-lg px-3 py-1.5 text-xs text-on-surface outline-none" />
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => tasi(i, -1)} disabled={i === 0} className="text-on-surface-variant disabled:opacity-30">
+                <span className="material-symbols-outlined text-base">arrow_back</span>
+              </button>
+              <button onClick={() => tasi(i, 1)} disabled={i === gorseller.length - 1} className="text-on-surface-variant disabled:opacity-30">
+                <span className="material-symbols-outlined text-base">arrow_forward</span>
+              </button>
+              <span className="flex-1" />
+              <button onClick={() => sil(i)} className="text-red-400 text-xs">Sil</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VideoEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const videoUrl = String(icerik.videoUrl ?? "");
+  const aciklama = String(icerik.aciklama ?? "");
+  return (
+    <div className="space-y-3">
+      {fieldInput("YouTube veya Vimeo linki", videoUrl, v => onChange({ ...icerik, videoUrl: v }), { ph: "https://youtube.com/watch?v=..." })}
+      {fieldInput("Açıklama (opsiyonel)", aciklama, v => onChange({ ...icerik, aciklama: v }), { area: true })}
+      {videoUrl && <p className="text-xs text-on-surface-variant">Önizleme kartın altında görünecek.</p>}
+    </div>
+  );
+}
+
+function FormEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const aciklama = String(icerik.aciklama ?? "");
+  const gonderButon = String(icerik.gonderButon ?? "Gönder");
+  return (
+    <div className="space-y-3">
+      {fieldInput("Form açıklaması", aciklama, v => onChange({ ...icerik, aciklama: v }), { area: true })}
+      {fieldInput("Buton metni", gonderButon, v => onChange({ ...icerik, gonderButon: v }))}
+      <p className="text-xs text-on-surface-variant">Form: ad, e-posta, telefon ve mesaj alanlarını içerir. Gelen başvurular &quot;Başvurular&quot; bölümünde listelenir.</p>
+    </div>
+  );
+}

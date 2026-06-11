@@ -9,6 +9,8 @@ const pageTitles: Record<string, string> = {
   "/firma": "Firma Paneli",
   "/firma/uyeler": "Üye Yönetimi",
   "/firma/template": "Kart Şablonları",
+  "/firma/sayfa": "Sayfa Modülleri",
+  "/firma/basvurular": "Başvurular",
   "/firma/analitik": "Analitik",
   "/firma/ayarlar": "Ayarlar",
 };

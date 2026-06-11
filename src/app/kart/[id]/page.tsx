@@ -1,5 +1,5 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 interface Card {
@@ -19,9 +19,13 @@ interface Card {
   avatar?: string;
 }
 
+type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM";
+interface Modul { id: string; tip: Tip; baslik: string; icerik: Record<string, unknown> }
+
 export default function KartPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [card, setCard] = useState<Card | null>(null);
+  const [moduller, setModuller] = useState<Modul[]>([]);
   const [loading, setLoading] = useState(true);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
@@ -32,7 +36,10 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
   useEffect(() => {
     fetch(`/api/kart/${id}`)
       .then(r => r.json())
-      .then(j => setCard(j.ok ? j.card : null))
+      .then(j => {
+        if (j.ok) { setCard(j.card); setModuller(j.moduller ?? []); }
+        else setCard(null);
+      })
       .catch(() => setCard(null))
       .finally(() => setLoading(false));
   }, [id]);
@@ -174,6 +181,12 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
+        {moduller.length > 0 && (
+          <div className="space-y-4 mb-6">
+            {moduller.map(m => <ModulRender key={m.id} modul={m} color={color} memberId={card.id} firmaAdi={card.firmaAdi} />)}
+          </div>
+        )}
+
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2 text-xs text-on-surface-variant/50 hover:text-on-surface-variant transition-all">
             <span className="font-bold tracking-widest" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC</span>
@@ -234,6 +247,197 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function youtubeEmbed(url: string): string | null {
+  const m = url.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([A-Za-z0-9_-]{11})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}`;
+  const vimeo = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return null;
+}
+
+function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color: string; memberId: string; firmaAdi: string }) {
+  if (modul.tip === "HAKKIMIZDA") {
+    const metin = String(modul.icerik.metin ?? "");
+    const gorsel = String(modul.icerik.gorsel ?? "");
+    if (!metin && !gorsel) return null;
+    return (
+      <div className="glass-card rounded-2xl overflow-hidden">
+        {gorsel && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={gorsel} alt={modul.baslik} className="w-full h-40 object-cover" />
+        )}
+        <div className="p-5">
+          <p className="text-xs uppercase tracking-wider mb-2" style={{ color }}>{modul.baslik}</p>
+          <p className="text-sm text-on-surface-variant whitespace-pre-line leading-relaxed">{metin}</p>
+        </div>
+      </div>
+    );
+  }
+  if (modul.tip === "GALERI") {
+    const gorseller = (Array.isArray(modul.icerik.gorseller) ? modul.icerik.gorseller : []) as { url: string; baslik?: string; aciklama?: string }[];
+    if (gorseller.length === 0) return null;
+    return <GaleriSlider baslik={modul.baslik} color={color} gorseller={gorseller} />;
+  }
+  if (modul.tip === "VIDEO") {
+    const videoUrl = String(modul.icerik.videoUrl ?? "");
+    const aciklama = String(modul.icerik.aciklama ?? "");
+    const embed = videoUrl ? youtubeEmbed(videoUrl) : null;
+    if (!embed) return null;
+    return (
+      <div className="glass-card rounded-2xl overflow-hidden">
+        <p className="text-xs uppercase tracking-wider mb-2 px-5 pt-5" style={{ color }}>{modul.baslik}</p>
+        <div className="aspect-video">
+          <iframe src={embed} className="w-full h-full" allowFullScreen title={modul.baslik} />
+        </div>
+        {aciklama && <p className="text-xs text-on-surface-variant p-4">{aciklama}</p>}
+      </div>
+    );
+  }
+  if (modul.tip === "FORM") {
+    return <FormModul modul={modul} color={color} memberId={memberId} firmaAdi={firmaAdi} />;
+  }
+  return null;
+}
+
+function GaleriSlider({ baslik, color, gorseller }: { baslik: string; color: string; gorseller: { url: string; baslik?: string; aciklama?: string }[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+
+  const onScroll = () => {
+    if (!ref.current) return;
+    const w = ref.current.clientWidth;
+    setIdx(Math.round(ref.current.scrollLeft / w));
+  };
+
+  const goto = (i: number) => {
+    if (!ref.current) return;
+    const w = ref.current.clientWidth;
+    ref.current.scrollTo({ left: i * w, behavior: "smooth" });
+  };
+
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <p className="text-xs uppercase tracking-wider mb-3" style={{ color }}>{baslik}</p>
+      <div className="relative -mx-2">
+        <div
+          ref={ref}
+          onScroll={onScroll}
+          className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-2 pb-1 [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {gorseller.map((g, i) => (
+            <a
+              key={i}
+              href={g.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-shrink-0 w-full snap-center"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={g.url} alt={g.baslik ?? ""} className="w-full aspect-square object-cover rounded-xl" />
+              {g.baslik && <p className="text-sm text-on-surface mt-2 font-medium">{g.baslik}</p>}
+              {g.aciklama && <p className="text-xs text-on-surface-variant mt-0.5">{g.aciklama}</p>}
+            </a>
+          ))}
+        </div>
+        {gorseller.length > 1 && idx > 0 && (
+          <button
+            onClick={() => goto(idx - 1)}
+            aria-label="Önceki"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 backdrop-blur flex items-center justify-center text-white hover:bg-black/80"
+          >
+            <span className="material-symbols-outlined text-xl">chevron_left</span>
+          </button>
+        )}
+        {gorseller.length > 1 && idx < gorseller.length - 1 && (
+          <button
+            onClick={() => goto(idx + 1)}
+            aria-label="Sonraki"
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 backdrop-blur flex items-center justify-center text-white hover:bg-black/80"
+          >
+            <span className="material-symbols-outlined text-xl">chevron_right</span>
+          </button>
+        )}
+      </div>
+      {gorseller.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5 mt-3">
+          {gorseller.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goto(i)}
+              aria-label={`Görsel ${i + 1}`}
+              className="h-1.5 rounded-full transition-all"
+              style={{
+                width: i === idx ? 18 : 6,
+                background: i === idx ? color : "rgba(255,255,255,0.25)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormModul({ modul, color, memberId, firmaAdi }: { modul: Modul; color: string; memberId: string; firmaAdi: string }) {
+  const aciklama = String(modul.icerik.aciklama ?? "");
+  const gonderButon = String(modul.icerik.gonderButon ?? "Gönder");
+  const [form, setForm] = useState({ ad: "", email: "", telefon: "", mesaj: "" });
+  const [gonderiliyor, setGonderiliyor] = useState(false);
+  const [gonderildi, setGonderildi] = useState(false);
+  const [hata, setHata] = useState("");
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHata(""); setGonderiliyor(true);
+    try {
+      const r = await fetch("/api/kart/basvuru", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, modulId: modul.id, ...form }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error ?? "Gönderilemedi.");
+      setGonderildi(true);
+    } catch (err) {
+      setHata(err instanceof Error ? err.message : "Gönderilemedi.");
+    } finally { setGonderiliyor(false); }
+  };
+
+  if (gonderildi) {
+    return (
+      <div className="glass-card rounded-2xl p-6 text-center">
+        <span className="material-symbols-outlined text-tertiary text-5xl block mb-3">check_circle</span>
+        <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Başvurunuz iletildi!</p>
+        <p className="text-sm text-on-surface-variant mt-1">{firmaAdi} en kısa sürede sizinle iletişime geçecek.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <p className="text-xs uppercase tracking-wider mb-2" style={{ color }}>{modul.baslik}</p>
+      {aciklama && <p className="text-xs text-on-surface-variant mb-3">{aciklama}</p>}
+      <form onSubmit={onSubmit} className="space-y-2.5">
+        <input value={form.ad} onChange={e => setForm({ ...form, ad: e.target.value })} required placeholder="Ad Soyad"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} type="email" placeholder="E-posta"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <input value={form.telefon} onChange={e => setForm({ ...form, telefon: e.target.value })} type="tel" placeholder="Telefon"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <textarea value={form.mesaj} onChange={e => setForm({ ...form, mesaj: e.target.value })} rows={3} placeholder="Mesaj"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        {hata && <p className="text-xs text-red-400">{hata}</p>}
+        <button type="submit" disabled={gonderiliyor}
+          className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-60"
+          style={{ background: color, color: "#000" }}>
+          {gonderiliyor ? "Gönderiliyor..." : gonderButon}
+        </button>
+      </form>
     </div>
   );
 }

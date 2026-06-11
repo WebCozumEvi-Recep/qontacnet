@@ -9,7 +9,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     include: {
       firma: {
         select: {
-          ad: true, website: true, logo: true,
+          id: true, ad: true, website: true, logo: true,
           templates: { where: { aktif: true }, take: 1, select: { renk: true } },
         },
       },
@@ -19,6 +19,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!member || !member.aktif) {
     return NextResponse.json({ ok: false, error: "Kart bulunamadı." }, { status: 404 });
   }
+
+  const moduller = member.firma
+    ? await prisma.firmaModul.findMany({
+        where: { firmaId: member.firma.id, aktif: true },
+        orderBy: { sira: "asc" },
+        select: { id: true, tip: true, baslik: true, icerik: true },
+      })
+    : [];
 
   // Görüntülenme sayacı (await etmeden)
   prisma.member.update({ where: { id }, data: { goruntulemeSayisi: { increment: 1 } } }).catch(() => {});
@@ -44,5 +52,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       website: member.showWebsite ? member.website : "",
       biyografi: member.showBio ? member.biyografi : "",
     },
+    moduller,
   });
 }

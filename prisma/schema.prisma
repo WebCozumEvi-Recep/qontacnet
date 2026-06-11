@@ -57,6 +57,13 @@ enum BasvuruDurum {
   KAYIP
 }
 
+enum FirmaModulTip {
+  HAKKIMIZDA
+  GALERI
+  VIDEO
+  FORM
+}
+
 model Firma {
   id             String     @id @default(cuid())
   ad             String
@@ -80,6 +87,44 @@ model Firma {
 
   members   Member[]
   templates CardTemplate[]
+  moduller  FirmaModul[]
+  basvurular FormBasvuru[]
+}
+
+model FirmaModul {
+  id        String        @id @default(cuid())
+  firma     Firma         @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  firmaId   String
+  tip       FirmaModulTip
+  sira      Int           @default(0)
+  aktif     Boolean       @default(true)
+  baslik    String        @default("")
+  // İçerik tipe göre değişir:
+  // HAKKIMIZDA: { metin, gorsel }
+  // GALERI: { gorseller: [{url, baslik, aciklama}] }
+  // VIDEO: { videoUrl, aciklama }
+  // FORM:  { aciklama, gonderButon }
+  icerik    Json
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([firmaId, sira])
+}
+
+model FormBasvuru {
+  id        String   @id @default(cuid())
+  firma     Firma    @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  firmaId   String
+  modulId   String?
+  memberId  String?
+  ad        String
+  email     String   @default("")
+  telefon   String   @default("")
+  mesaj     String   @default("")
+  okundu    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([firmaId, createdAt])
 }
 
 model Member {
