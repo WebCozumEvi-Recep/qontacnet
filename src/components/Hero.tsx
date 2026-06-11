@@ -4,7 +4,7 @@ export default function Hero() {
       {/* Right glow */}
       <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none" />
 
-      <div className="max-w-container-max mx-auto px-10 grid lg:grid-cols-2 gap-lg items-center relative z-10 w-full py-16">
+      <div className="max-w-container-max mx-auto px-6 md:px-10 grid lg:grid-cols-2 gap-lg items-center relative z-10 w-full py-10 md:py-16">
         {/* Left */}
         <div className="space-y-md">
           {/* Badge */}
@@ -46,13 +46,13 @@ export default function Hero() {
         </div>
 
         {/* Right: Mockups */}
-        <div className="relative h-[600px] flex items-center justify-center">
+        <div className="relative h-[300px] sm:h-[400px] lg:h-[600px] flex items-center justify-center">
           {/* Background glow */}
-          <div className="absolute w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
 
           {/* NFC Card Mockup */}
           <div className="absolute z-20 transform -rotate-12 hover:rotate-0 transition-transform duration-700 cursor-pointer">
-            <div className="w-80 h-48 rounded-2xl glass-card border-white/20 p-6 flex flex-col justify-between shadow-2xl overflow-hidden group">
+            <div className="w-72 sm:w-80 h-44 sm:h-48 rounded-2xl glass-card border-white/20 p-6 flex flex-col justify-between shadow-2xl overflow-hidden group relative">
               <div className="absolute inset-0 shimmer opacity-30" />
               <div className="flex justify-between items-start relative z-10">
                 <span
@@ -61,15 +61,19 @@ export default function Hero() {
                 >
                   QONTAC
                 </span>
-                <span className="material-symbols-outlined text-primary text-3xl">nfc</span>
+                <span className="material-symbols-outlined text-primary text-3xl">contactless</span>
               </div>
-              <div className="relative z-10">
-                <p className="font-bold text-white tracking-widest text-lg">
-                  #### #### #### ####
+              {/* Çip + NFC/QR */}
+              <div className="relative z-10 flex items-center gap-3">
+                <div className="w-11 h-8 rounded-md bg-gradient-to-br from-primary/50 to-primary/10 border border-primary/30" />
+                <span className="material-symbols-outlined text-primary/90 text-2xl">nfc</span>
+                <span className="material-symbols-outlined text-primary/90 text-2xl">qr_code_2</span>
+              </div>
+              <div className="relative z-10 flex items-end justify-between">
+                <p className="text-white/80 uppercase tracking-widest text-xs font-semibold">
+                  Dijital Network Kartı
                 </p>
-                <p className="text-white/60 mt-1 uppercase tracking-widest text-xs">
-                  NETWORK REPRESENTATIVE
-                </p>
+                <span className="material-symbols-outlined text-primary/70 text-base">verified</span>
               </div>
             </div>
           </div>
