@@ -165,29 +165,29 @@ export default function BasvurularPage() {
                   const d = durumBilgi(b.durum);
                   return (
                     <tr key={b.id} className={`border-b border-white/5 last:border-0 hover:bg-white/[0.02] ${b.okundu ? "opacity-60" : ""}`}>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-on-surface">{b.ad}</span>
                           {!b.okundu && <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">YENİ</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top">
                         <div className="flex flex-col gap-0.5 text-xs text-on-surface-variant">
                           {b.email && <a href={`mailto:${b.email}`} className="hover:text-primary">{b.email}</a>}
                           {b.telefon && <a href={`tel:${b.telefon}`} className="hover:text-primary">{b.telefon}</a>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 max-w-[260px]">
+                      <td className="px-4 py-3 align-top max-w-[260px]">
                         <p className="text-xs text-on-surface-variant line-clamp-2">{b.mesaj || "—"}</p>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top">
                         <select value={b.durum} onChange={e => void patch(b.id, { durum: e.target.value })}
-                          className={`text-xs rounded-lg px-2 py-1 border-0 outline-none cursor-pointer ${d.cls}`}>
+                          className={`w-[150px] text-xs rounded-lg px-2 py-1.5 border-0 outline-none cursor-pointer ${d.cls}`}>
                           {DURUMLAR.map(o => <option key={o.key} value={o.key} className="bg-surface text-on-surface">{o.label}</option>)}
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-xs text-on-surface-variant whitespace-nowrap">{fmt(b.createdAt)}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top text-xs text-on-surface-variant whitespace-nowrap tabular-nums">{fmt(b.createdAt)}</td>
+                      <td className="px-4 py-3 align-top">
                         <div className="flex items-center justify-end gap-1">
                           {b.telefon && (
                             <a href={waLink(b.telefon)} target="_blank" rel="noopener noreferrer" title="WhatsApp'tan yaz"

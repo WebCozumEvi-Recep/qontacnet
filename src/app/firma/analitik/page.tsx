@@ -103,7 +103,7 @@ export default function AnalitikPage() {
           <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Departmana Göre</h3>
           <div className="space-y-3">
             {departmanData.map((d, i) => (
-              <div key={d.dep} className="flex items-center gap-3"><span className="text-xs text-on-surface-variant w-4">{i + 1}</span><span className="text-sm text-on-surface flex-1">{d.dep}</span><span className="text-xs text-on-surface-variant w-20 text-right">{d.views} görüntüleme</span><span className="text-xs text-tertiary w-16 text-right">{d.leads} başvuru</span></div>
+              <div key={d.dep} className="flex items-center gap-3"><span className="text-xs text-on-surface-variant w-4">{i + 1}</span><span className="text-sm text-on-surface flex-1">{d.dep}</span><span className="text-xs text-on-surface-variant w-24 text-right tabular-nums">{d.views} görüntüleme</span><span className="text-xs text-tertiary w-20 text-right tabular-nums">{d.leads} başvuru</span></div>
             ))}
             {departmanData.length === 0 && <p className="text-sm text-on-surface-variant">Veri yok.</p>}
           </div>
@@ -119,9 +119,9 @@ export default function AnalitikPage() {
               {[...members].sort((a, b) => b.goruntulemeSayisi - a.goruntulemeSayisi).map((m, i) => (
                 <tr key={m.id} className="hover:bg-white/3 transition-all">
                   <td className="py-3 pr-4"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full flex items-center justify-center border" style={{ background: `${m.kartRenk}15`, borderColor: `${m.kartRenk}30` }}><span className="material-symbols-outlined text-xs" style={{ color: m.kartRenk }}>person</span></div><div><p className="text-on-surface">{m.ad} {m.soyad}</p><p className="text-xs text-on-surface-variant">{m.unvan}</p></div></div></td>
-                  <td className="py-3 px-4 text-right text-on-surface font-medium">{m.goruntulemeSayisi}</td>
-                  <td className="py-3 px-4 text-right text-tertiary font-medium">{m.leadSayisi}</td>
-                  <td className="py-3 px-4 text-right text-on-surface-variant">{m.goruntulemeSayisi ? ((m.leadSayisi / m.goruntulemeSayisi) * 100).toFixed(1) : "0"}%</td>
+                  <td className="py-3 px-4 text-right text-on-surface font-medium tabular-nums">{m.goruntulemeSayisi}</td>
+                  <td className="py-3 px-4 text-right text-tertiary font-medium tabular-nums">{m.leadSayisi}</td>
+                  <td className="py-3 px-4 text-right text-on-surface-variant tabular-nums">{m.goruntulemeSayisi ? ((m.leadSayisi / m.goruntulemeSayisi) * 100).toFixed(1) : "0"}%</td>
                   <td className="py-3 pl-4 text-right"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${i === 0 ? "bg-yellow-400/20 text-yellow-400" : i === 1 ? "bg-slate-400/20 text-slate-400" : i === 2 ? "bg-orange-400/20 text-orange-400" : "text-on-surface-variant"}`}>#{i + 1}</span></td>
                 </tr>
               ))}
