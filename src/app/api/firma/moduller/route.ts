@@ -19,12 +19,25 @@ const VARSAYILAN_BASLIK: Record<Tip, string> = {
   FORM: "Başvuru Formu",
 };
 
-export async function GET() {
+async function templateMine(templateId: string, firmaId: string) {
+  const t = await prisma.cardTemplate.findUnique({ where: { id: templateId } });
+  return t && t.firmaId === firmaId ? t : null;
+}
+
+export async function GET(req: NextRequest) {
   const session = await requireRole("firma");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
 
+  const { searchParams } = new URL(req.url);
+  const templateId = searchParams.get("templateId") ?? "";
+  if (!templateId) return NextResponse.json({ ok: false, error: "templateId gerekli." }, { status: 400 });
+
+  if (!(await templateMine(templateId, session.sub))) {
+    return NextResponse.json({ ok: false, error: "Şablon bulunamadı." }, { status: 404 });
+  }
+
   const moduller = await prisma.firmaModul.findMany({
-    where: { firmaId: session.sub },
+    where: { templateId },
     orderBy: { sira: "asc" },
   });
   return NextResponse.json({ ok: true, moduller });
@@ -34,15 +47,17 @@ export async function POST(req: NextRequest) {
   const session = await requireRole("firma");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
 
-  const body = (await req.json()) as { tip?: string };
+  const body = (await req.json()) as { tip?: string; templateId?: string };
   const tip = body.tip as Tip;
-  if (!TIPLER.includes(tip)) {
-    return NextResponse.json({ ok: false, error: "Geçersiz modül tipi." }, { status: 400 });
+  const templateId = String(body.templateId ?? "");
+  if (!TIPLER.includes(tip)) return NextResponse.json({ ok: false, error: "Geçersiz modül tipi." }, { status: 400 });
+  if (!templateId) return NextResponse.json({ ok: false, error: "templateId gerekli." }, { status: 400 });
+  if (!(await templateMine(templateId, session.sub))) {
+    return NextResponse.json({ ok: false, error: "Şablon bulunamadı." }, { status: 404 });
   }
 
-  // En büyük sıra + 1
   const son = await prisma.firmaModul.findFirst({
-    where: { firmaId: session.sub },
+    where: { templateId },
     orderBy: { sira: "desc" },
     select: { sira: true },
   });
@@ -50,6 +65,7 @@ export async function POST(req: NextRequest) {
   const modul = await prisma.firmaModul.create({
     data: {
       firmaId: session.sub,
+      templateId,
       tip,
       sira: (son?.sira ?? 0) + 1,
       aktif: true,

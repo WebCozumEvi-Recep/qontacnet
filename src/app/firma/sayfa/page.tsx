@@ -29,17 +29,35 @@ async function uploadFile(file: File): Promise<string> {
   return j.url as string;
 }
 
+interface Template { id: string; ad: string; renk: string; aktif: boolean }
+
 export default function SayfaModulleri() {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templateId, setTemplateId] = useState<string>("");
   const [moduller, setModuller] = useState<Modul[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [showTipMenu, setShowTipMenu] = useState(false);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    (async () => {
+      const r = await fetch("/api/firma/templates");
+      const j = await r.json();
+      if (j.ok) {
+        const list: Template[] = j.templates;
+        setTemplates(list);
+        const aktif = list.find(t => t.aktif) ?? list[0];
+        if (aktif) setTemplateId(aktif.id);
+        else setLoading(false);
+      } else setLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => { if (templateId) void load(); }, [templateId]);
 
   async function load() {
     setLoading(true);
-    const r = await fetch("/api/firma/moduller");
+    const r = await fetch(`/api/firma/moduller?templateId=${templateId}`);
     const j = await r.json();
     if (j.ok) setModuller(j.moduller);
     setLoading(false);
@@ -50,7 +68,7 @@ export default function SayfaModulleri() {
     const r = await fetch("/api/firma/moduller", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tip }),
+      body: JSON.stringify({ tip, templateId }),
     });
     const j = await r.json();
     if (j.ok) setModuller(prev => [...prev, j.modul]);
@@ -90,6 +108,8 @@ export default function SayfaModulleri() {
     void sirala(yeni);
   }
 
+  const aktifTemplate = templates.find(t => t.aktif);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -98,7 +118,7 @@ export default function SayfaModulleri() {
             Sayfa Modülleri
           </h2>
           <p className="text-sm text-on-surface-variant mt-1">
-            Üye kartının altında görünecek bölümleri sıralı şekilde yönet.
+            Her şablon için ayrı modüller tanımla. Üyelerin kartvizitinde <span className="text-on-surface">aktif şablonun</span> modülleri görünür.
           </p>
         </div>
         <div className="relative">
@@ -123,7 +143,31 @@ export default function SayfaModulleri() {
         </div>
       </div>
 
-      {loading ? (
+      {templates.length === 0 ? (
+        <div className="glass-card rounded-2xl p-10 text-center">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 block mb-3">style</span>
+          <p className="text-sm text-on-surface-variant">Henüz şablonun yok. Önce <a href="/firma/template" className="text-primary underline">Şablonlar</a> bölümünden bir şablon oluştur.</p>
+        </div>
+      ) : (
+        <div className="glass-card rounded-2xl p-3 flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-on-surface-variant px-2">Şablon:</span>
+          {templates.map(t => (
+            <button key={t.id} onClick={() => setTemplateId(t.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all ${templateId === t.id ? "bg-primary-container text-on-primary-container" : "glass-card text-on-surface-variant hover:text-on-surface"}`}>
+              <span className="w-3 h-3 rounded-full" style={{ background: t.renk }} />
+              {t.ad}
+              {t.aktif && <span className="text-[10px] bg-tertiary/20 text-tertiary px-1.5 py-0.5 rounded">AKTİF</span>}
+            </button>
+          ))}
+          {aktifTemplate && templateId !== aktifTemplate.id && (
+            <span className="ml-auto text-[11px] text-amber-300 px-2">
+              Düzenlediğin şablon aktif değil — modüller kartvizitte görünmez.
+            </span>
+          )}
+        </div>
+      )}
+
+      {templates.length > 0 && (loading ? (
         <div className="text-center py-12">
           <span className="material-symbols-outlined text-primary text-3xl animate-spin">progress_activity</span>
         </div>
@@ -147,7 +191,7 @@ export default function SayfaModulleri() {
             />
           ))}
         </div>
-      )}
+      ))}
     </div>
   );
 }

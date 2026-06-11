@@ -20,9 +20,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ ok: false, error: "Kart bulunamadı." }, { status: 404 });
   }
 
-  const moduller = member.firma
-    ? await prisma.firmaModul.findMany({
+  // Aktif şablonun modülleri (şablon yoksa boş)
+  const aktifTemplate = member.firma
+    ? await prisma.cardTemplate.findFirst({
         where: { firmaId: member.firma.id, aktif: true },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      })
+    : null;
+  const moduller = aktifTemplate
+    ? await prisma.firmaModul.findMany({
+        where: { templateId: aktifTemplate.id, aktif: true },
         orderBy: { sira: "asc" },
         select: { id: true, tip: true, baslik: true, icerik: true },
       })

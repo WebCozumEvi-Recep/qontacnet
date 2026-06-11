@@ -92,23 +92,20 @@ model Firma {
 }
 
 model FirmaModul {
-  id        String        @id @default(cuid())
-  firma     Firma         @relation(fields: [firmaId], references: [id], onDelete: Cascade)
-  firmaId   String
-  tip       FirmaModulTip
-  sira      Int           @default(0)
-  aktif     Boolean       @default(true)
-  baslik    String        @default("")
-  // İçerik tipe göre değişir:
-  // HAKKIMIZDA: { metin, gorsel }
-  // GALERI: { gorseller: [{url, baslik, aciklama}] }
-  // VIDEO: { videoUrl, aciklama }
-  // FORM:  { aciklama, gonderButon }
-  icerik    Json
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id         String        @id @default(cuid())
+  firma      Firma         @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  firmaId    String
+  template   CardTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+  tip        FirmaModulTip
+  sira       Int           @default(0)
+  aktif      Boolean       @default(true)
+  baslik     String        @default("")
+  icerik     Json
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
-  @@index([firmaId, sira])
+  @@index([templateId, sira])
 }
 
 model FormBasvuru {
@@ -185,6 +182,8 @@ model CardTemplate {
   renk      String   @default("#00d4ff")
   aktif     Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  moduller  FirmaModul[]
 }
 
 model Lead {
