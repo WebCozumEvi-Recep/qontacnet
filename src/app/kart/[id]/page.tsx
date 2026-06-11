@@ -97,12 +97,17 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
     }
   };
 
-  const links = [
-    card.whatsapp && { icon: "chat", label: "WhatsApp ile Yaz", href: `https://wa.me/${card.whatsapp.replace(/\s/g, "")}`, color: "#25d366" },
-    card.linkedin && { icon: "link", label: "LinkedIn", href: `https://${card.linkedin.replace(/^https?:\/\//, "")}`, color: "#0077b5" },
-    card.instagram && { icon: "photo_camera", label: "Instagram", href: `https://instagram.com/${card.instagram.replace("@", "")}`, color: "#e1306c" },
-    card.website && { icon: "public", label: "Website", href: `https://${card.website.replace(/^https?:\/\//, "")}`, color: "#00d4ff" },
-  ].filter(Boolean) as { icon: string; label: string; href: string; color: string }[];
+  type Action = { icon: string; label: string; onClick?: () => void; href?: string; bg: string };
+  const actions: Action[] = [
+    { icon: "person_add", label: "Rehbere Kaydet", onClick: saveContact, bg: "#ffd93d" },
+    { icon: "handshake", label: "Tanışalım", onClick: () => setShowLeadForm(true), bg: "rgba(255,255,255,0.08)" },
+    card.telefon && { icon: "call", label: "Ara", href: `tel:${card.telefon}`, bg: "#00d4ff" },
+    card.email && { icon: "mail", label: "E-Posta", href: `mailto:${card.email}`, bg: "#ff9f43" },
+    card.whatsapp && { icon: "chat", label: "WhatsApp", href: `https://wa.me/${card.whatsapp.replace(/\s/g, "")}`, bg: "#25d366" },
+    card.linkedin && { icon: "link", label: "LinkedIn", href: `https://${card.linkedin.replace(/^https?:\/\//, "")}`, bg: "#0077b5" },
+    card.instagram && { icon: "photo_camera", label: "Instagram", href: `https://instagram.com/${card.instagram.replace("@", "")}`, bg: "#e1306c" },
+    card.website && { icon: "public", label: "Website", href: `https://${card.website.replace(/^https?:\/\//, "")}`, bg: "#a29bfe" },
+  ].filter(Boolean) as Action[];
 
   return (
     <div className="min-h-screen flex flex-col items-center" style={{ background: "#050816" }}>
@@ -133,53 +138,21 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <button onClick={saveContact}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: color, color: "#000" }}>
-            <span className="material-symbols-outlined text-base">contact_page</span>Kaydet
-          </button>
-          <button onClick={() => setShowLeadForm(true)}
-            className="flex items-center justify-center gap-2 py-3.5 glass-card rounded-2xl text-on-surface font-semibold text-sm hover:bg-white/5 transition-all">
-            <span className="material-symbols-outlined text-base">handshake</span>Tanış
-          </button>
+        <div className="flex items-center justify-center gap-2.5 flex-wrap mb-5">
+          {actions.map(a => {
+            const cls = "w-12 h-12 rounded-full flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform shadow-lg";
+            const style = { background: a.bg, color: a.bg === "#ffd93d" ? "#000" : "#fff" };
+            return a.href ? (
+              <a key={a.label} href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" aria-label={a.label} title={a.label} className={cls} style={style}>
+                <span className="material-symbols-outlined text-xl">{a.icon}</span>
+              </a>
+            ) : (
+              <button key={a.label} onClick={a.onClick} aria-label={a.label} title={a.label} className={cls} style={style}>
+                <span className="material-symbols-outlined text-xl">{a.icon}</span>
+              </button>
+            );
+          })}
         </div>
-
-        {card.telefon && (
-          <a href={`tel:${card.telefon}`} className="w-full flex items-center gap-3 py-4 px-5 glass-card rounded-2xl mb-3 hover:bg-white/5 transition-all group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}15` }}>
-              <span className="material-symbols-outlined text-xl" style={{ color }}>call</span>
-            </div>
-            <div><p className="text-xs text-on-surface-variant">Ara</p><p className="text-sm text-on-surface font-medium">{card.telefon}</p></div>
-            <span className="material-symbols-outlined text-on-surface-variant/40 ml-auto group-hover:text-primary transition-all">chevron_right</span>
-          </a>
-        )}
-
-        {card.email && (
-          <a href={`mailto:${card.email}`} className="w-full flex items-center gap-3 py-4 px-5 glass-card rounded-2xl mb-4 hover:bg-white/5 transition-all group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}15` }}>
-              <span className="material-symbols-outlined text-xl" style={{ color }}>mail</span>
-            </div>
-            <div><p className="text-xs text-on-surface-variant">E-Posta</p><p className="text-sm text-on-surface font-medium">{card.email}</p></div>
-            <span className="material-symbols-outlined text-on-surface-variant/40 ml-auto group-hover:text-primary transition-all">chevron_right</span>
-          </a>
-        )}
-
-        {links.length > 0 && (
-          <div className="glass-card rounded-2xl p-4 mb-4">
-            <p className="text-xs text-on-surface-variant mb-3">Sosyal & Web</p>
-            <div className="space-y-2">
-              {links.map(l => (
-                <a key={l.label} href={l.href} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-3 py-3 px-3 rounded-xl hover:bg-white/5 transition-all group">
-                  <span className="material-symbols-outlined text-base" style={{ color: l.color }}>{l.icon}</span>
-                  <span className="text-sm text-on-surface flex-1">{l.label}</span>
-                  <span className="material-symbols-outlined text-on-surface-variant/40 text-sm group-hover:text-primary transition-all">open_in_new</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
 
         {moduller.length > 0 && (
           <div className="space-y-4 mb-6">
