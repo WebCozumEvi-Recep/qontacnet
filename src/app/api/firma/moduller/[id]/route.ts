@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const data: Record<string, unknown> = {};
   if (typeof body.baslik === "string") data.baslik = body.baslik.slice(0, 200);
   if (typeof body.aktif === "boolean") data.aktif = body.aktif;
-  if (body.icerik && typeof body.icerik === "object") data.icerik = body.icerik;
+  if (body.icerik && typeof body.icerik === "object") data.icerik = body.icerik as object;
 
   const updated = await prisma.firmaModul.update({ where: { id }, data });
   return NextResponse.json({ ok: true, modul: updated });

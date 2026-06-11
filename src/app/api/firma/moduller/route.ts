@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       sira: (son?.sira ?? 0) + 1,
       aktif: true,
       baslik: VARSAYILAN_BASLIK[tip],
-      icerik: VARSAYILAN_ICERIK[tip],
+      icerik: VARSAYILAN_ICERIK[tip] as object,
     },
   });
   return NextResponse.json({ ok: true, modul });
