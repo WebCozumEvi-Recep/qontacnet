@@ -19,7 +19,7 @@ interface Card {
   avatar?: string;
 }
 
-type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM";
+type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | "SSS" | "HERO";
 interface Modul { id: string; tip: Tip; baslik: string; icerik: Record<string, unknown> }
 
 export default function KartPage({ params }: { params: Promise<{ id: string }> }) {
@@ -300,7 +300,79 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
   if (modul.tip === "FORM") {
     return <FormModul modul={modul} color={color} memberId={memberId} firmaAdi={firmaAdi} />;
   }
+  if (modul.tip === "HTML") {
+    const kod = String(modul.icerik.kod ?? "");
+    if (!kod.trim()) return null;
+    return (
+      <div className="glass-card rounded-2xl p-5">
+        {modul.baslik && <p className="text-xs uppercase tracking-wider mb-3" style={{ color }}>{modul.baslik}</p>}
+        <div className="text-sm text-on-surface" dangerouslySetInnerHTML={{ __html: kod }} />
+      </div>
+    );
+  }
+  if (modul.tip === "TEK_GORSEL") {
+    const url = String(modul.icerik.url ?? "");
+    const baslik = String(modul.icerik.baslik ?? "");
+    const link = String(modul.icerik.link ?? "");
+    if (!url) return null;
+    const inner = (
+      <>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt={baslik} className="w-full object-cover" />
+        {baslik && <p className="text-sm text-on-surface p-4">{baslik}</p>}
+      </>
+    );
+    return (
+      <div className="glass-card rounded-2xl overflow-hidden">
+        {modul.baslik && <p className="text-xs uppercase tracking-wider px-5 pt-5" style={{ color }}>{modul.baslik}</p>}
+        {link ? <a href={link} target="_blank" rel="noreferrer" className="block">{inner}</a> : inner}
+      </div>
+    );
+  }
+  if (modul.tip === "SSS") {
+    const sorular = (Array.isArray(modul.icerik.sorular) ? modul.icerik.sorular : []) as { soru: string; cevap: string }[];
+    if (sorular.length === 0) return null;
+    return <SssAkordiyon baslik={modul.baslik} color={color} sorular={sorular} />;
+  }
+  if (modul.tip === "HERO") {
+    const arkaplan = String(modul.icerik.arkaplan ?? "");
+    const html = String(modul.icerik.html ?? "");
+    const hizalama = String(modul.icerik.hizalama ?? "center");
+    return (
+      <div className="rounded-2xl overflow-hidden relative min-h-[200px] flex items-center"
+        style={{ background: arkaplan ? `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${arkaplan}) center/cover` : "rgba(255,255,255,0.05)" }}>
+        <div className="p-6 w-full text-white hero-content" style={{ textAlign: hizalama as "left" | "center" | "right" }}
+          dangerouslySetInnerHTML={{ __html: html }} />
+      </div>
+    );
+  }
   return null;
+}
+
+function SssAkordiyon({ baslik, color, sorular }: { baslik: string; color: string; sorular: { soru: string; cevap: string }[] }) {
+  const [acik, setAcik] = useState<number | null>(0);
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <p className="text-xs uppercase tracking-wider mb-3" style={{ color }}>{baslik}</p>
+      <div className="space-y-2">
+        {sorular.map((s, i) => {
+          const open = acik === i;
+          return (
+            <div key={i} className="border border-white/10 rounded-xl overflow-hidden">
+              <button onClick={() => setAcik(open ? null : i)}
+                className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-white/5">
+                <span className="text-sm font-medium text-on-surface flex-1">{s.soru}</span>
+                <span className="material-symbols-outlined text-base transition-transform" style={{ transform: open ? "rotate(180deg)" : "none", color }}>expand_more</span>
+              </button>
+              {open && s.cevap && (
+                <div className="px-3 pb-3 text-xs text-on-surface-variant whitespace-pre-line leading-relaxed">{s.cevap}</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function GaleriSlider({ baslik, color, gorseller }: { baslik: string; color: string; gorseller: { url: string; baslik?: string; aciklama?: string }[] }) {

@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM";
+type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | "SSS" | "HERO";
 type Galeri = { url: string; baslik?: string; aciklama?: string };
+type Sss = { soru: string; cevap: string };
 type Icerik = Record<string, unknown>;
 interface Modul {
   id: string;
@@ -18,6 +19,10 @@ const TIP_META: Record<Tip, { etiket: string; ikon: string; renk: string }> = {
   GALERI: { etiket: "Kampanya Galerisi", ikon: "photo_library", renk: "#ff9f43" },
   VIDEO: { etiket: "Kurumsal Video", ikon: "smart_display", renk: "#fd79a8" },
   FORM: { etiket: "Başvuru Formu", ikon: "edit_note", renk: "#42faba" },
+  HTML: { etiket: "Özel HTML", ikon: "code", renk: "#a29bfe" },
+  TEK_GORSEL: { etiket: "Tek Görsel", ikon: "image", renk: "#ffd93d" },
+  SSS: { etiket: "Sık Sorulan Sorular", ikon: "quiz", renk: "#6dd5ed" },
+  HERO: { etiket: "Tanıtım Banner (Hero)", ikon: "wallpaper", renk: "#ff6b6b" },
 };
 
 async function uploadFile(file: File): Promise<string> {
@@ -256,6 +261,18 @@ function ModulKart({ modul, ilk, son, onYukari, onAsagi, onSil, onGuncelle }: {
           {modul.tip === "FORM" && (
             <FormEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
           )}
+          {modul.tip === "HTML" && (
+            <HtmlEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
+          {modul.tip === "TEK_GORSEL" && (
+            <TekGorselEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
+          {modul.tip === "SSS" && (
+            <SssEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
+          {modul.tip === "HERO" && (
+            <HeroEditor icerik={modul.icerik} onChange={icerik => onGuncelle({ icerik })} />
+          )}
         </div>
       )}
     </div>
@@ -415,6 +432,137 @@ function FormEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik
       {fieldInput("Form açıklaması", aciklama, v => onChange({ ...icerik, aciklama: v }), { area: true })}
       {fieldInput("Buton metni", gonderButon, v => onChange({ ...icerik, gonderButon: v }))}
       <p className="text-xs text-on-surface-variant">Form: ad, e-posta, telefon ve mesaj alanlarını içerir. Gelen başvurular &quot;Başvurular&quot; bölümünde listelenir.</p>
+    </div>
+  );
+}
+
+function HtmlEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const kod = String(icerik.kod ?? "");
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-on-surface-variant">İstediğin HTML kodunu yazabilirsin. Stil için inline <code className="text-primary">style=&quot;...&quot;</code> kullan.</p>
+      <textarea value={kod} onChange={e => onChange({ ...icerik, kod: e.target.value })}
+        rows={10} spellCheck={false}
+        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-on-surface text-xs font-mono outline-none focus:border-primary"
+        placeholder='<div style="...">İçerik</div>' />
+    </div>
+  );
+}
+
+function TekGorselEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const url = String(icerik.url ?? "");
+  const baslik = String(icerik.baslik ?? "");
+  const link = String(icerik.link ?? "");
+  return (
+    <div className="space-y-3">
+      <GorselYukle url={url} onChange={u => onChange({ ...icerik, url: u })} />
+      {fieldInput("Başlık (opsiyonel)", baslik, v => onChange({ ...icerik, baslik: v }))}
+      {fieldInput("Tıklanınca gidilecek link (opsiyonel)", link, v => onChange({ ...icerik, link: v }), { ph: "https://..." })}
+    </div>
+  );
+}
+
+function SssEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const sorular = (Array.isArray(icerik.sorular) ? icerik.sorular : []) as Sss[];
+  const guncelle = (i: number, p: Partial<Sss>) => onChange({
+    ...icerik,
+    sorular: sorular.map((s, idx) => idx === i ? { ...s, ...p } : s),
+  });
+  const sil = (i: number) => onChange({ ...icerik, sorular: sorular.filter((_, idx) => idx !== i) });
+  const ekle = () => onChange({ ...icerik, sorular: [...sorular, { soru: "", cevap: "" }] });
+  const tasi = (i: number, yon: -1 | 1) => {
+    const hedef = i + yon;
+    if (hedef < 0 || hedef >= sorular.length) return;
+    const arr = [...sorular];
+    [arr[i], arr[hedef]] = [arr[hedef], arr[i]];
+    onChange({ ...icerik, sorular: arr });
+  };
+  return (
+    <div className="space-y-3">
+      {sorular.map((s, i) => (
+        <div key={i} className="glass-card rounded-xl p-3 space-y-2">
+          <input value={s.soru} onChange={e => guncelle(i, { soru: e.target.value })} placeholder="Soru"
+            className="w-full bg-surface-dim border border-white/10 rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-primary font-medium" />
+          <textarea value={s.cevap} onChange={e => guncelle(i, { cevap: e.target.value })} rows={3} placeholder="Cevap"
+            className="w-full bg-surface-dim border border-white/10 rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-primary" />
+          <div className="flex items-center gap-1">
+            <button onClick={() => tasi(i, -1)} disabled={i === 0} className="text-on-surface-variant disabled:opacity-30">
+              <span className="material-symbols-outlined text-base">expand_less</span>
+            </button>
+            <button onClick={() => tasi(i, 1)} disabled={i === sorular.length - 1} className="text-on-surface-variant disabled:opacity-30">
+              <span className="material-symbols-outlined text-base">expand_more</span>
+            </button>
+            <span className="flex-1" />
+            <button onClick={() => sil(i)} className="text-red-400 text-xs">Sil</button>
+          </div>
+        </div>
+      ))}
+      <button type="button" onClick={ekle}
+        className="px-4 py-2.5 rounded-xl glass-card text-sm text-on-surface flex items-center gap-2">
+        <span className="material-symbols-outlined text-base">add</span>
+        Soru ekle
+      </button>
+    </div>
+  );
+}
+
+function HeroEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik) => void }) {
+  const arkaplan = String(icerik.arkaplan ?? "");
+  const html = String(icerik.html ?? "");
+  const hizalama = String(icerik.hizalama ?? "center");
+  const ref = useRef<HTMLDivElement>(null);
+
+  const cmd = (komut: string, deger?: string) => {
+    ref.current?.focus();
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    document.execCommand(komut, false, deger);
+    if (ref.current) onChange({ ...icerik, html: ref.current.innerHTML });
+  };
+
+  return (
+    <div className="space-y-3">
+      <GorselYukle url={arkaplan} onChange={u => onChange({ ...icerik, arkaplan: u })} label="Arkaplan görseli" />
+      <div>
+        <label className="text-xs text-on-surface-variant mb-1 block">Metin hizalama</label>
+        <div className="flex gap-2">
+          {(["left", "center", "right"] as const).map(h => (
+            <button key={h} onClick={() => onChange({ ...icerik, hizalama: h })}
+              className={`px-3 py-1.5 rounded-lg text-xs ${hizalama === h ? "bg-primary-container text-on-primary-container" : "glass-card text-on-surface-variant"}`}>
+              {h === "left" ? "Sol" : h === "center" ? "Orta" : "Sağ"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="text-xs text-on-surface-variant mb-1 block">Metin</label>
+        <div className="flex gap-1 flex-wrap mb-2">
+          {[
+            { k: "bold", i: "format_bold" },
+            { k: "italic", i: "format_italic" },
+            { k: "underline", i: "format_underlined" },
+          ].map(b => (
+            <button key={b.k} type="button" onClick={() => cmd(b.k)} className="w-8 h-8 rounded-lg glass-card text-on-surface flex items-center justify-center hover:bg-white/10">
+              <span className="material-symbols-outlined text-base">{b.i}</span>
+            </button>
+          ))}
+          <button type="button" onClick={() => cmd("formatBlock", "<h2>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">H2</button>
+          <button type="button" onClick={() => cmd("formatBlock", "<h3>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">H3</button>
+          <button type="button" onClick={() => cmd("formatBlock", "<p>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">P</button>
+          <label className="w-8 h-8 rounded-lg glass-card flex items-center justify-center cursor-pointer">
+            <input type="color" onChange={e => cmd("foreColor", e.target.value)} className="w-0 h-0 opacity-0" />
+            <span className="material-symbols-outlined text-base">format_color_text</span>
+          </label>
+        </div>
+        <div
+          ref={ref}
+          contentEditable
+          suppressContentEditableWarning
+          onBlur={e => onChange({ ...icerik, html: (e.target as HTMLDivElement).innerHTML })}
+          className="min-h-[120px] bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+        <p className="text-[11px] text-on-surface-variant mt-1">İçerik kayıt için tıklamayı bırak (focus dışına çıkınca kaydedilir).</p>
+      </div>
     </div>
   );
 }

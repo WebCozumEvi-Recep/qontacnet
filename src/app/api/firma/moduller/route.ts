@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
-const TIPLER = ["HAKKIMIZDA", "GALERI", "VIDEO", "FORM"] as const;
+const TIPLER = ["HAKKIMIZDA", "GALERI", "VIDEO", "FORM", "HTML", "TEK_GORSEL", "SSS", "HERO"] as const;
 type Tip = typeof TIPLER[number];
 
 const VARSAYILAN_ICERIK: Record<Tip, Record<string, unknown>> = {
@@ -10,6 +10,10 @@ const VARSAYILAN_ICERIK: Record<Tip, Record<string, unknown>> = {
   GALERI: { gorseller: [] },
   VIDEO: { videoUrl: "", aciklama: "" },
   FORM: { aciklama: "Bilgilerinizi bırakın, sizinle iletişime geçelim.", gonderButon: "Gönder" },
+  HTML: { kod: "<p>Buraya HTML içeriğinizi yazın.</p>" },
+  TEK_GORSEL: { url: "", baslik: "", link: "" },
+  SSS: { sorular: [] },
+  HERO: { arkaplan: "", html: "<h2>Başlığınız</h2><p>Açıklama metni</p>", hizalama: "center" },
 };
 
 const VARSAYILAN_BASLIK: Record<Tip, string> = {
@@ -17,6 +21,10 @@ const VARSAYILAN_BASLIK: Record<Tip, string> = {
   GALERI: "Kampanyalar",
   VIDEO: "Kurumsal Video",
   FORM: "Başvuru Formu",
+  HTML: "Özel İçerik",
+  TEK_GORSEL: "Görsel",
+  SSS: "Sık Sorulan Sorular",
+  HERO: "Tanıtım",
 };
 
 async function templateMine(templateId: string, firmaId: string) {
