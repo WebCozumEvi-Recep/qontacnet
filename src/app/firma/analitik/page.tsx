@@ -21,11 +21,6 @@ export default function AnalitikPage() {
   const monthly = s?.monthly ?? [];
   const maxMonthly = Math.max(...(monthly.length ? monthly : [1]));
 
-  // Haftalık görünüm (günlük takip yok; toplam görüntülenmeden türetilmiş gösterim)
-  const weeklyBase = Math.max(1, Math.floor(totalViews / 30));
-  const weeklyViews = [0.6, 0.9, 0.75, 1.1, 0.95, 1.3, 1.0].map(f => Math.round(weeklyBase * f));
-  const maxWeekly = Math.max(...weeklyViews, 1);
-
   const kaynakToplam = s ? s.kaynakDagilim.NFC + s.kaynakDagilim.QR + s.kaynakDagilim.LINK : 0;
   const kaynak = [
     { label: "NFC Dokunma", value: s?.kaynakDagilim.NFC ?? 0, color: "#00d4ff" },
@@ -47,9 +42,9 @@ export default function AnalitikPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { icon: "visibility", label: "Toplam Görüntülenme", value: totalViews, sub: "Tüm üyeler", color: "#00d4ff" },
-          { icon: "group_add", label: "Toplam Lead", value: totalLeads, sub: "Tüm zamanlar", color: "#42faba" },
-          { icon: "nfc", label: "NFC Dokunma", value: s?.kaynakDagilim.NFC ?? 0, sub: "Lead kaynağı", color: "#6001d1" },
-          { icon: "conversion_path", label: "Dönüşüm Oranı", value: totalViews ? `${((totalLeads / totalViews) * 100).toFixed(1)}%` : "—", sub: "Lead / Görüntülenme", color: "#a8e8ff" },
+          { icon: "group_add", label: "Toplam Başvuru", value: totalLeads, sub: "Tüm zamanlar", color: "#42faba" },
+          { icon: "nfc", label: "NFC Dokunma", value: s?.kaynakDagilim.NFC ?? 0, sub: "Başvuru kaynağı", color: "#6001d1" },
+          { icon: "conversion_path", label: "Dönüşüm Oranı", value: totalViews ? `${((totalLeads / totalViews) * 100).toFixed(1)}%` : "—", sub: "Başvuru / Görüntülenme", color: "#a8e8ff" },
         ].map(st => (
           <div key={st.label} className="glass-card rounded-2xl p-5">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: `${st.color}15`, border: `1px solid ${st.color}25` }}><span className="material-symbols-outlined text-xl" style={{ color: st.color }}>{st.icon}</span></div>
@@ -61,7 +56,7 @@ export default function AnalitikPage() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="glass-card rounded-2xl p-6">
-          <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Aylık Lead Trendi</h3>
+          <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Aylık Başvuru Trendi</h3>
           <p className="text-xs text-on-surface-variant mb-5">Son 12 ay</p>
           <div className="flex items-end gap-1.5 h-40">
             {monthly.map((v, i) => (
@@ -77,23 +72,22 @@ export default function AnalitikPage() {
 
         <div className="glass-card rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Haftalık Görüntülenme</h3>
-          <p className="text-xs text-on-surface-variant mb-5">Tahmini dağılım</p>
+          <p className="text-xs text-on-surface-variant mb-5">Günlük dağılım</p>
           <div className="flex items-end gap-2 h-40">
-            {weeklyViews.map((v, i) => (
+            {days.map((d, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
-                <div className="w-full rounded-t-lg relative group" style={{ height: `${(v / maxWeekly) * 100}%`, background: i === 6 ? "#42faba" : "rgba(66,250,186,0.25)" }}>
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container px-1.5 py-0.5 rounded text-xs text-on-surface whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all z-10">{v}</div>
-                </div>
-                <span className="text-on-surface-variant text-xs">{days[i]}</span>
+                <div className="w-full rounded-t-lg" style={{ height: "2px", background: "rgba(66,250,186,0.25)" }} />
+                <span className="text-on-surface-variant text-xs">{d}</span>
               </div>
             ))}
           </div>
+          <p className="text-xs text-on-surface-variant mt-4">Günlük takip verisi henüz toplanmadı.</p>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="glass-card rounded-2xl p-6">
-          <h3 className="text-sm font-semibold text-on-surface mb-5" style={{ fontFamily: "Sora, sans-serif" }}>Lead Kaynak Dağılımı</h3>
+          <h3 className="text-sm font-semibold text-on-surface mb-5" style={{ fontFamily: "Sora, sans-serif" }}>Başvuru Kaynak Dağılımı</h3>
           <div className="space-y-4">
             {kaynak.map(k => (
               <div key={k.label}>
@@ -101,7 +95,7 @@ export default function AnalitikPage() {
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${k.pct}%`, background: k.color }} /></div>
               </div>
             ))}
-            {kaynakToplam === 0 && <p className="text-sm text-on-surface-variant">Henüz lead verisi yok.</p>}
+            {kaynakToplam === 0 && <p className="text-sm text-on-surface-variant">Henüz başvuru verisi yok.</p>}
           </div>
         </div>
 
@@ -109,7 +103,7 @@ export default function AnalitikPage() {
           <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Departmana Göre</h3>
           <div className="space-y-3">
             {departmanData.map((d, i) => (
-              <div key={d.dep} className="flex items-center gap-3"><span className="text-xs text-on-surface-variant w-4">{i + 1}</span><span className="text-sm text-on-surface flex-1">{d.dep}</span><span className="text-xs text-on-surface-variant w-20 text-right">{d.views} görüntüleme</span><span className="text-xs text-tertiary w-16 text-right">{d.leads} lead</span></div>
+              <div key={d.dep} className="flex items-center gap-3"><span className="text-xs text-on-surface-variant w-4">{i + 1}</span><span className="text-sm text-on-surface flex-1">{d.dep}</span><span className="text-xs text-on-surface-variant w-20 text-right">{d.views} görüntüleme</span><span className="text-xs text-tertiary w-16 text-right">{d.leads} başvuru</span></div>
             ))}
             {departmanData.length === 0 && <p className="text-sm text-on-surface-variant">Veri yok.</p>}
           </div>
@@ -120,7 +114,7 @@ export default function AnalitikPage() {
         <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Üye Performans Tablosu</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-white/5"><th className="text-left py-3 pr-4 text-xs text-on-surface-variant font-medium">Üye</th><th className="text-right py-3 px-4 text-xs text-on-surface-variant font-medium">Görüntülenme</th><th className="text-right py-3 px-4 text-xs text-on-surface-variant font-medium">Lead</th><th className="text-right py-3 px-4 text-xs text-on-surface-variant font-medium">Dönüşüm</th><th className="text-right py-3 pl-4 text-xs text-on-surface-variant font-medium">Sıra</th></tr></thead>
+            <thead><tr className="border-b border-white/5"><th className="text-left py-3 pr-4 text-xs text-on-surface-variant font-medium">Üye</th><th className="text-right py-3 px-4 text-xs text-on-surface-variant font-medium">Görüntülenme</th><th className="text-right py-3 px-4 text-xs text-on-surface-variant font-medium">Başvuru</th><th className="text-right py-3 px-4 text-xs text-on-surface-variant font-medium">Dönüşüm</th><th className="text-right py-3 pl-4 text-xs text-on-surface-variant font-medium">Sıra</th></tr></thead>
             <tbody className="divide-y divide-white/5">
               {[...members].sort((a, b) => b.goruntulemeSayisi - a.goruntulemeSayisi).map((m, i) => (
                 <tr key={m.id} className="hover:bg-white/3 transition-all">
