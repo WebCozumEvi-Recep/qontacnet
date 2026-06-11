@@ -24,7 +24,7 @@ export default async function Footer() {
 
   return (
     <footer id="iletisim" className="bg-surface-container-lowest w-full py-xl border-t border-white/5">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-md px-10 max-w-container-max mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-md px-6 md:px-10 max-w-container-max mx-auto">
         {/* Brand */}
         <div className="col-span-1 space-y-md">
           <div className="flex items-center gap-xs">
@@ -47,21 +47,21 @@ export default async function Footer() {
           )}
         </div>
 
-        {/* Kurumsal — admin'den yönetilen özel sayfalar */}
-        <div>
-          <h5 className="text-headline-sm text-sm mb-md text-white font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
-            Kurumsal
-          </h5>
-          <ul className="space-y-sm text-body-md text-on-surface-variant text-sm">
-            {sayfalar.length === 0 ? (
-              <li className="text-on-surface-variant/50">—</li>
-            ) : sayfalar.map((p) => (
-              <li key={p.slug}>
-                <Link href={`/sayfa/${p.slug}`} className="hover:text-primary transition-colors">{p.baslik}</Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Kurumsal — admin'den yönetilen özel sayfalar (yoksa gizle) */}
+        {sayfalar.length > 0 && (
+          <div>
+            <h5 className="text-headline-sm text-sm mb-md text-white font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
+              Kurumsal
+            </h5>
+            <ul className="space-y-sm text-body-md text-on-surface-variant text-sm">
+              {sayfalar.map((p) => (
+                <li key={p.slug}>
+                  <Link href={`/sayfa/${p.slug}`} className="hover:text-primary transition-colors">{p.baslik}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Sistem */}
         <div>
@@ -103,7 +103,7 @@ export default async function Footer() {
         </div>
       </div>
 
-      <div className="max-w-container-max mx-auto px-10 pt-lg mt-lg border-t border-white/5 text-center">
+      <div className="max-w-container-max mx-auto px-6 md:px-10 pt-lg mt-lg border-t border-white/5 text-center">
         <p className="text-label-sm text-on-surface-variant">
           © {new Date().getFullYear()} {logoText} Network. Tüm hakları saklıdır.
         </p>

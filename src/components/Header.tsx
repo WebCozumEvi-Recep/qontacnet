@@ -18,7 +18,7 @@ export default function Header({ logoUrl = "", logoText = "QONTAC" }: { logoUrl?
 
   return (
     <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
-      <nav className="flex justify-between items-center h-20 px-10 max-w-container-max mx-auto">
+      <nav className="flex justify-between items-center h-20 px-4 md:px-10 max-w-container-max mx-auto">
         {/* Logo */}
         <div className="flex items-center gap-xs">
           {logoUrl ? (
@@ -48,13 +48,13 @@ export default function Header({ logoUrl = "", logoText = "QONTAC" }: { logoUrl?
         </div>
 
         {/* CTAs */}
-        <div className="flex items-center gap-sm">
+        <div className="flex items-center gap-2 md:gap-sm">
           <Link href="/auth/login" className="hidden lg:block text-on-surface-variant font-medium hover:text-primary transition-colors text-label-md px-4 py-2">
             Giriş Yap
           </Link>
           <Link
             href="/auth/register"
-            className="bg-primary-container text-on-primary-container font-bold px-6 py-3 rounded-xl hover:scale-105 active:scale-95 transition-all text-label-md"
+            className="bg-primary-container text-on-primary-container font-bold px-3.5 py-2 md:px-6 md:py-3 rounded-xl hover:scale-105 active:scale-95 transition-all text-label-sm md:text-label-md whitespace-nowrap"
           >
             Firma Başvurusu
           </Link>
