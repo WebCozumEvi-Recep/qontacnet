@@ -2,7 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 
 interface AdminUser { id: string; ad: string; email: string; rol: string }
-interface SiteSettings { logoUrl: string; logoText: string; googleSiteVerification: string; headKod: string; bodyKod: string }
+interface SiteSettings {
+  logoUrl: string; logoText: string; googleSiteVerification: string; headKod: string; bodyKod: string;
+  iletisimEmail: string; iletisimTelefon: string; iletisimAdres: string; iletisimAciklama: string;
+  sosyalLinkedin: string; sosyalInstagram: string; sosyalX: string; sosyalFacebook: string; sosyalYoutube: string; sosyalWebsite: string;
+}
 
 export default function AdminAyarlarPage() {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
@@ -154,7 +158,11 @@ export default function AdminAyarlarPage() {
 }
 
 function SiteKimligi() {
-  const [s, setS] = useState<SiteSettings>({ logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "" });
+  const [s, setS] = useState<SiteSettings>({
+    logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "",
+    iletisimEmail: "", iletisimTelefon: "", iletisimAdres: "", iletisimAciklama: "",
+    sosyalLinkedin: "", sosyalInstagram: "", sosyalX: "", sosyalFacebook: "", sosyalYoutube: "", sosyalWebsite: "",
+  });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -170,6 +178,16 @@ function SiteKimligi() {
         googleSiteVerification: j.settings.googleSiteVerification ?? "",
         headKod: j.settings.headKod ?? "",
         bodyKod: j.settings.bodyKod ?? "",
+        iletisimEmail: j.settings.iletisimEmail ?? "",
+        iletisimTelefon: j.settings.iletisimTelefon ?? "",
+        iletisimAdres: j.settings.iletisimAdres ?? "",
+        iletisimAciklama: j.settings.iletisimAciklama ?? "",
+        sosyalLinkedin: j.settings.sosyalLinkedin ?? "",
+        sosyalInstagram: j.settings.sosyalInstagram ?? "",
+        sosyalX: j.settings.sosyalX ?? "",
+        sosyalFacebook: j.settings.sosyalFacebook ?? "",
+        sosyalYoutube: j.settings.sosyalYoutube ?? "",
+        sosyalWebsite: j.settings.sosyalWebsite ?? "",
       });
     });
   }, []);
@@ -233,6 +251,52 @@ function SiteKimligi() {
         <input value={s.logoText} onChange={e => setS(p => ({ ...p, logoText: e.target.value }))}
           placeholder="QONTAC" maxLength={60} className={`${inputCls} font-semibold`} />
         <p className="text-[11px] text-on-surface-variant mt-1">Header ve kart altındaki marka yazısı.</p>
+      </div>
+
+      {/* Footer İletişim Bilgileri */}
+      <div className="border-t border-white/10 pt-5 mb-5">
+        <p className="text-sm font-semibold text-on-surface mb-1">Footer İletişim Bilgileri</p>
+        <p className="text-[11px] text-on-surface-variant mb-4">Ana sayfa footer'ında gösterilir.</p>
+        <div className="mb-4">
+          <label className="block text-xs text-on-surface-variant mb-1.5">Footer Açıklama Metni</label>
+          <textarea value={s.iletisimAciklama} onChange={e => setS(p => ({ ...p, iletisimAciklama: e.target.value }))} rows={2}
+            maxLength={300} className={inputCls} placeholder="Marka açıklama metni" />
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">E-posta</label>
+            <input value={s.iletisimEmail} onChange={e => setS(p => ({ ...p, iletisimEmail: e.target.value }))} className={inputCls} placeholder="info@qontac.net" />
+          </div>
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">Telefon</label>
+            <input value={s.iletisimTelefon} onChange={e => setS(p => ({ ...p, iletisimTelefon: e.target.value }))} className={inputCls} placeholder="+90 (850) ..." />
+          </div>
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">Adres</label>
+            <input value={s.iletisimAdres} onChange={e => setS(p => ({ ...p, iletisimAdres: e.target.value }))} className={inputCls} placeholder="Şehir / Ülke" />
+          </div>
+        </div>
+      </div>
+
+      {/* Sosyal Medya Linkleri */}
+      <div className="border-t border-white/10 pt-5 mb-5">
+        <p className="text-sm font-semibold text-on-surface mb-1">Sosyal Medya Linkleri</p>
+        <p className="text-[11px] text-on-surface-variant mb-4">Boş bıraktığınız ikonlar footer'da gösterilmez.</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          {([
+            ["sosyalLinkedin", "LinkedIn", "https://linkedin.com/company/..."],
+            ["sosyalInstagram", "Instagram", "https://instagram.com/..."],
+            ["sosyalX", "X (Twitter)", "https://x.com/..."],
+            ["sosyalFacebook", "Facebook", "https://facebook.com/..."],
+            ["sosyalYoutube", "YouTube", "https://youtube.com/@..."],
+            ["sosyalWebsite", "Web Sitesi", "https://..."],
+          ] as const).map(([key, label, ph]) => (
+            <div key={key}>
+              <label className="block text-xs text-on-surface-variant mb-1.5">{label}</label>
+              <input value={s[key]} onChange={e => setS(p => ({ ...p, [key]: e.target.value }))} className={inputCls} placeholder={ph} />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="mb-4">

@@ -9,7 +9,12 @@ export async function GET() {
   const settings = await prisma.siteSettings.findUnique({ where: { id: "site" } });
   return NextResponse.json({
     ok: true,
-    settings: settings ?? { id: "site", logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "" },
+    settings: settings ?? {
+      id: "site", logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "",
+      iletisimEmail: "info@qontac.net", iletisimTelefon: "+90 (850) 302 40 04", iletisimAdres: "Ümraniye, İstanbul / Türkiye",
+      iletisimAciklama: "Geleceğin networking dünyasında yerinizi alın. Dijital, akıllı ve prestijli.",
+      sosyalLinkedin: "", sosyalInstagram: "", sosyalX: "", sosyalFacebook: "", sosyalYoutube: "", sosyalWebsite: "",
+    },
   });
 }
 
@@ -24,6 +29,16 @@ export async function PUT(req: NextRequest) {
     googleSiteVerification: String(body.googleSiteVerification ?? "").trim(),
     headKod: String(body.headKod ?? ""),
     bodyKod: String(body.bodyKod ?? ""),
+    iletisimEmail: String(body.iletisimEmail ?? "").trim(),
+    iletisimTelefon: String(body.iletisimTelefon ?? "").trim(),
+    iletisimAdres: String(body.iletisimAdres ?? "").trim(),
+    iletisimAciklama: String(body.iletisimAciklama ?? "").slice(0, 300),
+    sosyalLinkedin: String(body.sosyalLinkedin ?? "").trim(),
+    sosyalInstagram: String(body.sosyalInstagram ?? "").trim(),
+    sosyalX: String(body.sosyalX ?? "").trim(),
+    sosyalFacebook: String(body.sosyalFacebook ?? "").trim(),
+    sosyalYoutube: String(body.sosyalYoutube ?? "").trim(),
+    sosyalWebsite: String(body.sosyalWebsite ?? "").trim(),
   };
 
   const settings = await prisma.siteSettings.upsert({

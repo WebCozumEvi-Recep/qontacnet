@@ -36,6 +36,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/gelir", icon: "trending_up", label: "Gelir Raporu" },
   { href: "/admin/urunler", icon: "inventory_2", label: "Ürünler" },
   { href: "/admin/basvurular", icon: "mark_email_unread", label: "Başvurular" },
+  { href: "/admin/sayfalar", icon: "description", label: "Özel Sayfalar" },
   { href: "/admin/ayarlar", icon: "settings", label: "Ayarlar" },
 ];
 

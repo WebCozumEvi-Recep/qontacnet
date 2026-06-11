@@ -46,21 +46,6 @@ export default function DemoForm() {
             Ekibinizin büyüklüğünü ve ihtiyaçlarınızı paylaşın, size özel sunumumuzu
             hazırlayıp iletişime geçelim.
           </p>
-          <div className="flex items-center gap-sm">
-            <div className="flex -space-x-3">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-12 h-12 rounded-full border-2 border-surface bg-surface-container-highest flex items-center justify-center"
-                >
-                  <span className="material-symbols-outlined text-on-surface-variant text-base">person</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-on-surface-variant">
-              <span className="text-white font-bold">500+</span> Firma QONTAC kullanıyor
-            </p>
-          </div>
         </div>
 
         {/* Form */}

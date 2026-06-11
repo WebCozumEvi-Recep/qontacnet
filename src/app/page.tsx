@@ -9,7 +9,6 @@ import ForMembers from "@/components/ForMembers";
 import Features from "@/components/Features";
 import Panels from "@/components/Panels";
 import UseCases from "@/components/UseCases";
-import Pricing from "@/components/Pricing";
 import Products from "@/components/Products";
 import DemoForm from "@/components/DemoForm";
 import FAQ from "@/components/FAQ";
@@ -53,7 +52,6 @@ export default async function Home() {
         <Panels />
         <UseCases />
         <Products />
-        <Pricing />
         <DemoForm />
         <FAQ />
       </main>

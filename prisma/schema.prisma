@@ -286,7 +286,33 @@ model SiteSettings {
   googleSiteVerification String   @default("")
   headKod                String   @default("") // <head> içine eklenecek kodlar (analytics vb.)
   bodyKod                String   @default("") // <body> sonuna eklenecek kodlar (reklam vb.)
+  // Footer iletişim bilgileri
+  iletisimEmail          String   @default("info@qontac.net")
+  iletisimTelefon        String   @default("+90 (850) 302 40 04")
+  iletisimAdres          String   @default("Ümraniye, İstanbul / Türkiye")
+  iletisimAciklama       String   @default("Geleceğin networking dünyasında yerinizi alın. Dijital, akıllı ve prestijli.")
+  // Sosyal medya linkleri (boş olan footer'da gizlenir)
+  sosyalLinkedin         String   @default("")
+  sosyalInstagram        String   @default("")
+  sosyalX                String   @default("")
+  sosyalFacebook         String   @default("")
+  sosyalYoutube          String   @default("")
+  sosyalWebsite          String   @default("")
   updatedAt              DateTime @updatedAt
+}
+
+// Admin tarafından CKEditor ile yönetilen kurumsal/özel sayfalar (Hakkımızda, KVKK vb.)
+model CustomPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  baslik    String
+  icerik    String   @default("") // CKEditor HTML çıktısı
+  aktif     Boolean  @default(true)
+  sira      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([aktif, sira])
 }
 
 model Product {
