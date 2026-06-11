@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Member } from "@/lib/mock-data";
 
 export default function ProfilPage() {
-  const { user, updateUserData } = useAuth();
+  const { user, updateUserData, refresh } = useAuth();
   const member = user?.data as unknown as Member;
 
   const [form, setForm] = useState({
@@ -65,6 +65,8 @@ export default function ProfilPage() {
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Kaydedilemedi.");
       updateUserData(json.member);
+      // Email değişmiş olabilir — auth context'i ve session'ı tazele
+      await refresh();
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -189,6 +191,9 @@ export default function ProfilPage() {
           </div>
         </div>
 
+        {/* Şifre Değişikliği */}
+        <SifreDegistir />
+
         {/* Actions */}
         <div className="flex items-center gap-3">
           <button type="submit" disabled={saving}
@@ -213,6 +218,69 @@ export default function ProfilPage() {
           )}
         </div>
       </form>
+    </div>
+  );
+}
+
+function SifreDegistir() {
+  const [form, setForm] = useState({ eski: "", yeni: "", tekrar: "" });
+  const [loading, setLoading] = useState(false);
+  const [mesaj, setMesaj] = useState<{ tip: "ok" | "hata"; metin: string } | null>(null);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMesaj(null);
+    if (form.yeni !== form.tekrar) { setMesaj({ tip: "hata", metin: "Yeni şifreler eşleşmiyor." }); return; }
+    if (form.yeni.length < 6) { setMesaj({ tip: "hata", metin: "Yeni şifre en az 6 karakter olmalı." }); return; }
+    setLoading(true);
+    try {
+      const r = await fetch("/api/me/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eski: form.eski, yeni: form.yeni }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error ?? "Değiştirilemedi.");
+      setMesaj({ tip: "ok", metin: "Şifreniz güncellendi." });
+      setForm({ eski: "", yeni: "", tekrar: "" });
+    } catch (err) {
+      setMesaj({ tip: "hata", metin: err instanceof Error ? err.message : "Hata" });
+    } finally { setLoading(false); }
+  };
+
+  const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:border-primary outline-none transition-all";
+  const labelCls = "text-xs text-on-surface-variant mb-1.5 block";
+
+  return (
+    <div className="glass-card rounded-2xl p-6">
+      <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Şifre Değişikliği</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className={labelCls}>Mevcut şifre</label>
+          <input type="password" value={form.eski} onChange={e => setForm({ ...form, eski: e.target.value })} className={inputCls} placeholder="••••••" />
+        </div>
+        <div>
+          <label className={labelCls}>Yeni şifre</label>
+          <input type="password" value={form.yeni} onChange={e => setForm({ ...form, yeni: e.target.value })} className={inputCls} placeholder="En az 6 karakter" />
+        </div>
+        <div>
+          <label className={labelCls}>Yeni şifre (tekrar)</label>
+          <input type="password" value={form.tekrar} onChange={e => setForm({ ...form, tekrar: e.target.value })} className={inputCls} placeholder="••••••" />
+        </div>
+      </div>
+      <div className="flex items-center gap-3 mt-4">
+        <button type="button" onClick={onSubmit} disabled={loading || !form.eski || !form.yeni || !form.tekrar}
+          className="flex items-center gap-2 px-5 py-2.5 glass-card rounded-xl text-sm text-on-surface hover:bg-white/5 disabled:opacity-50">
+          <span className="material-symbols-outlined text-base">{loading ? "progress_activity" : "key"}</span>
+          {loading ? "Güncelleniyor..." : "Şifreyi Değiştir"}
+        </button>
+        {mesaj && (
+          <span className={`flex items-center gap-1.5 text-sm ${mesaj.tip === "ok" ? "text-tertiary" : "text-red-400"}`}>
+            <span className="material-symbols-outlined text-base">{mesaj.tip === "ok" ? "check_circle" : "error"}</span>
+            {mesaj.metin}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

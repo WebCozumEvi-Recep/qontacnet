@@ -1,6 +1,7 @@
 "use client";
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 
 interface Card {
   id: string;
@@ -27,6 +28,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
   const [card, setCard] = useState<Card | null>(null);
   const [moduller, setModuller] = useState<Modul[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showQr, setShowQr] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
   const [leadLoading, setLeadLoading] = useState(false);
@@ -107,6 +109,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
     card.linkedin && { icon: "link", label: "LinkedIn", href: `https://${card.linkedin.replace(/^https?:\/\//, "")}`, bg: "#0077b5" },
     card.instagram && { icon: "photo_camera", label: "Instagram", href: `https://instagram.com/${card.instagram.replace("@", "")}`, bg: "#e1306c" },
     card.website && { icon: "public", label: "Website", href: `https://${card.website.replace(/^https?:\/\//, "")}`, bg: "#a29bfe" },
+    { icon: "qr_code_2", label: "QR Kod", onClick: () => setShowQr(true), bg: "#1a1a2e" },
   ].filter(Boolean) as Action[];
 
   return (
@@ -167,6 +170,25 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           </Link>
         </div>
       </div>
+
+      {showQr && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-6" onClick={() => setShowQr(false)}>
+          <div className="rounded-3xl p-6 max-w-sm w-full text-center" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Kartı paylaş</p>
+              <button onClick={() => setShowQr(false)} className="text-on-surface-variant hover:text-on-surface">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="bg-white p-4 rounded-2xl inline-block">
+              <QRCodeSVG value={typeof window !== "undefined" ? window.location.href : ""} size={220} fgColor="#050816" bgColor="#ffffff" level="M" />
+            </div>
+            <p className="text-sm font-bold text-on-surface mt-4">{card.ad} {card.soyad}</p>
+            <p className="text-xs text-on-surface-variant">{card.unvan} · {card.firmaAdi}</p>
+            <p className="text-[11px] text-on-surface-variant/70 mt-3">Bu QR kodu telefonunuzla okutarak kartı arkadaşlarınızla paylaşabilirsiniz.</p>
+          </div>
+        </div>
+      )}
 
       {showLeadForm && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center p-0" onClick={() => setShowLeadForm(false)}>

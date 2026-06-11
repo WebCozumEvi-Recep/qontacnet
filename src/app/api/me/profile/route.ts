@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { createSession } from "@/lib/session";
 
 const FIELDS = ["ad", "soyad", "unvan", "departman", "telefon", "whatsapp", "linkedin", "instagram", "website", "biyografi"] as const;
 
@@ -33,6 +34,10 @@ export async function PUT(req: NextRequest) {
       where: { id: session.sub },
       data,
     });
+    // Email değiştiyse session cookie'yi yeni email ile yeniden bas
+    if (data.email && data.email !== session.email) {
+      await createSession({ sub: session.sub, role: session.role, email: data.email });
+    }
     const { passwordHash, ...safe } = updated;
     void passwordHash;
     return NextResponse.json({ ok: true, member: safe });

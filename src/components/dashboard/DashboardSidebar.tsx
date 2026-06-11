@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
 interface NavItem {
@@ -50,28 +49,15 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const [displayName, setDisplayName] = useState<string>("");
   const nav = role === "uye" ? uyeNav : role === "firma" ? firmaNav : adminNav;
   const roleLabel = role === "uye" ? "Üye" : role === "firma" ? "Firma" : "Platform";
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const res = await fetch("/api/auth/me");
-        const json = await res.json();
-        if (json.user?.data?.["ad"] && json.user?.data?.["soyad"]) {
-          setDisplayName(`${json.user.data["ad"]} ${json.user.data["soyad"]}`);
-        } else if (json.user?.data?.["ad"]) {
-          setDisplayName(String(json.user.data["ad"]));
-        } else if (user?.email) {
-          setDisplayName(user.email.split("@")[0]);
-        }
-      } catch {
-        if (user?.email) setDisplayName(user.email.split("@")[0]);
-      }
-    };
-    fetchUserData();
-  }, []);
+  const ad = String(user?.data?.["ad"] ?? "");
+  const soyad = String(user?.data?.["soyad"] ?? "");
+  const displayName = (ad + (soyad ? " " + soyad : "")).trim() || (user?.email?.split("@")[0] ?? "");
+  const displayEmail = String(user?.data?.["email"] ?? user?.email ?? "");
+  const avatar = String(user?.data?.["avatar"] ?? "");
+  const logo = String(user?.data?.["logo"] ?? "");
 
   const handleLogout = async () => {
     await logout();
@@ -125,12 +111,17 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
         {/* User + Logout */}
         <div className="p-4 border-t border-white/5">
           <div className="flex items-center gap-3 px-4 py-3 glass-card rounded-xl mb-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-primary text-sm">person</span>
+            <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center flex-shrink-0">
+              {(avatar || logo) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatar || logo} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="material-symbols-outlined text-primary text-sm">person</span>
+              )}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-on-surface truncate">{displayName}</p>
-              <p className="text-xs text-on-surface-variant truncate">{user?.email}</p>
+              <p className="text-xs text-on-surface-variant truncate">{displayEmail}</p>
             </div>
           </div>
           <button
