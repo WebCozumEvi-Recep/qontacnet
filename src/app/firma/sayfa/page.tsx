@@ -43,6 +43,8 @@ export default function SayfaModulleri() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [showTipMenu, setShowTipMenu] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -110,6 +112,15 @@ export default function SayfaModulleri() {
     if (idx < 0 || hedef < 0 || hedef >= moduller.length) return;
     const yeni = [...moduller];
     [yeni[idx], yeni[hedef]] = [yeni[hedef], yeni[idx]];
+    void sirala(yeni);
+  }
+
+  function dropAt(target: number) {
+    if (dragIdx === null || dragIdx === target) { setDragIdx(null); setOverIdx(null); return; }
+    const yeni = [...moduller];
+    const [tasinan] = yeni.splice(dragIdx, 1);
+    yeni.splice(target, 0, tasinan);
+    setDragIdx(null); setOverIdx(null);
     void sirala(yeni);
   }
 
@@ -184,16 +195,26 @@ export default function SayfaModulleri() {
       ) : (
         <div className="space-y-4">
           {moduller.map((m, idx) => (
-            <ModulKart
+            <div
               key={m.id}
-              modul={m}
-              ilk={idx === 0}
-              son={idx === moduller.length - 1}
-              onYukari={() => tasi(m.id, -1)}
-              onAsagi={() => tasi(m.id, 1)}
-              onSil={() => sil(m.id)}
-              onGuncelle={(p) => guncelle(m.id, p)}
-            />
+              draggable
+              onDragStart={() => setDragIdx(idx)}
+              onDragOver={(e) => { e.preventDefault(); setOverIdx(idx); }}
+              onDragLeave={() => setOverIdx(prev => prev === idx ? null : prev)}
+              onDrop={(e) => { e.preventDefault(); dropAt(idx); }}
+              onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
+              className={`transition-all ${dragIdx === idx ? "opacity-40" : ""} ${overIdx === idx && dragIdx !== idx ? "ring-2 ring-primary rounded-2xl" : ""}`}
+            >
+              <ModulKart
+                modul={m}
+                ilk={idx === 0}
+                son={idx === moduller.length - 1}
+                onYukari={() => tasi(m.id, -1)}
+                onAsagi={() => tasi(m.id, 1)}
+                onSil={() => sil(m.id)}
+                onGuncelle={(p) => guncelle(m.id, p)}
+              />
+            </div>
           ))}
         </div>
       ))}
@@ -216,6 +237,7 @@ function ModulKart({ modul, ilk, son, onYukari, onAsagi, onSil, onGuncelle }: {
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
       <div className="p-4 flex items-center gap-3 flex-wrap">
+        <span className="material-symbols-outlined text-on-surface-variant/40 cursor-grab active:cursor-grabbing select-none" title="Sürükle">drag_indicator</span>
         <div className="flex flex-col gap-1">
           <button onClick={onYukari} disabled={ilk} className="text-on-surface-variant disabled:opacity-30 hover:text-primary">
             <span className="material-symbols-outlined text-lg">expand_less</span>
@@ -346,6 +368,16 @@ function GaleriEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icer
   const gorseller = (Array.isArray(icerik.gorseller) ? icerik.gorseller : []) as Galeri[];
   const ref = useRef<HTMLInputElement>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
+  const dropAt = (target: number) => {
+    if (dragIdx === null || dragIdx === target) { setDragIdx(null); setOverIdx(null); return; }
+    const arr = [...gorseller];
+    const [t] = arr.splice(dragIdx, 1);
+    arr.splice(target, 0, t);
+    setDragIdx(null); setOverIdx(null);
+    onChange({ ...icerik, gorseller: arr });
+  };
 
   const ekle = async (files: FileList | null) => {
     if (!files) return;
@@ -384,8 +416,16 @@ function GaleriEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icer
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {gorseller.map((g, i) => (
-          <div key={i} className="glass-card rounded-xl p-3 space-y-2">
-            <div className="flex items-start gap-3">
+          <div key={i}
+            draggable
+            onDragStart={() => setDragIdx(i)}
+            onDragOver={(e) => { e.preventDefault(); setOverIdx(i); }}
+            onDragLeave={() => setOverIdx(prev => prev === i ? null : prev)}
+            onDrop={(e) => { e.preventDefault(); dropAt(i); }}
+            onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
+            className={`glass-card rounded-xl p-3 space-y-2 transition-all ${dragIdx === i ? "opacity-40" : ""} ${overIdx === i && dragIdx !== i ? "ring-2 ring-primary" : ""}`}>
+            <div className="flex items-start gap-2">
+              <span className="material-symbols-outlined text-on-surface-variant/40 cursor-grab active:cursor-grabbing select-none mt-2" title="Sürükle">drag_indicator</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={g.url} alt="" className="w-20 h-20 rounded-lg object-cover" />
               <div className="flex-1 space-y-2">

@@ -244,7 +244,6 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
           <img src={gorsel} alt={modul.baslik} className="w-full h-40 object-cover" />
         )}
         <div className="p-5">
-          <p className="text-xs uppercase tracking-wider mb-2" style={{ color }}>{modul.baslik}</p>
           <p className="text-sm text-on-surface-variant whitespace-pre-line leading-relaxed">{metin}</p>
         </div>
       </div>
@@ -262,7 +261,6 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
     if (!embed) return null;
     return (
       <div className="glass-card rounded-2xl overflow-hidden">
-        <p className="text-xs uppercase tracking-wider mb-2 px-5 pt-5" style={{ color }}>{modul.baslik}</p>
         <div className="aspect-video">
           <iframe src={embed} className="w-full h-full" allowFullScreen title={modul.baslik} />
         </div>
@@ -278,7 +276,6 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
     if (!kod.trim()) return null;
     return (
       <div className="glass-card rounded-2xl p-5">
-        {modul.baslik && <p className="text-xs uppercase tracking-wider mb-3" style={{ color }}>{modul.baslik}</p>}
         <div className="text-sm text-on-surface" dangerouslySetInnerHTML={{ __html: kod }} />
       </div>
     );
@@ -297,7 +294,6 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
     );
     return (
       <div className="glass-card rounded-2xl overflow-hidden">
-        {modul.baslik && <p className="text-xs uppercase tracking-wider px-5 pt-5" style={{ color }}>{modul.baslik}</p>}
         {link ? <a href={link} target="_blank" rel="noreferrer" className="block">{inner}</a> : inner}
       </div>
     );
@@ -322,11 +318,10 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
   return null;
 }
 
-function SssAkordiyon({ baslik, color, sorular }: { baslik: string; color: string; sorular: { soru: string; cevap: string }[] }) {
+function SssAkordiyon({ color, sorular }: { baslik?: string; color: string; sorular: { soru: string; cevap: string }[] }) {
   const [acik, setAcik] = useState<number | null>(0);
   return (
     <div className="glass-card rounded-2xl p-5">
-      <p className="text-xs uppercase tracking-wider mb-3" style={{ color }}>{baslik}</p>
       <div className="space-y-2">
         {sorular.map((s, i) => {
           const open = acik === i;
@@ -348,7 +343,7 @@ function SssAkordiyon({ baslik, color, sorular }: { baslik: string; color: strin
   );
 }
 
-function GaleriSlider({ baslik, color, gorseller }: { baslik: string; color: string; gorseller: { url: string; baslik?: string; aciklama?: string }[] }) {
+function GaleriSlider({ color, gorseller }: { baslik?: string; color: string; gorseller: { url: string; baslik?: string; aciklama?: string }[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
 
@@ -366,7 +361,6 @@ function GaleriSlider({ baslik, color, gorseller }: { baslik: string; color: str
 
   return (
     <div className="glass-card rounded-2xl p-5">
-      <p className="text-xs uppercase tracking-wider mb-3" style={{ color }}>{baslik}</p>
       <div className="relative -mx-2">
         <div
           ref={ref}
@@ -465,7 +459,6 @@ function FormModul({ modul, color, memberId, firmaAdi }: { modul: Modul; color: 
 
   return (
     <div className="glass-card rounded-2xl p-5">
-      <p className="text-xs uppercase tracking-wider mb-2" style={{ color }}>{modul.baslik}</p>
       {aciklama && <p className="text-xs text-on-surface-variant mb-3">{aciklama}</p>}
       <form onSubmit={onSubmit} className="space-y-2.5">
         <input value={form.ad} onChange={e => setForm({ ...form, ad: e.target.value })} required placeholder="Ad Soyad"
