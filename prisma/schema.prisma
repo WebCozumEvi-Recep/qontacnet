@@ -123,6 +123,8 @@ model FormBasvuru {
   telefon   String   @default("")
   mesaj     String   @default("")
   okundu    Boolean  @default(false)
+  durum     String   @default("yeni")
+  notlar    Json     @default("[]")
   createdAt DateTime @default(now())
 
   @@index([firmaId, createdAt])
