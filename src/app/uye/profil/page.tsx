@@ -10,6 +10,7 @@ export default function ProfilPage() {
   const [form, setForm] = useState({
     ad: member?.ad ?? "",
     soyad: member?.soyad ?? "",
+    email: member?.email ?? "",
     unvan: member?.unvan ?? "",
     departman: member?.departman ?? "",
     telefon: member?.telefon ?? "",
@@ -143,6 +144,10 @@ export default function ProfilPage() {
             <div>
               <label className={labelClass}>Takım</label>
               <input value={form.departman} onChange={e => set("departman", e.target.value)} className={inputClass} placeholder="Satış" />
+            </div>
+            <div className="col-span-2">
+              <label className={labelClass}>E-Posta</label>
+              <input type="email" value={form.email} onChange={e => set("email", e.target.value)} className={inputClass} placeholder="email@example.com" />
             </div>
             <div className="col-span-2">
               <label className={labelClass}>Telefon</label>
