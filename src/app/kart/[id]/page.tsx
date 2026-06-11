@@ -182,8 +182,24 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <div className="bg-white p-4 rounded-2xl inline-block">
-              <QRCodeSVG value={typeof window !== "undefined" ? window.location.href : ""} size={220} fgColor="#050816" bgColor="#ffffff" level="M" />
+            <div className="flex justify-center">
+              <div className="relative inline-flex items-center justify-center p-4 rounded-2xl border border-white/10" style={{ background: "#0f1321" }}>
+                <QRCodeSVG
+                  value={typeof window !== "undefined" ? window.location.href : ""}
+                  size={220}
+                  bgColor="#0f1321"
+                  fgColor={color}
+                  level="H"
+                  style={{ borderRadius: 8 }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div style={{ background: "rgba(15,19,33,0.82)", borderRadius: 8, padding: "4px 12px", backdropFilter: "blur(2px)" }}>
+                    <span style={{ fontFamily: "'Dancing Script', 'Pacifico', cursive", fontSize: 17, color, letterSpacing: 0.5, whiteSpace: "nowrap", textShadow: `0 0 8px ${color}99` }}>
+                      {card.ad} {card.soyad}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
             <p className="text-sm font-bold text-on-surface mt-4">{card.ad} {card.soyad}</p>
             <p className="text-xs text-on-surface-variant">{card.unvan} · {card.firmaAdi}</p>
