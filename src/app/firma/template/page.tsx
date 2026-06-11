@@ -206,19 +206,6 @@ export default function TemplatePage() {
             </div>
           )}
 
-          {/* Hazır paletler */}
-          <div className="glass-card rounded-2xl p-5">
-            <p className="text-xs font-semibold text-on-surface-variant mb-3 uppercase tracking-wider">Hazır Renk Paletleri</p>
-            <div className="grid grid-cols-4 gap-2">
-              {PRESET_COLORS.map(p => (
-                <button key={p.color} onClick={() => { setFormAd(p.name); setFormRenk(p.color); setModal("new"); }}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 transition-all group">
-                  <div className="w-8 h-8 rounded-full group-hover:scale-110 transition-all" style={{ background: p.color }} />
-                  <p className="text-xs text-on-surface-variant" style={{ fontSize: 10 }}>{p.name}</p>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Sağ: Canlı önizleme */}
