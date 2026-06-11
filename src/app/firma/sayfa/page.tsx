@@ -147,7 +147,7 @@ export default function SayfaModulleri() {
             Modül Ekle
           </button>
           {showTipMenu && (
-            <div className="absolute right-0 mt-2 z-20 w-60 glass-card rounded-xl p-2 space-y-1" style={{ background: "#1a1f2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <div className="right-0 mt-2 w-60 rounded-xl p-2 space-y-1 shadow-2xl" style={{ position: "absolute", zIndex: 50, background: "#1a1f2e", border: "1px solid rgba(255,255,255,0.12)" }}>
               {(Object.keys(TIP_META) as Tip[]).map(t => (
                 <button key={t} onClick={() => ekle(t)} className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/5 text-left">
                   <span className="material-symbols-outlined text-base" style={{ color: TIP_META[t].renk }}>{TIP_META[t].ikon}</span>
