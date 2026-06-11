@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { temaLimiti } from "@/lib/labels";
 
 export async function GET() {
   const session = await requireRole("firma");
@@ -17,6 +18,14 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
   const { ad, renk } = (await req.json()) as { ad?: string; renk?: string };
   if (!ad) return NextResponse.json({ ok: false, error: "Şablon adı gerekli." }, { status: 400 });
+
+  // Pakete göre tema limiti
+  const firma = await prisma.firma.findUnique({ where: { id: session.sub }, select: { paket: true } });
+  const limit = temaLimiti[firma?.paket ?? "BASLANGIC"] ?? 1;
+  const mevcut = await prisma.cardTemplate.count({ where: { firmaId: session.sub } });
+  if (mevcut >= limit) {
+    return NextResponse.json({ ok: false, error: `Paketiniz en fazla ${limit} temaya izin veriyor. Daha fazlası için paketinizi yükseltin.` }, { status: 403 });
+  }
 
   // Yeni oluşturulunca diğerlerini pasife al
   await prisma.cardTemplate.updateMany({ where: { firmaId: session.sub }, data: { aktif: false } });

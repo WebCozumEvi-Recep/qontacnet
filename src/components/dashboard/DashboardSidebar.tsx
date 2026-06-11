@@ -22,7 +22,6 @@ const firmaNav: NavItem[] = [
   { href: "/firma", icon: "dashboard", label: "Panel" },
   { href: "/firma/uyeler", icon: "group", label: "Üyeler" },
   { href: "/firma/template", icon: "style", label: "Şablonlar" },
-  { href: "/firma/sayfa", icon: "view_carousel", label: "Sayfa Modülleri" },
   { href: "/firma/basvurular", icon: "inbox", label: "Başvurular" },
   { href: "/firma/analitik", icon: "bar_chart", label: "Analitik" },
   { href: "/firma/ayarlar", icon: "settings", label: "Ayarlar" },

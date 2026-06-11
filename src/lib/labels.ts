@@ -6,6 +6,13 @@ export const paketLabel: Record<string, string> = {
   KURUMSAL: "Kurumsal",
 };
 
+// Pakete göre oluşturulabilecek maksimum kart teması sayısı
+export const temaLimiti: Record<string, number> = {
+  BASLANGIC: 1,
+  PROFESYONEL: 5,
+  KURUMSAL: Infinity,
+};
+
 export const firmaDurumMap: Record<string, { label: string; color: string }> = {
   AKTIF: { label: "Aktif", color: "#42faba" },
   DENEME: { label: "Deneme", color: "#a8e8ff" },
