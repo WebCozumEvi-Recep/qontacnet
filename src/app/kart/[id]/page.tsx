@@ -29,6 +29,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
   const [moduller, setModuller] = useState<Modul[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQr, setShowQr] = useState(false);
+  const [siteText, setSiteText] = useState("QONTAC");
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
   const [leadLoading, setLeadLoading] = useState(false);
@@ -44,6 +45,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
       })
       .catch(() => setCard(null))
       .finally(() => setLoading(false));
+    fetch("/api/site-info").then(r => r.json()).then(j => { if (j.ok) setSiteText(j.logoText || "QONTAC"); }).catch(() => {});
   }, [id]);
 
   if (loading) {
@@ -165,7 +167,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
 
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2 text-xs text-on-surface-variant/50 hover:text-on-surface-variant transition-all">
-            <span className="font-bold tracking-widest" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC</span>
+            <span className="font-bold tracking-widest" style={{ fontFamily: "Sora, sans-serif" }}>{siteText}</span>
             <span>·</span><span>Dijital Kartvizit Oluştur</span>
           </Link>
         </div>

@@ -14,7 +14,7 @@ const navLinks = [
   { label: "İletişim", href: "#iletisim" },
 ];
 
-export default function Header({ logoUrl = "" }: { logoUrl?: string }) {
+export default function Header({ logoUrl = "", logoText = "QONTAC" }: { logoUrl?: string; logoText?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,10 +23,10 @@ export default function Header({ logoUrl = "" }: { logoUrl?: string }) {
         {/* Logo */}
         <div className="flex items-center gap-xs">
           {logoUrl ? (
-            <img src={logoUrl} alt="QONTAC" className="h-10 w-auto object-contain" />
+            <img src={logoUrl} alt={logoText} className="h-10 w-auto object-contain" />
           ) : (
             <span className="text-headline-md font-bold text-primary tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>
-              QONTAC
+              {logoText}
             </span>
           )}
         </div>

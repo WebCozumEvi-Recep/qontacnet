@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -52,6 +53,12 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
   const nav = role === "uye" ? uyeNav : role === "firma" ? firmaNav : adminNav;
   const roleLabel = role === "uye" ? "Üye" : role === "firma" ? "Firma" : "Platform";
 
+  const [siteText, setSiteText] = useState("QONTAC");
+  const [siteLogo, setSiteLogo] = useState("");
+  useEffect(() => {
+    fetch("/api/site-info").then(r => r.json()).then(j => { if (j.ok) { setSiteText(j.logoText || "QONTAC"); setSiteLogo(j.logoUrl || ""); } }).catch(() => {});
+  }, []);
+
   const ad = String(user?.data?.["ad"] ?? "");
   const soyad = String(user?.data?.["soyad"] ?? "");
   const displayName = (ad + (soyad ? " " + soyad : "")).trim() || (user?.email?.split("@")[0] ?? "");
@@ -82,7 +89,12 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
         {/* Logo */}
         <div className="p-6 border-b border-white/5">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-primary" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC</span>
+            {siteLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={siteLogo} alt={siteText} className="h-7 w-auto object-contain" />
+            ) : (
+              <span className="text-xl font-bold text-primary" style={{ fontFamily: "Sora, sans-serif" }}>{siteText}</span>
+            )}
             <span className="text-xs text-on-surface-variant bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
               {roleLabel}
             </span>

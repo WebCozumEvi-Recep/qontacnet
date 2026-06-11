@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface AdminUser { id: string; ad: string; email: string; rol: string }
-interface SiteSettings { logoUrl: string; googleSiteVerification: string; headKod: string; bodyKod: string }
+interface SiteSettings { logoUrl: string; logoText: string; googleSiteVerification: string; headKod: string; bodyKod: string }
 
 export default function AdminAyarlarPage() {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
@@ -154,7 +154,7 @@ export default function AdminAyarlarPage() {
 }
 
 function SiteKimligi() {
-  const [s, setS] = useState<SiteSettings>({ logoUrl: "", googleSiteVerification: "", headKod: "", bodyKod: "" });
+  const [s, setS] = useState<SiteSettings>({ logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -166,6 +166,7 @@ function SiteKimligi() {
     fetch("/api/admin/site-ayarlar").then(r => r.json()).then(j => {
       if (j.ok && j.settings) setS({
         logoUrl: j.settings.logoUrl ?? "",
+        logoText: j.settings.logoText ?? "QONTAC",
         googleSiteVerification: j.settings.googleSiteVerification ?? "",
         headKod: j.settings.headKod ?? "",
         bodyKod: j.settings.bodyKod ?? "",
@@ -209,7 +210,7 @@ function SiteKimligi() {
       {/* Logo */}
       <div className="mb-5">
         <label className="block text-xs text-on-surface-variant mb-1.5">Site Logosu</label>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           {s.logoUrl ? (
             <img src={s.logoUrl} alt="logo" className="h-12 max-w-[180px] object-contain rounded-lg border border-white/10 bg-white/5 px-2" />
           ) : (
@@ -225,6 +226,13 @@ function SiteKimligi() {
               className="px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-400/10 transition-all">Kaldır</button>
           )}
         </div>
+      </div>
+
+      <div className="mb-5">
+        <label className="block text-xs text-on-surface-variant mb-1.5">Logo Yazısı (logo görsel yokken gösterilir)</label>
+        <input value={s.logoText} onChange={e => setS(p => ({ ...p, logoText: e.target.value }))}
+          placeholder="QONTAC" maxLength={60} className={`${inputCls} font-semibold`} />
+        <p className="text-[11px] text-on-surface-variant mt-1">Header ve kart altındaki marka yazısı.</p>
       </div>
 
       <div className="mb-4">

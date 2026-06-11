@@ -280,6 +280,7 @@ model Order {
 model SiteSettings {
   id                     String   @id @default("site")
   logoUrl                String   @default("")
+  logoText               String   @default("QONTAC")
   googleSiteVerification String   @default("")
   headKod                String   @default("") // <head> içine eklenecek kodlar (analytics vb.)
   bodyKod                String   @default("") // <body> sonuna eklenecek kodlar (reklam vb.)

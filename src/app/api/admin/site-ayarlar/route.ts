@@ -9,7 +9,7 @@ export async function GET() {
   const settings = await prisma.siteSettings.findUnique({ where: { id: "site" } });
   return NextResponse.json({
     ok: true,
-    settings: settings ?? { id: "site", logoUrl: "", googleSiteVerification: "", headKod: "", bodyKod: "" },
+    settings: settings ?? { id: "site", logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "" },
   });
 }
 
@@ -20,6 +20,7 @@ export async function PUT(req: NextRequest) {
   const body = (await req.json()) as Record<string, unknown>;
   const data = {
     logoUrl: String(body.logoUrl ?? ""),
+    logoText: String(body.logoText ?? "QONTAC").slice(0, 60),
     googleSiteVerification: String(body.googleSiteVerification ?? "").trim(),
     headKod: String(body.headKod ?? ""),
     bodyKod: String(body.bodyKod ?? ""),

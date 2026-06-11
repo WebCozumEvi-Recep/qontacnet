@@ -41,7 +41,7 @@ export default async function Home() {
   return (
     <>
       {s?.headKod ? <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: s.headKod }} /> : null}
-      <Header logoUrl={s?.logoUrl || ""} />
+      <Header logoUrl={s?.logoUrl || ""} logoText={s?.logoText || "QONTAC"} />
       <main className="pt-20">
         <Hero />
         <ProblemSolution />
