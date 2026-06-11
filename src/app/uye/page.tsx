@@ -6,6 +6,10 @@ import Link from "next/link";
 
 interface Member { ad?: string; soyad?: string; unvan?: string; firmaAdi?: string; goruntulemeSayisi?: number; leadSayisi?: number; kartAktif?: boolean }
 interface Lead { id: string; ad: string; sirket: string; kaynak: string }
+interface Stats {
+  stats: { goruntulenme: number; baglanti: number; nfc: number; qr: number; link: number; buAy: number; kartAktif: boolean };
+  haftalik: { gun: string; sayi: number }[];
+}
 
 function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub: string; color: string }) {
   return (
@@ -26,23 +30,22 @@ export default function UyeDashboard() {
   const { user } = useAuth();
   const member = user?.data as unknown as Member;
   const [myLeads, setMyLeads] = useState<Lead[]>([]);
+  const [d, setD] = useState<Stats | null>(null);
 
   useEffect(() => {
     fetch("/api/me/leads").then(r => r.json()).then(j => { if (j.ok) setMyLeads(j.leads); }).catch(() => {});
+    fetch("/api/me/stats").then(r => r.json()).then(j => { if (j.ok) setD(j); }).catch(() => {});
   }, []);
 
-  // Haftalık görünüm (günlük takip yok; toplam görüntülenmeden türetilmiş gösterim)
-  const base = Math.max(1, Math.floor((member?.goruntulemeSayisi ?? 0) / 30));
-  const weeklyViews = [0.6, 0.9, 0.75, 1.1, 0.95, 1.3, 1.0].map(f => Math.round(base * f));
-  const maxView = Math.max(...weeklyViews, 1);
-
-  const days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  const haftalik = d?.haftalik ?? [];
+  const maxView = Math.max(...haftalik.map(h => h.sayi), 1);
+  const kartAktif = d?.stats.kartAktif ?? member?.kartAktif ?? false;
 
   return (
     <div className="space-y-6 max-w-[1100px]">
 
       {/* Kart aktivasyon banner — kart henüz aktive edilmemişse */}
-      {member?.kartAktif === false && (
+      {!kartAktif && (
         <div className="glass-card rounded-2xl p-5 border border-amber-400/20 bg-amber-400/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center flex-shrink-0">
@@ -90,32 +93,39 @@ export default function UyeDashboard() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — gerçek veriler */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="visibility" label="Toplam Görüntülenme" value={member?.goruntulemeSayisi ?? 0} sub="+12% bu hafta" color="#00d4ff" />
-        <StatCard icon="group_add" label="Bağlantılar" value={member?.leadSayisi ?? 0} sub="+5 bu ay" color="#42faba" />
-        <StatCard icon="nfc" label="NFC Dokunma" value={Math.floor((member?.goruntulemeSayisi ?? 0) * 0.6)} sub="Son 30 gün" color="#6001d1" />
-        <StatCard icon="qr_code_2" label="QR Tarama" value={Math.floor((member?.goruntulemeSayisi ?? 0) * 0.4)} sub="Son 30 gün" color="#a8e8ff" />
+        <StatCard icon="visibility" label="Toplam Görüntülenme" value={d?.stats.goruntulenme ?? member?.goruntulemeSayisi ?? 0} sub="Kart sayfası açılışı" color="#00d4ff" />
+        <StatCard icon="group_add" label="Bağlantılar" value={d?.stats.baglanti ?? member?.leadSayisi ?? 0} sub={`${d?.stats.buAy ?? 0} bu ay`} color="#42faba" />
+        <StatCard icon="nfc" label="NFC ile Gelen" value={d?.stats.nfc ?? 0} sub="Bağlantı kaynağı" color="#6001d1" />
+        <StatCard icon="qr_code_2" label="QR ile Gelen" value={d?.stats.qr ?? 0} sub="Bağlantı kaynağı" color="#a8e8ff" />
       </div>
 
       {/* Charts Row */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Weekly Views Chart */}
+        {/* Haftalık bağlantı grafiği — son 7 gün, gerçek */}
         <div className="glass-card rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>
-            Haftalık Görüntülenme
+            Son 7 Gün Bağlantı
           </h3>
-          <div className="flex items-end gap-2 h-32">
-            {weeklyViews.map((v, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
-                <div
-                  className="w-full rounded-t-lg transition-all"
-                  style={{ height: `${(v / maxView) * 100}%`, background: i === 6 ? "#00d4ff" : "rgba(0,212,255,0.35)" }}
-                />
-                <span className="text-xs text-on-surface-variant">{days[i]}</span>
-              </div>
-            ))}
-          </div>
+          {haftalik.every(h => h.sayi === 0) ? (
+            <div className="h-32 flex items-center justify-center text-xs text-on-surface-variant">
+              Son 7 günde yeni bağlantı yok.
+            </div>
+          ) : (
+            <div className="flex items-end gap-2 h-32">
+              {haftalik.map((h, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
+                  <span className="text-xs text-on-surface-variant" style={{ fontSize: "10px" }}>{h.sayi || ""}</span>
+                  <div
+                    className="w-full rounded-t-lg transition-all"
+                    style={{ height: `${(h.sayi / maxView) * 100}%`, minHeight: h.sayi ? 4 : 0, background: i === 6 ? "#00d4ff" : "rgba(0,212,255,0.35)" }}
+                  />
+                  <span className="text-xs text-on-surface-variant">{h.gun}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Leads */}
@@ -125,7 +135,9 @@ export default function UyeDashboard() {
             <Link href="/uye/baglantilar" className="text-xs text-primary hover:underline">Tümü →</Link>
           </div>
           <div className="space-y-3">
-            {myLeads.slice(0, 3).map(lead => (
+            {myLeads.length === 0 ? (
+              <div className="py-8 text-center text-xs text-on-surface-variant">Henüz bağlantı yok. Kartını paylaşmaya başla.</div>
+            ) : myLeads.slice(0, 3).map(lead => (
               <div key={lead.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/3 hover:bg-white/5 transition-all">
                 <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
                   <span className="material-symbols-outlined text-primary text-sm">person</span>
@@ -145,24 +157,26 @@ export default function UyeDashboard() {
         </div>
       </div>
 
-      {/* Card preview CTA */}
-      <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-primary/5">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-2xl">nfc</span>
+      {/* Card preview CTA — yalnızca kart aktifse */}
+      {kartAktif && (
+        <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-primary/5">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-2xl">nfc</span>
+              </div>
+              <div>
+                <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>NFC Kartın Aktif</p>
+                <p className="text-sm text-on-surface-variant">Fiziksel kartın dijital profilinle bağlı ve aktif durumda.</p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>NFC Kartın Aktif</p>
-              <p className="text-sm text-on-surface-variant">Fiziksel kartın dijital profilinle bağlı ve aktif durumda.</p>
-            </div>
+            <Link href="/uye/qr" className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl text-sm font-medium hover:bg-primary/20 transition-all whitespace-nowrap">
+              <span className="material-symbols-outlined text-base">qr_code_2</span>
+              QR Kodunu Gör
+            </Link>
           </div>
-          <Link href="/uye/qr" className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-xl text-sm font-medium hover:bg-primary/20 transition-all whitespace-nowrap">
-            <span className="material-symbols-outlined text-base">qr_code_2</span>
-            QR Kodunu Gör
-          </Link>
         </div>
-      </div>
+      )}
     </div>
   );
 }
