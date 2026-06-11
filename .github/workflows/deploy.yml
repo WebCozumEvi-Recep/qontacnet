@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: {}
 
 jobs:
   deploy:
@@ -15,9 +16,34 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
           script: |
+            set -e
             cd /var/www/qontac
-            git pull origin main
-            docker compose -f docker-compose.prod.yml build app
-            docker compose -f docker-compose.prod.yml up -d --no-deps app
-            docker compose -f docker-compose.prod.yml exec -T app npx prisma migrate deploy
+
+            echo "--- Son kod çekiliyor ---"
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "--- .env.production kontrolü ---"
+            if [ ! -f .env.production ]; then
+              echo "HATA: .env.production yok." >&2
+              exit 1
+            fi
+
+            echo "--- Image build ediliyor ---"
+            docker compose -f docker-compose.prod.yml build
+
+            echo "--- Servisler güncelleniyor (postgres + migrate + app) ---"
+            docker compose -f docker-compose.prod.yml up -d
+
+            # nginx restart değil, recreate: yeni app IP'si + güncel config/volume mount.
+            echo "--- nginx yenileniyor ---"
+            docker compose -f docker-compose.prod.yml up -d --force-recreate nginx
+
+            echo "--- Eski image temizliği ---"
+            docker image prune -f
+
+            echo "=== Dağıtım tamamlandı ==="
+            docker compose -f docker-compose.prod.yml ps
