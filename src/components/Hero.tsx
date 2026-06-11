@@ -47,33 +47,66 @@ export default function Hero() {
 
         {/* Right: Mockups */}
         <div className="relative h-[300px] sm:h-[400px] lg:h-[600px] flex items-center justify-center">
-          {/* Background glow */}
-          <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
+          {/* Background glow — sıcak altın tonu */}
+          <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-amber-400/15 rounded-full blur-[100px] animate-pulse" />
 
-          {/* NFC Card Mockup */}
+          {/* NFC Card Mockup — premium siyah + altın */}
           <div className="absolute z-20 transform -rotate-12 hover:rotate-0 transition-transform duration-700 cursor-pointer">
-            <div className="w-72 sm:w-80 h-44 sm:h-48 rounded-2xl glass-card border-white/20 p-6 flex flex-col justify-between shadow-2xl overflow-hidden group relative">
-              <div className="absolute inset-0 shimmer opacity-30" />
-              <div className="flex justify-between items-start relative z-10">
+            <div
+              className="w-72 sm:w-80 h-44 sm:h-48 rounded-2xl p-6 flex flex-col items-center justify-center shadow-2xl overflow-hidden group relative"
+              style={{
+                background: "linear-gradient(145deg, #111014 0%, #1c1a17 55%, #0c0b0a 100%)",
+                border: "1px solid rgba(212,175,55,0.35)",
+              }}
+            >
+              <div className="absolute inset-0 shimmer opacity-20" />
+
+              {/* Köşe altın çizgi süslemeleri */}
+              <svg className="absolute -top-2 -left-2 w-24 h-24 opacity-60" viewBox="0 0 100 100" fill="none" stroke="url(#gold)" strokeWidth="0.8">
+                <defs>
+                  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#f5d77e" />
+                    <stop offset="0.5" stopColor="#d4af37" />
+                    <stop offset="1" stopColor="#9a7b22" />
+                  </linearGradient>
+                </defs>
+                <path d="M0 38 A38 38 0 0 1 38 0" />
+                <path d="M0 30 A30 30 0 0 1 30 0" />
+                <path d="M0 22 A22 22 0 0 1 22 0" />
+              </svg>
+              <svg className="absolute -bottom-2 -right-2 w-24 h-24 opacity-60 rotate-180" viewBox="0 0 100 100" fill="none" stroke="url(#gold)" strokeWidth="0.8">
+                <path d="M0 38 A38 38 0 0 1 38 0" />
+                <path d="M0 30 A30 30 0 0 1 30 0" />
+                <path d="M0 22 A22 22 0 0 1 22 0" />
+              </svg>
+
+              {/* Temassız + NFC (sağ üst) */}
+              <div className="absolute top-4 right-5 flex flex-col items-center z-10" style={{ color: "#e6c66a" }}>
+                <span className="material-symbols-outlined text-2xl leading-none">contactless</span>
+                <span className="text-[8px] tracking-[0.2em] font-semibold mt-0.5">NFC</span>
+              </div>
+
+              {/* Merkez wordmark */}
+              <div className="relative z-10 flex flex-col items-center">
                 <span
-                  className="font-bold text-xl text-primary tracking-widest"
-                  style={{ fontFamily: "Sora, sans-serif" }}
+                  className="font-bold text-2xl sm:text-3xl tracking-[0.12em]"
+                  style={{
+                    fontFamily: "Sora, sans-serif",
+                    background: "linear-gradient(135deg, #f7e3a1 0%, #d4af37 50%, #a9821f 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
                 >
-                  QONTAC
+                  QONTACNET
                 </span>
-                <span className="material-symbols-outlined text-primary text-3xl">contactless</span>
-              </div>
-              {/* Çip + NFC/QR */}
-              <div className="relative z-10 flex items-center gap-3">
-                <div className="w-11 h-8 rounded-md bg-gradient-to-br from-primary/50 to-primary/10 border border-primary/30" />
-                <span className="material-symbols-outlined text-primary/90 text-2xl">nfc</span>
-                <span className="material-symbols-outlined text-primary/90 text-2xl">qr_code_2</span>
-              </div>
-              <div className="relative z-10 flex items-end justify-between">
-                <p className="text-white/80 uppercase tracking-widest text-xs font-semibold">
-                  Dijital Network Kartı
-                </p>
-                <span className="material-symbols-outlined text-primary/70 text-base">verified</span>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="h-px w-5" style={{ background: "linear-gradient(90deg, transparent, #d4af37)" }} />
+                  <span className="uppercase text-[9px] sm:text-[10px] tracking-[0.28em]" style={{ color: "#c9a94a" }}>
+                    Digital Network Card
+                  </span>
+                  <span className="h-px w-5" style={{ background: "linear-gradient(90deg, #d4af37, transparent)" }} />
+                </div>
               </div>
             </div>
           </div>
