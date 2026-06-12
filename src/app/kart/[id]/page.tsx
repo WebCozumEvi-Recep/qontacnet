@@ -28,11 +28,19 @@ interface Modul { id: string; tip: Tip; baslik: string; icerik: Record<string, u
 type UyeTip = "GALERI" | "TEXT" | "VIDEO";
 interface UyeModul { id: string; tip: UyeTip; baslik: string; icerik: Record<string, unknown>; tanim?: { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string } | null }
 
+function uyeModulDolu(m: UyeModul): boolean {
+  const ic = m.icerik;
+  if (m.tip === "TEXT") return Boolean(ic.metin || ic.gorsel);
+  if (m.tip === "GALERI") return Array.isArray(ic.gorseller) && ic.gorseller.length > 0;
+  return Boolean(ic.videoUrl);
+}
+
 export default function KartPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [card, setCard] = useState<Card | null>(null);
   const [moduller, setModuller] = useState<Modul[]>([]);
   const [uyeModuller, setUyeModuller] = useState<UyeModul[]>([]);
+  const [aktifModul, setAktifModul] = useState<UyeModul | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQr, setShowQr] = useState(false);
   const [siteText, setSiteText] = useState("QONTAC");
@@ -169,17 +177,17 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
               </button>
             );
           })}
+          {uyeModuller.filter(uyeModulDolu).map(m => (
+            <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
+              className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
+              <ModulIkon veri={m.tanim ?? {}} size={56} />
+            </button>
+          ))}
         </div>
 
         {moduller.length > 0 && (
           <div className="space-y-4 mb-6">
             {moduller.map(m => <ModulRender key={m.id} modul={m} color={color} memberId={card.id} firmaAdi={card.firmaAdi} />)}
-          </div>
-        )}
-
-        {uyeModuller.length > 0 && (
-          <div className="space-y-4 mb-6">
-            {uyeModuller.map(m => <UyeModulRender key={m.id} modul={m} color={color} />)}
           </div>
         )}
 
@@ -190,6 +198,10 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           </Link>
         </div>
       </div>
+
+      {aktifModul && (
+        <UyeModulLightbox modul={aktifModul} color={color} onClose={() => setAktifModul(null)} />
+      )}
 
       {showQr && (
         <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-6" onClick={() => setShowQr(false)}>
@@ -376,26 +388,69 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
   return null;
 }
 
-// Üyenin eklediği modüller — firma ModulRender'ını tip eşleyerek kullanır
-function UyeModulRender({ modul, color }: { modul: UyeModul; color: string }) {
-  const ic = modul.icerik;
-  const hasContent =
-    modul.tip === "TEXT" ? Boolean(ic.metin || ic.gorsel)
-    : modul.tip === "GALERI" ? Array.isArray(ic.gorseller) && ic.gorseller.length > 0
-    : Boolean(ic.videoUrl);
-  if (!hasContent) return null;
-  const cardTip: Tip = modul.tip === "TEXT" ? "HAKKIMIZDA" : modul.tip;
-  const mapped: Modul = { id: modul.id, tip: cardTip, baslik: modul.baslik, icerik: modul.icerik };
-  const body = <ModulRender modul={mapped} color={color} memberId="" firmaAdi="" />;
-  return (
-    <div>
-      {modul.baslik && (
-        <div className="flex items-center gap-2 mb-2 px-1">
-          <ModulIkon veri={modul.tanim ?? {}} size={22} />
-          <h2 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{modul.baslik}</h2>
+// Üye modülü lightbox içinde gösterir (text→kopyala, galeri→slider, video→embed)
+function UyeModulLightbox({ modul, color, onClose }: { modul: UyeModul; color: string; onClose: () => void }) {
+  const [kopyalandi, setKopyalandi] = useState(false);
+  const ic = modul.icerik as { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; gorseller?: { url: string; baslik?: string; aciklama?: string }[] };
+
+  const kopyala = (metin: string) => {
+    navigator.clipboard.writeText(metin).then(() => {
+      setKopyalandi(true);
+      setTimeout(() => setKopyalandi(false), 2000);
+    }).catch(() => {});
+  };
+
+  let body: React.ReactNode = null;
+  if (modul.tip === "TEXT") {
+    const metin = String(ic.metin ?? "");
+    body = (
+      <div className="space-y-3">
+        {ic.gorsel && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={ic.gorsel} alt={modul.baslik} className="w-full rounded-xl object-cover" />
+        )}
+        {metin && (
+          <button type="button" onClick={() => kopyala(metin)}
+            className="w-full text-left bg-surface-dim border border-white/10 rounded-xl px-4 py-3 hover:border-white/25 transition-all">
+            <p className="text-sm text-on-surface whitespace-pre-line leading-relaxed">{metin}</p>
+            <p className="text-xs mt-2 flex items-center gap-1" style={{ color: kopyalandi ? "#25d366" : undefined }}>
+              <span className="material-symbols-outlined text-sm">{kopyalandi ? "check" : "content_copy"}</span>
+              {kopyalandi ? "Kopyalandı" : "Kopyalamak için dokun"}
+            </p>
+          </button>
+        )}
+      </div>
+    );
+  } else if (modul.tip === "GALERI") {
+    const gorseller = Array.isArray(ic.gorseller) ? ic.gorseller : [];
+    body = <GaleriSlider color={color} gorseller={gorseller} />;
+  } else if (modul.tip === "VIDEO") {
+    const embed = ic.videoUrl ? youtubeEmbed(String(ic.videoUrl)) : null;
+    body = embed ? (
+      <div className="space-y-2">
+        <div className="aspect-video rounded-xl overflow-hidden">
+          <iframe src={embed} className="w-full h-full" allowFullScreen title={modul.baslik} />
         </div>
-      )}
-      {body}
+        {ic.aciklama && <p className="text-xs text-on-surface-variant">{ic.aciklama}</p>}
+      </div>
+    ) : <p className="text-sm text-on-surface-variant">Geçersiz video bağlantısı.</p>;
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-3xl p-5 max-h-[85vh] overflow-auto"
+        style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <ModulIkon veri={modul.tanim ?? {}} size={28} />
+            <h3 className="text-sm font-semibold text-on-surface truncate" style={{ fontFamily: "Sora, sans-serif" }}>{modul.baslik}</h3>
+          </div>
+          <button onClick={onClose} className="flex items-center gap-1 text-on-surface-variant hover:text-on-surface text-xs flex-shrink-0">
+            <span className="material-symbols-outlined">close</span>Kapat
+          </button>
+        </div>
+        {body}
+      </div>
     </div>
   );
 }
