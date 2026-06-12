@@ -24,10 +24,14 @@ interface Card {
 type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | "SSS" | "HERO";
 interface Modul { id: string; tip: Tip; baslik: string; icerik: Record<string, unknown> }
 
+type UyeTip = "GALERI" | "TEXT" | "VIDEO";
+interface UyeModul { id: string; tip: UyeTip; baslik: string; icerik: Record<string, unknown>; tanim?: { ikon: string } | null }
+
 export default function KartPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [card, setCard] = useState<Card | null>(null);
   const [moduller, setModuller] = useState<Modul[]>([]);
+  const [uyeModuller, setUyeModuller] = useState<UyeModul[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQr, setShowQr] = useState(false);
   const [siteText, setSiteText] = useState("QONTAC");
@@ -41,7 +45,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
     fetch(`/api/kart/${id}`)
       .then(r => r.json())
       .then(j => {
-        if (j.ok) { setCard(j.card); setModuller(j.moduller ?? []); }
+        if (j.ok) { setCard(j.card); setModuller(j.moduller ?? []); setUyeModuller(j.uyeModuller ?? []); }
         else setCard(null);
       })
       .catch(() => setCard(null))
@@ -169,6 +173,12 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
         {moduller.length > 0 && (
           <div className="space-y-4 mb-6">
             {moduller.map(m => <ModulRender key={m.id} modul={m} color={color} memberId={card.id} firmaAdi={card.firmaAdi} />)}
+          </div>
+        )}
+
+        {uyeModuller.length > 0 && (
+          <div className="space-y-4 mb-6">
+            {uyeModuller.map(m => <UyeModulRender key={m.id} modul={m} color={color} />)}
           </div>
         )}
 
@@ -363,6 +373,35 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
     );
   }
   return null;
+}
+
+// Üyenin eklediği modüller — firma ModulRender'ını tip eşleyerek kullanır
+function UyeModulRender({ modul, color }: { modul: UyeModul; color: string }) {
+  const ic = modul.icerik;
+  const hasContent =
+    modul.tip === "TEXT" ? Boolean(ic.metin || ic.gorsel)
+    : modul.tip === "GALERI" ? Array.isArray(ic.gorseller) && ic.gorseller.length > 0
+    : Boolean(ic.videoUrl);
+  if (!hasContent) return null;
+  const cardTip: Tip = modul.tip === "TEXT" ? "HAKKIMIZDA" : modul.tip;
+  const mapped: Modul = { id: modul.id, tip: cardTip, baslik: modul.baslik, icerik: modul.icerik };
+  const body = <ModulRender modul={mapped} color={color} memberId="" firmaAdi="" />;
+  return (
+    <div>
+      {modul.baslik && (
+        <div className="flex items-center gap-2 mb-2 px-1">
+          {modul.tanim?.ikon ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={modul.tanim.ikon} alt="" className="w-5 h-5 rounded object-cover" />
+          ) : (
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+          )}
+          <h2 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{modul.baslik}</h2>
+        </div>
+      )}
+      {body}
+    </div>
+  );
 }
 
 function SssAkordiyon({ color, sorular }: { baslik?: string; color: string; sorular: { soru: string; cevap: string }[] }) {

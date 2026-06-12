@@ -8,6 +8,7 @@ import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 const pageTitles: Record<string, string> = {
   "/uye": "Panel",
   "/uye/kartim": "Kartım",
+  "/uye/modullerim": "Modüllerim",
   "/uye/profil": "Profilim",
   "/uye/qr": "QR Kodum",
   "/uye/baglantilar": "Bağlantılarım",

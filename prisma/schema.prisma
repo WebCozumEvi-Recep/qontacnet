@@ -68,6 +68,13 @@ enum FirmaModulTip {
   HERO
 }
 
+// Üyenin kartına ekleyebileceği modül tipleri (admin kataloğu)
+enum UyeModulTip {
+  GALERI
+  TEXT
+  VIDEO
+}
+
 model Firma {
   id             String     @id @default(cuid())
   ad             String
@@ -110,6 +117,40 @@ model FirmaModul {
   updatedAt  DateTime      @updatedAt
 
   @@index([templateId, sira])
+}
+
+// Admin tarafından tanımlanan üye modül kataloğu (ad + tip + ikon)
+model UyeModulTanim {
+  id        String      @id @default(cuid())
+  ad        String
+  tip       UyeModulTip
+  ikon      String      @default("")
+  sira      Int         @default(0)
+  aktif     Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  moduller MemberModul[]
+
+  @@index([sira])
+}
+
+// Üyenin kendi kartına eklediği modül örneği
+model MemberModul {
+  id        String         @id @default(cuid())
+  member    Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+  tanim     UyeModulTanim? @relation(fields: [tanimId], references: [id], onDelete: SetNull)
+  tanimId   String?
+  tip       UyeModulTip
+  baslik    String         @default("")
+  icerik    Json
+  sira      Int            @default(0)
+  aktif     Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([memberId, sira])
 }
 
 model FormBasvuru {
@@ -168,7 +209,8 @@ model Member {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  leads Lead[]
+  leads     Lead[]
+  uyeModuller MemberModul[]
 }
 
 model Admin {

@@ -13,6 +13,7 @@ const pageTitles: Record<string, string> = {
   "/admin/lisanslar": "Lisans Yönetimi",
   "/admin/gelir": "Gelir Raporları",
   "/admin/basvurular": "Başvurular",
+  "/admin/uye-modulleri": "Üye Modülleri",
   "/admin/sayfalar": "Özel Sayfalar",
   "/admin/ayarlar": "Platform Ayarları",
 };

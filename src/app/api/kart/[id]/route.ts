@@ -36,6 +36,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       })
     : [];
 
+  // Üyenin kendi eklediği modüller (aktif)
+  const uyeModuller = await prisma.memberModul.findMany({
+    where: { memberId: id, aktif: true },
+    orderBy: [{ sira: "asc" }, { createdAt: "asc" }],
+    select: { id: true, tip: true, baslik: true, icerik: true, tanim: { select: { ikon: true } } },
+  });
+
   // Görüntülenme sayacı (await etmeden)
   prisma.member.update({ where: { id }, data: { goruntulemeSayisi: { increment: 1 } } }).catch(() => {});
 
@@ -62,5 +69,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       biyografi: member.showBio ? member.biyografi : "",
     },
     moduller,
+    uyeModuller,
   });
 }

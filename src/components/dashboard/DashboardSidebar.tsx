@@ -13,6 +13,7 @@ interface NavItem {
 const uyeNav: NavItem[] = [
   { href: "/uye", icon: "dashboard", label: "Panel" },
   { href: "/uye/kartim", icon: "credit_card", label: "Kartım" },
+  { href: "/uye/modullerim", icon: "widgets", label: "Modüllerim" },
   { href: "/uye/profil", icon: "manage_accounts", label: "Profilim" },
   { href: "/uye/qr", icon: "qr_code_2", label: "QR Kodum" },
   { href: "/uye/baglantilar", icon: "group_add", label: "Bağlantılarım" },
@@ -35,6 +36,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/lisanslar", icon: "workspace_premium", label: "Lisanslar" },
   { href: "/admin/gelir", icon: "trending_up", label: "Gelir Raporu" },
   { href: "/admin/urunler", icon: "inventory_2", label: "Ürünler" },
+  { href: "/admin/uye-modulleri", icon: "widgets", label: "Üye Modülleri" },
   { href: "/admin/basvurular", icon: "mark_email_unread", label: "Başvurular" },
   { href: "/admin/sayfalar", icon: "description", label: "Özel Sayfalar" },
   { href: "/admin/ayarlar", icon: "settings", label: "Ayarlar" },
