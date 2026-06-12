@@ -539,14 +539,14 @@ function HeroEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik
             { k: "italic", i: "format_italic" },
             { k: "underline", i: "format_underlined" },
           ].map(b => (
-            <button key={b.k} type="button" onClick={() => cmd(b.k)} className="w-8 h-8 rounded-lg glass-card text-on-surface flex items-center justify-center hover:bg-white/10">
+            <button key={b.k} type="button" onMouseDown={e => e.preventDefault()} onClick={() => cmd(b.k)} className="w-8 h-8 rounded-lg glass-card text-on-surface flex items-center justify-center hover:bg-white/10">
               <span className="material-symbols-outlined text-base">{b.i}</span>
             </button>
           ))}
-          <button type="button" onClick={() => cmd("formatBlock", "<h2>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">H2</button>
-          <button type="button" onClick={() => cmd("formatBlock", "<h3>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">H3</button>
-          <button type="button" onClick={() => cmd("formatBlock", "<p>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">P</button>
-          <label className="w-8 h-8 rounded-lg glass-card flex items-center justify-center cursor-pointer">
+          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => cmd("formatBlock", "<h2>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">H2</button>
+          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => cmd("formatBlock", "<h3>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">H3</button>
+          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => cmd("formatBlock", "<p>")} className="px-2 h-8 rounded-lg glass-card text-on-surface text-xs">P</button>
+          <label className="w-8 h-8 rounded-lg glass-card flex items-center justify-center cursor-pointer" onMouseDown={e => e.preventDefault()}>
             <input type="color" onChange={e => cmd("foreColor", e.target.value)} className="w-0 h-0 opacity-0" />
             <span className="material-symbols-outlined text-base">format_color_text</span>
           </label>
@@ -556,7 +556,7 @@ function HeroEditor({ icerik, onChange }: { icerik: Icerik; onChange: (i: Icerik
           contentEditable
           suppressContentEditableWarning
           onBlur={e => onChange({ ...icerik, html: (e.target as HTMLDivElement).innerHTML })}
-          className="min-h-[120px] bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface outline-none focus:border-primary"
+          className="min-h-[120px] max-h-[320px] overflow-auto bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm leading-relaxed text-on-surface outline-none focus:border-primary [&>*:first-child]:mt-0 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold"
           dangerouslySetInnerHTML={{ __html: html }}
         />
         <p className="text-[11px] text-on-surface-variant mt-1">İçerik kayıt için tıklamayı bırak (focus dışına çıkınca kaydedilir).</p>
