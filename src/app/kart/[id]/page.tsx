@@ -502,9 +502,87 @@ function SssAkordiyon({ color, sorular }: { baslik?: string; color: string; soru
   );
 }
 
+type Gorsel = { url: string; baslik?: string; aciklama?: string };
+
+// Tam ekran, kaydırılabilir görüntü lightbox'ı
+function GoruntuLightbox({ gorseller, start, color, onClose }: { gorseller: Gorsel[]; start: number; color: string; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(start);
+
+  useEffect(() => {
+    if (ref.current) ref.current.scrollLeft = start * ref.current.clientWidth;
+  }, [start]);
+
+  const goto = (i: number) => {
+    if (!ref.current) return;
+    const n = Math.max(0, Math.min(gorseller.length - 1, i));
+    ref.current.scrollTo({ left: n * ref.current.clientWidth, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowRight") goto(idx + 1);
+      else if (e.key === "ArrowLeft") goto(idx - 1);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onScroll = () => {
+    if (!ref.current) return;
+    setIdx(Math.round(ref.current.scrollLeft / ref.current.clientWidth));
+  };
+  const aktif = gorseller[idx];
+
+  return (
+    <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col" onClick={onClose}>
+      <button onClick={onClose} aria-label="Kapat"
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+        <span className="material-symbols-outlined">close</span>
+      </button>
+      <div ref={ref} onScroll={onScroll} onClick={e => e.stopPropagation()}
+        className="flex-1 flex overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
+        {gorseller.map((g, i) => (
+          <div key={i} className="flex-shrink-0 w-full h-full snap-center flex items-center justify-center p-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={g.url} alt={g.baslik ?? ""} className="max-w-full max-h-full object-contain rounded-lg" />
+          </div>
+        ))}
+      </div>
+      {gorseller.length > 1 && idx > 0 && (
+        <button onClick={e => { e.stopPropagation(); goto(idx - 1); }} aria-label="Önceki"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <span className="material-symbols-outlined text-2xl">chevron_left</span>
+        </button>
+      )}
+      {gorseller.length > 1 && idx < gorseller.length - 1 && (
+        <button onClick={e => { e.stopPropagation(); goto(idx + 1); }} aria-label="Sonraki"
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <span className="material-symbols-outlined text-2xl">chevron_right</span>
+        </button>
+      )}
+      <div className="pb-6 px-4 text-center" onClick={e => e.stopPropagation()}>
+        {aktif?.baslik && <p className="text-sm text-white font-medium">{aktif.baslik}</p>}
+        {aktif?.aciklama && <p className="text-xs text-white/60 mt-0.5">{aktif.aciklama}</p>}
+        {gorseller.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-3">
+            {gorseller.map((_, i) => (
+              <button key={i} onClick={() => goto(i)} aria-label={`Görsel ${i + 1}`}
+                className="h-1.5 rounded-full transition-all"
+                style={{ width: i === idx ? 18 : 6, background: i === idx ? color : "rgba(255,255,255,0.25)" }} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function GaleriSlider({ color, gorseller }: { baslik?: string; color: string; gorseller: { url: string; baslik?: string; aciklama?: string }[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const onScroll = () => {
     if (!ref.current) return;
@@ -528,18 +606,17 @@ function GaleriSlider({ color, gorseller }: { baslik?: string; color: string; go
           style={{ scrollbarWidth: "none" }}
         >
           {gorseller.map((g, i) => (
-            <a
+            <button
               key={i}
-              href={g.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-shrink-0 w-full snap-center"
+              type="button"
+              onClick={() => setLightboxIdx(i)}
+              className="flex-shrink-0 w-full snap-center text-left cursor-zoom-in"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={g.url} alt={g.baslik ?? ""} className="w-full aspect-square object-cover rounded-xl" />
               {g.baslik && <p className="text-sm text-on-surface mt-2 font-medium">{g.baslik}</p>}
               {g.aciklama && <p className="text-xs text-on-surface-variant mt-0.5">{g.aciklama}</p>}
-            </a>
+            </button>
           ))}
         </div>
         {gorseller.length > 1 && idx > 0 && (
@@ -576,6 +653,9 @@ function GaleriSlider({ color, gorseller }: { baslik?: string; color: string; go
             />
           ))}
         </div>
+      )}
+      {lightboxIdx !== null && (
+        <GoruntuLightbox gorseller={gorseller} start={lightboxIdx} color={color} onClose={() => setLightboxIdx(null)} />
       )}
     </div>
   );
