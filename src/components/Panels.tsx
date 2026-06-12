@@ -4,23 +4,23 @@ const panels = [
   {
     title: "Firma Paneli",
     icon: "🏢",
-    color: "#00D4FF",
+    color: "#d4af37",
     items: ["Üye yönetimi", "Template yönetimi", "Ürün ve kampanya yönetimi", "Lead raporları", "Kart aktivasyon takibi"],
     mockupRows: [
       { label: "Aktif Üyeler", value: "1.240", color: "#18E6A7" },
-      { label: "Kart Okutma", value: "8.430", color: "#00D4FF" },
-      { label: "Lead Formu", value: "312", color: "#7C3AED" },
+      { label: "Kart Okutma", value: "8.430", color: "#d4af37" },
+      { label: "Lead Formu", value: "312", color: "#a9821f" },
     ],
   },
   {
     title: "Üye Uygulaması",
     icon: "📱",
-    color: "#7C3AED",
+    color: "#a9821f",
     items: ["Profil düzenleme", "Kart aktivasyonu", "QR paylaşımı", "Gelen talepler", "İstatistikler"],
     mockupRows: [
       { label: "Profil Görüntülenme", value: "248", color: "#18E6A7" },
-      { label: "WhatsApp Tıklama", value: "64", color: "#00D4FF" },
-      { label: "Referans Kayıt", value: "12", color: "#7C3AED" },
+      { label: "WhatsApp Tıklama", value: "64", color: "#d4af37" },
+      { label: "Referans Kayıt", value: "12", color: "#a9821f" },
     ],
   },
   {
@@ -30,15 +30,15 @@ const panels = [
     items: ["Firma yönetimi", "Kart üretimi", "Lisans yönetimi", "Sipariş takibi", "Gelir raporları"],
     mockupRows: [
       { label: "Toplam Firma", value: "87", color: "#18E6A7" },
-      { label: "Aktif Kart", value: "24.500", color: "#00D4FF" },
-      { label: "Aylık Sipariş", value: "1.820", color: "#7C3AED" },
+      { label: "Aktif Kart", value: "24.500", color: "#d4af37" },
+      { label: "Aylık Sipariş", value: "1.820", color: "#a9821f" },
     ],
   },
 ];
 
 export default function Panels() {
   return (
-    <section className="py-24" style={{ background: "#0B1020" }}>
+    <section className="py-24" style={{ background: "#0d0b09" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionTitle
           badge="Yönetim Panelleri"

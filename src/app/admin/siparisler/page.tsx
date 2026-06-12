@@ -115,8 +115,8 @@ export default function AdminSiparislerPage() {
     <div className="space-y-6 max-w-[1200px]">
       {/* İstatistikler */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat icon="receipt_long" label="Toplam Sipariş" value={orders.length} sub="Tüm zamanlar" color="#00d4ff" />
-        <Stat icon="pending_actions" label="Bekleyen" value={(counts["HAZIRLANIYOR"]||0)+(counts["URETIMDE"]||0)+(counts["KARGODA"]||0)} sub="Hazırlanan + Kargoda" color="#a8e8ff" />
+        <Stat icon="receipt_long" label="Toplam Sipariş" value={orders.length} sub="Tüm zamanlar" color="#d4af37" />
+        <Stat icon="pending_actions" label="Bekleyen" value={(counts["HAZIRLANIYOR"]||0)+(counts["URETIMDE"]||0)+(counts["KARGODA"]||0)} sub="Hazırlanan + Kargoda" color="#f0d289" />
         <Stat icon="check_circle" label="Teslim Edilen" value={counts["TESLIM"]||0} sub="Tamamlandı" color="#42faba" />
         <Stat icon="payments" label="Ciro" value={`₺${toplamCiro.toLocaleString("tr-TR")}`} sub={tab === "tum" ? "Tüm aktif" : siparisDurumMap[tab]?.label} color="#6001d1" />
       </div>

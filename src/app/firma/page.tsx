@@ -44,10 +44,10 @@ export default function FirmaDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="group" label="Toplam Üye" value={d?.stats.toplamUye ?? "—"} sub={`${d?.stats.aktif ?? 0} aktif`} color="#00d4ff" href="/firma/uyeler" />
+        <StatCard icon="group" label="Toplam Üye" value={d?.stats.toplamUye ?? "—"} sub={`${d?.stats.aktif ?? 0} aktif`} color="#d4af37" href="/firma/uyeler" />
         <StatCard icon="credit_card" label="Aktif Kart" value={d?.stats.aktif ?? "—"} sub="NFC bağlı" color="#42faba" />
         <StatCard icon="visibility" label="Toplam Görüntülenme" value={d?.stats.toplamGoruntulenme ?? "—"} sub="Tüm üyeler" color="#6001d1" href="/firma/analitik" />
-        <StatCard icon="group_add" label="Toplam Lead" value={d?.stats.toplamLead ?? "—"} sub="Bu ay" color="#a8e8ff" href="/firma/analitik" />
+        <StatCard icon="group_add" label="Toplam Lead" value={d?.stats.toplamLead ?? "—"} sub="Bu ay" color="#f0d289" href="/firma/analitik" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -56,7 +56,7 @@ export default function FirmaDashboard() {
           <div className="flex items-end gap-1.5 h-36">
             {monthly.map((v, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
-                <div className="w-full rounded-t-md transition-all" style={{ height: `${(v / maxLead) * 100}%`, background: i === 11 ? "#00d4ff" : "rgba(0,212,255,0.35)" }} />
+                <div className="w-full rounded-t-md transition-all" style={{ height: `${(v / maxLead) * 100}%`, background: i === 11 ? "#d4af37" : "rgba(212, 175, 55,0.35)" }} />
                 <span className="text-xs text-on-surface-variant" style={{ fontSize: "10px" }}>{months[i]}</span>
               </div>
             ))}

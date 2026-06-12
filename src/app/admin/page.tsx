@@ -43,10 +43,10 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="corporate_fare" label="Aktif Firma" value={s.aktifFirma} sub={`${s.denemeFirma} deneme süresinde`} color="#00d4ff" href="/admin/firmalar" />
+        <StatCard icon="corporate_fare" label="Aktif Firma" value={s.aktifFirma} sub={`${s.denemeFirma} deneme süresinde`} color="#d4af37" href="/admin/firmalar" />
         <StatCard icon="payments" label="Aylık Gelir (MRR)" value={`₺${(s.mrr / 1000).toFixed(1)}K`} sub="Mevcut ay" color="#42faba" href="/admin/gelir" />
         <StatCard icon="credit_card" label="Aktif Kart" value={s.aktifKart} sub={`${s.stoktakiKart} stokta`} color="#6001d1" href="/admin/kartlar" />
-        <StatCard icon="local_shipping" label="Bekleyen Sipariş" value={s.aktifSiparis} sub="Hazırlanıyor / Kargoda" color="#a8e8ff" href="/admin/siparisler" />
+        <StatCard icon="local_shipping" label="Bekleyen Sipariş" value={s.aktifSiparis} sub="Hazırlanıyor / Kargoda" color="#f0d289" href="/admin/siparisler" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -55,7 +55,7 @@ export default function AdminDashboard() {
           <div className="flex items-end gap-2 h-40">
             {d.revenue.map((r, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full">
-                <div className="w-full rounded-t-md transition-all hover:opacity-80" style={{ height: `${(r.mrr / maxMrr) * 100}%`, background: i === d.revenue.length - 1 ? "#00d4ff" : "rgba(0,212,255,0.4)" }} title={`${r.ay}: ₺${r.mrr.toLocaleString("tr-TR")}`} />
+                <div className="w-full rounded-t-md transition-all hover:opacity-80" style={{ height: `${(r.mrr / maxMrr) * 100}%`, background: i === d.revenue.length - 1 ? "#d4af37" : "rgba(212, 175, 55,0.4)" }} title={`${r.ay}: ₺${r.mrr.toLocaleString("tr-TR")}`} />
                 <span className="text-xs text-on-surface-variant" style={{ fontSize: "10px" }}>{r.ay}</span>
               </div>
             ))}

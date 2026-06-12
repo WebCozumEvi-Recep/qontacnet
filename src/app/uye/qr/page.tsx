@@ -63,7 +63,7 @@ export default function QRPage() {
               value={cardUrl}
               size={200}
               bgColor="#0f1321"
-              fgColor="#00d4ff"
+              fgColor="#d4af37"
               level="H"
               style={{ borderRadius: 8 }}
             />
@@ -84,10 +84,10 @@ export default function QRPage() {
                     style={{
                       fontFamily: "'Dancing Script', 'Pacifico', cursive",
                       fontSize: 15,
-                      color: "#00d4ff",
+                      color: "#d4af37",
                       letterSpacing: 0.5,
                       whiteSpace: "nowrap",
-                      textShadow: "0 0 8px rgba(0,212,255,0.6)",
+                      textShadow: "0 0 8px rgba(212, 175, 55,0.6)",
                     }}
                   >
                     {fullName}
@@ -128,7 +128,7 @@ export default function QRPage() {
           {[
             { label: "WhatsApp", icon: "chat", color: "#25d366", href: `https://wa.me/?text=Dijital%20kartvizitime%20bakabilirsin:%20${cardUrl}` },
             { label: "LinkedIn", icon: "link", color: "#0077b5", href: `https://linkedin.com/sharing/share-offsite/?url=${cardUrl}` },
-            { label: "E-Posta", icon: "mail", color: "#00d4ff", href: `mailto:?subject=Dijital%20Kartvizitim&body=${cardUrl}` },
+            { label: "E-Posta", icon: "mail", color: "#d4af37", href: `mailto:?subject=Dijital%20Kartvizitim&body=${cardUrl}` },
           ].map(item => (
             <a key={item.label} href={item.href} target="_blank" rel="noreferrer"
               className="flex flex-col items-center gap-2 p-3 glass-card rounded-xl hover:bg-white/5 transition-all group">

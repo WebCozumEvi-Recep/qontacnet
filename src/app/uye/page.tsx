@@ -95,10 +95,10 @@ export default function UyeDashboard() {
 
       {/* Stats — gerçek veriler */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="visibility" label="Toplam Görüntülenme" value={d?.stats.goruntulenme ?? member?.goruntulemeSayisi ?? 0} sub="Kart sayfası açılışı" color="#00d4ff" />
+        <StatCard icon="visibility" label="Toplam Görüntülenme" value={d?.stats.goruntulenme ?? member?.goruntulemeSayisi ?? 0} sub="Kart sayfası açılışı" color="#d4af37" />
         <StatCard icon="group_add" label="Bağlantılar" value={d?.stats.baglanti ?? member?.leadSayisi ?? 0} sub={`${d?.stats.buAy ?? 0} bu ay`} color="#42faba" />
         <StatCard icon="nfc" label="NFC ile Gelen" value={d?.stats.nfc ?? 0} sub="Bağlantı kaynağı" color="#6001d1" />
-        <StatCard icon="qr_code_2" label="QR ile Gelen" value={d?.stats.qr ?? 0} sub="Bağlantı kaynağı" color="#a8e8ff" />
+        <StatCard icon="qr_code_2" label="QR ile Gelen" value={d?.stats.qr ?? 0} sub="Bağlantı kaynağı" color="#f0d289" />
       </div>
 
       {/* Charts Row */}
@@ -119,7 +119,7 @@ export default function UyeDashboard() {
                   <span className="text-xs text-on-surface-variant" style={{ fontSize: "10px" }}>{h.sayi || ""}</span>
                   <div
                     className="w-full rounded-t-lg transition-all"
-                    style={{ height: `${(h.sayi / maxView) * 100}%`, minHeight: h.sayi ? 4 : 0, background: i === 6 ? "#00d4ff" : "rgba(0,212,255,0.35)" }}
+                    style={{ height: `${(h.sayi / maxView) * 100}%`, minHeight: h.sayi ? 4 : 0, background: i === 6 ? "#d4af37" : "rgba(212, 175, 55,0.35)" }}
                   />
                   <span className="text-xs text-on-surface-variant">{h.gun}</span>
                 </div>

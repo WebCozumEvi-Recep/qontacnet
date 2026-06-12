@@ -18,7 +18,7 @@ export default function Hero() {
             style={{ fontFamily: "Sora, sans-serif", letterSpacing: "-0.02em" }}
           >
             Network ekipleriniz için{" "}
-            <span className="text-primary-container">akıllı dijital kartvizit</span>{" "}
+            <span className="gradient-text">akıllı dijital kartvizit</span>{" "}
             sistemi
           </h1>
 
@@ -31,7 +31,7 @@ export default function Hero() {
           <div className="flex flex-wrap gap-sm pt-xs">
             <a
               href="#demo"
-              className="px-8 py-4 bg-primary-container text-on-primary-container font-bold rounded-xl hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition-all flex items-center gap-2"
+              className="px-8 py-4 bg-primary-container text-on-primary-container font-bold rounded-xl hover:shadow-[0_0_20px_rgba(212, 175, 55,0.4)] transition-all flex items-center gap-2"
             >
               Demo Talep Et
               <span className="material-symbols-outlined">arrow_forward</span>

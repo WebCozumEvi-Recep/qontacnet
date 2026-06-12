@@ -114,10 +114,10 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
         <div className="lg:col-span-2 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: "visibility", label: "Görüntülenme", value: member.goruntulemeSayisi, color: "#00d4ff" },
+              { icon: "visibility", label: "Görüntülenme", value: member.goruntulemeSayisi, color: "#d4af37" },
               { icon: "group_add", label: "Bağlantı", value: leads.length, color: "#42faba" },
               { icon: "nfc", label: "NFC ile Gelen", value: leads.filter(l => l.kaynak === "NFC").length, color: "#6001d1" },
-              { icon: "qr_code_2", label: "QR ile Gelen", value: leads.filter(l => l.kaynak === "QR").length, color: "#a8e8ff" },
+              { icon: "qr_code_2", label: "QR ile Gelen", value: leads.filter(l => l.kaynak === "QR").length, color: "#f0d289" },
             ].map(s => (
               <div key={s.label} className="glass-card rounded-xl p-4"><div className="flex items-center gap-2 mb-2"><span className="material-symbols-outlined text-base" style={{ color: s.color }}>{s.icon}</span><span className="text-xs text-on-surface-variant">{s.label}</span></div><p className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{s.value}</p></div>
             ))}

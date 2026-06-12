@@ -15,7 +15,7 @@ interface Modul {
 }
 
 const TIP_META: Record<Tip, { etiket: string; ikon: string; renk: string }> = {
-  HAKKIMIZDA: { etiket: "Hakkımızda", ikon: "info", renk: "#00d4ff" },
+  HAKKIMIZDA: { etiket: "Hakkımızda", ikon: "info", renk: "#d4af37" },
   GALERI: { etiket: "Kampanya Galerisi", ikon: "photo_library", renk: "#ff9f43" },
   VIDEO: { etiket: "Kurumsal Video", ikon: "smart_display", renk: "#fd79a8" },
   FORM: { etiket: "Başvuru Formu", ikon: "edit_note", renk: "#42faba" },

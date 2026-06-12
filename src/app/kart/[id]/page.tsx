@@ -105,7 +105,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
   const actions: Action[] = [
     { icon: "person_add", label: "Rehbere Kaydet", onClick: saveContact, bg: "#ffd93d" },
     { icon: "handshake", label: "Tanışalım", onClick: () => setShowLeadForm(true), bg: "rgba(255,255,255,0.08)" },
-    card.telefon && { icon: "call", label: "Ara", href: `tel:${card.telefon}`, bg: "#00d4ff" },
+    card.telefon && { icon: "call", label: "Ara", href: `tel:${card.telefon}`, bg: "#d4af37" },
     card.email && { icon: "mail", label: "E-Posta", href: `mailto:${card.email}`, bg: "#ff9f43" },
     card.whatsapp && { icon: "chat", label: "WhatsApp", href: `https://wa.me/${card.whatsapp.replace(/\s/g, "")}`, bg: "#25d366" },
     card.linkedin && { icon: "link", label: "LinkedIn", href: `https://${card.linkedin.replace(/^https?:\/\//, "")}`, bg: "#0077b5" },

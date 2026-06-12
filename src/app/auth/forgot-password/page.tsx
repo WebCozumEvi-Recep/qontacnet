@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg,#050816 0%,#0B1020 60%,#050816 100%)" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg,#050816 0%,#0d0b09 60%,#050816 100%)" }}>
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <Link href="/" className="text-2xl font-black text-primary tracking-widest" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC</Link>

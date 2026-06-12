@@ -23,7 +23,7 @@ export default function AnalitikPage() {
 
   const kaynakToplam = s ? s.kaynakDagilim.NFC + s.kaynakDagilim.QR + s.kaynakDagilim.LINK : 0;
   const kaynak = [
-    { label: "NFC Dokunma", value: s?.kaynakDagilim.NFC ?? 0, color: "#00d4ff" },
+    { label: "NFC Dokunma", value: s?.kaynakDagilim.NFC ?? 0, color: "#d4af37" },
     { label: "QR Tarama", value: s?.kaynakDagilim.QR ?? 0, color: "#42faba" },
     { label: "Direkt Link", value: s?.kaynakDagilim.LINK ?? 0, color: "#6001d1" },
   ].map(k => ({ ...k, pct: kaynakToplam ? Math.round((k.value / kaynakToplam) * 100) : 0 }));
@@ -41,10 +41,10 @@ export default function AnalitikPage() {
     <div className="max-w-[1100px] space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: "visibility", label: "Toplam Görüntülenme", value: totalViews, sub: "Tüm üyeler", color: "#00d4ff" },
+          { icon: "visibility", label: "Toplam Görüntülenme", value: totalViews, sub: "Tüm üyeler", color: "#d4af37" },
           { icon: "group_add", label: "Toplam Başvuru", value: totalLeads, sub: "Tüm zamanlar", color: "#42faba" },
           { icon: "nfc", label: "NFC Dokunma", value: s?.kaynakDagilim.NFC ?? 0, sub: "Başvuru kaynağı", color: "#6001d1" },
-          { icon: "conversion_path", label: "Dönüşüm Oranı", value: totalViews ? `${((totalLeads / totalViews) * 100).toFixed(1)}%` : "—", sub: "Başvuru / Görüntülenme", color: "#a8e8ff" },
+          { icon: "conversion_path", label: "Dönüşüm Oranı", value: totalViews ? `${((totalLeads / totalViews) * 100).toFixed(1)}%` : "—", sub: "Başvuru / Görüntülenme", color: "#f0d289" },
         ].map(st => (
           <div key={st.label} className="glass-card rounded-2xl p-5">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: `${st.color}15`, border: `1px solid ${st.color}25` }}><span className="material-symbols-outlined text-xl" style={{ color: st.color }}>{st.icon}</span></div>
@@ -61,7 +61,7 @@ export default function AnalitikPage() {
           <div className="flex items-end gap-1.5 h-40">
             {monthly.map((v, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
-                <div className="w-full rounded-t-md transition-all relative group" style={{ height: `${(v / maxMonthly) * 100}%`, background: i === 11 ? "#00d4ff" : "rgba(0,212,255,0.35)" }}>
+                <div className="w-full rounded-t-md transition-all relative group" style={{ height: `${(v / maxMonthly) * 100}%`, background: i === 11 ? "#d4af37" : "rgba(212, 175, 55,0.35)" }}>
                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container px-1.5 py-0.5 rounded text-xs text-on-surface whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all z-10">{v}</div>
                 </div>
                 <span className="text-on-surface-variant" style={{ fontSize: "10px" }}>{months[i]}</span>

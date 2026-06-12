@@ -38,7 +38,7 @@ export default function HowItWorks() {
 
           {steps.map((s) => (
             <div key={s.title} className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full glass-card border-primary/50 flex items-center justify-center mb-md bg-surface-container shadow-[0_0_30px_rgba(0,212,255,0.2)]">
+              <div className="w-20 h-20 rounded-full glass-card border-primary/50 flex items-center justify-center mb-md bg-surface-container shadow-[0_0_30px_rgba(212, 175, 55,0.2)]">
                 <span className="material-symbols-outlined text-4xl text-primary">{s.icon}</span>
               </div>
               <h3

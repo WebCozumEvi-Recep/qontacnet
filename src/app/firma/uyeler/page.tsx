@@ -64,7 +64,7 @@ export default function UyelerPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {[{ label: "Toplam", value: members.length, color: "#00d4ff" }, { label: "Aktif", value: members.filter(m => m.aktif).length, color: "#42faba" }, { label: "Pasif", value: members.filter(m => !m.aktif).length, color: "#ff6b6b" }].map(s => (
+        {[{ label: "Toplam", value: members.length, color: "#d4af37" }, { label: "Aktif", value: members.filter(m => m.aktif).length, color: "#42faba" }, { label: "Pasif", value: members.filter(m => !m.aktif).length, color: "#ff6b6b" }].map(s => (
           <div key={s.label} className="glass-card rounded-xl p-4 text-center"><p className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif", color: s.color }}>{s.value}</p><p className="text-xs text-on-surface-variant mt-0.5">{s.label} Üye</p></div>
         ))}
       </div>

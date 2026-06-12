@@ -66,7 +66,7 @@ export default function KartimPage() {
   const member = user?.data as unknown as MemberData;
 
   // Firma temasını API'den çek (gerçek public card rengi)
-  const [firmaColor, setFirmaColor] = useState("#00d4ff");
+  const [firmaColor, setFirmaColor] = useState("#d4af37");
   const [toggles, setToggles] = useState({
     showWhatsapp: true, showLinkedin: true, showInstagram: true, showWebsite: true, showBio: true,
   });

@@ -10,8 +10,8 @@ export default function SectionTitle({ badge, title, highlight, subtitle, center
   return (
     <div className={`mb-16 ${center ? "text-center" : ""}`}>
       {badge && (
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-semibold uppercase tracking-widest mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
           {badge}
         </div>
       )}

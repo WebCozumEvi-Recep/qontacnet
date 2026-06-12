@@ -31,7 +31,7 @@ const benefits = [
 
 export default function ForMembers() {
   return (
-    <section id="uyeler" className="py-24" style={{ background: "#0B1020" }}>
+    <section id="uyeler" className="py-24" style={{ background: "#0d0b09" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionTitle
           badge="Üyeler İçin"

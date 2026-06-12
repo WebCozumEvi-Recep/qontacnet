@@ -30,9 +30,9 @@ export default function AdminGelirPage() {
     <div className="space-y-6 max-w-[1200px]">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat icon="payments" label="Bu Ay MRR" value={`₺${currentMrr.toLocaleString("tr-TR")}`} sub={`${delta >= 0 ? "+" : ""}${deltaPct}% geçen aya göre`} color="#42faba" />
-        <Stat icon="trending_up" label="Yıllık Tahmin (ARR)" value={`₺${(currentMrr * 12 / 1000).toFixed(0)}K`} sub="Mevcut MRR × 12" color="#00d4ff" />
+        <Stat icon="trending_up" label="Yıllık Tahmin (ARR)" value={`₺${(currentMrr * 12 / 1000).toFixed(0)}K`} sub="Mevcut MRR × 12" color="#d4af37" />
         <Stat icon="show_chart" label="12 Ay Ortalama" value={`₺${(ortalama / 1000).toFixed(1)}K`} sub="MRR ortalaması" color="#6001d1" />
-        <Stat icon="account_balance" label="Toplam Gelir" value={`₺${(revenue.reduce((a, r) => a + r.mrr, 0) / 1000).toFixed(0)}K`} sub="12 aylık toplam" color="#a8e8ff" />
+        <Stat icon="account_balance" label="Toplam Gelir" value={`₺${(revenue.reduce((a, r) => a + r.mrr, 0) / 1000).toFixed(0)}K`} sub="12 aylık toplam" color="#f0d289" />
       </div>
 
       <div className="glass-card rounded-2xl p-6">
@@ -43,7 +43,7 @@ export default function AdminGelirPage() {
           {revenue.map((r, i) => (
             <div key={i} className="flex-1 flex flex-col items-center justify-end gap-2 h-full group cursor-pointer">
               <div className="text-xs text-on-surface opacity-0 group-hover:opacity-100 transition-opacity font-semibold">₺{(r.mrr / 1000).toFixed(1)}K</div>
-              <div className="w-full rounded-t-lg transition-all" style={{ height: `${(r.mrr / maxMrr) * 100}%`, background: i === revenue.length - 1 ? "#00d4ff" : "rgba(0,212,255,0.4)" }} />
+              <div className="w-full rounded-t-lg transition-all" style={{ height: `${(r.mrr / maxMrr) * 100}%`, background: i === revenue.length - 1 ? "#d4af37" : "rgba(212, 175, 55,0.4)" }} />
               <span className="text-xs text-on-surface-variant">{r.ay}</span>
             </div>
           ))}

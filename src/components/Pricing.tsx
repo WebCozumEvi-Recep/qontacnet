@@ -18,7 +18,7 @@ const plans = [
     ],
     popular: true,
     btnLabel: "Teklif Al",
-    btnStyle: "bg-primary text-black hover:shadow-[0_0_20px_rgba(0,212,255,0.4)]",
+    btnStyle: "bg-primary text-black hover:shadow-[0_0_20px_rgba(212, 175, 55,0.4)]",
   },
   {
     name: "Kurumsal",

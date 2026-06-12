@@ -129,10 +129,10 @@ export default function AdminKartlarPage() {
   return (
     <div className="space-y-6 max-w-[1200px]">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat icon="inventory" label="Toplam Üretilen" value={toplam} color="#00d4ff" />
+        <Stat icon="inventory" label="Toplam Üretilen" value={toplam} color="#d4af37" />
         <Stat icon="warehouse" label="Stokta" value={sum("STOKTA")} color="#42faba" />
         <Stat icon="assignment_turned_in" label="Tahsis Edildi" value={sum("TAHSIS")} color="#6001d1" />
-        <Stat icon="factory" label="Üretimde" value={sum("URETIMDE")} color="#a8e8ff" />
+        <Stat icon="factory" label="Üretimde" value={sum("URETIMDE")} color="#f0d289" />
       </div>
 
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">

@@ -5,7 +5,7 @@ import { temaLimiti, paketLabel } from "@/lib/labels";
 import ModulYonetimi from "@/components/firma/ModulYonetimi";
 
 const PRESET_COLORS = [
-  { name: "Cyber Blue", color: "#00d4ff" },
+  { name: "Cyber Blue", color: "#d4af37" },
   { name: "Neon Purple", color: "#6001d1" },
   { name: "Mint Green", color: "#42faba" },
   { name: "Sunset Red", color: "#ff6b6b" },
@@ -30,7 +30,7 @@ export default function TemplatePage() {
 
   const [modal, setModal] = useState<null | "new" | string>(null);
   const [formAd, setFormAd] = useState("");
-  const [formRenk, setFormRenk] = useState("#00d4ff");
+  const [formRenk, setFormRenk] = useState("#d4af37");
   const [limitUyari, setLimitUyari] = useState("");
 
   const [onizle, setOnizle] = useState(false);
@@ -59,7 +59,7 @@ export default function TemplatePage() {
       setLimitUyari(`${paketLabel[paket]} paketi en fazla ${limit} tema oluşturmanıza izin verir. Daha fazlası için paketinizi yükseltin.`);
       return;
     }
-    setFormAd(""); setFormRenk("#00d4ff"); setModal("new");
+    setFormAd(""); setFormRenk("#d4af37"); setModal("new");
   };
   const openEdit = (t: Template) => { setFormAd(t.ad); setFormRenk(t.renk); setModal(t.id); };
   const closeModal = () => setModal(null);

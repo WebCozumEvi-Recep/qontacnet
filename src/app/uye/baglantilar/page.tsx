@@ -48,7 +48,7 @@ export default function BaglantilarPage() {
     <div className="max-w-[900px] space-y-5">
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Toplam Bağlantı", value: allLeads.length, icon: "group_add", color: "#00d4ff" },
+          { label: "Toplam Bağlantı", value: allLeads.length, icon: "group_add", color: "#d4af37" },
           { label: "NFC ile Gelen", value: allLeads.filter(l => l.kaynak === "NFC").length, icon: "nfc", color: "#42faba" },
           { label: "QR ile Gelen", value: allLeads.filter(l => l.kaynak === "QR").length, icon: "qr_code_2", color: "#6001d1" },
         ].map(s => (

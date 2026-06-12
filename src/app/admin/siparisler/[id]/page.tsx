@@ -273,7 +273,7 @@ export default function SiparisDetayPage() {
       <div className="hidden print:block p-8 bg-white text-gray-900 font-sans">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <div className="text-2xl font-black text-cyan-600" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC</div>
+            <div className="text-2xl font-black text-amber-500" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC</div>
             <div className="text-xs text-gray-500 mt-0.5">NFC + QR Dijital Kartvizit Platformu</div>
           </div>
           <div className="text-right">

@@ -88,10 +88,10 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Metric icon="group" label="Üye Sayısı" value={firma.uyeSayisi} color="#00d4ff" />
+        <Metric icon="group" label="Üye Sayısı" value={firma.uyeSayisi} color="#d4af37" />
         <Metric icon="credit_card" label="Aktif Kart" value={firma.aktifKart} color="#42faba" />
         <Metric icon="payments" label="Aylık Gelir" value={`₺${firma.mrr.toLocaleString("tr-TR")}`} color="#6001d1" />
-        <Metric icon="event" label="Üyelik Bitiş" value={firma.paketBitis ? trDate(firma.paketBitis) : "—"} color="#a8e8ff" />
+        <Metric icon="event" label="Üyelik Bitiş" value={firma.paketBitis ? trDate(firma.paketBitis) : "—"} color="#f0d289" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
