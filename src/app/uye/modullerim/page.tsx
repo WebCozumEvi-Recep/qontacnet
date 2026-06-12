@@ -7,7 +7,7 @@ import { ModulIkon } from "@/components/ModulIkon";
 type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK";
 type IkonAlan = { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string };
 interface Tanim extends IkonAlan { id: string; ad: string; tip: Tip }
-interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; gorseller?: { url: string }[] }
+interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gorseller?: { url: string }[] }
 interface Modul {
   id: string;
   tip: Tip;
@@ -85,10 +85,25 @@ function ModulEditor({ modul, onChange }: { modul: Modul; onChange: (icerik: Ice
   if (modul.tip === "LINK") {
     return (
       <div className="space-y-3">
-        <input value={i.url ?? ""} onChange={e => onChange({ ...i, url: e.target.value })}
-          placeholder="https://... (web sitesi, menü, ödeme linki vb.)"
-          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
-        <p className="text-[11px] text-on-surface-variant/60">Kartta bu modülün ikonuna tıklanınca bu bağlantı yeni sekmede açılır.</p>
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Açıklama (butonun üstünde görünür)</label>
+          <textarea value={i.aciklama ?? ""} onChange={e => onChange({ ...i, aciklama: e.target.value })}
+            placeholder="ör. Menümüzü görmek için tıklayın" rows={2}
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary resize-y" />
+        </div>
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Buton adı</label>
+          <input value={i.butonAdi ?? ""} onChange={e => onChange({ ...i, butonAdi: e.target.value })}
+            placeholder="ör. Menüyü Aç"
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Bağlantı (URL)</label>
+          <input value={i.url ?? ""} onChange={e => onChange({ ...i, url: e.target.value })}
+            placeholder="https://..."
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        </div>
+        <p className="text-[11px] text-on-surface-variant/60">Kartta ikona tıklanınca popup açılır; butona basınca bu bağlantı yeni sekmede gider.</p>
       </div>
     );
   }

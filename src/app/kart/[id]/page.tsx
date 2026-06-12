@@ -185,17 +185,10 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
             );
           })}
           {uyeModuller.filter(uyeModulDolu).map(m => (
-            m.tip === "LINK" ? (
-              <a key={m.id} href={disLink(String(m.icerik.url))} target="_blank" rel="noreferrer" aria-label={m.baslik} title={m.baslik}
-                className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
-                <ModulIkon veri={m.tanim ?? {}} size={56} />
-              </a>
-            ) : (
-              <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
-                className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
-                <ModulIkon veri={m.tanim ?? {}} size={56} />
-              </button>
-            )
+            <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
+              className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
+              <ModulIkon veri={m.tanim ?? {}} size={56} />
+            </button>
           ))}
         </div>
 
@@ -405,7 +398,7 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
 // Üye modülü lightbox içinde gösterir (text→kopyala, galeri→slider, video→embed)
 function UyeModulLightbox({ modul, color, onClose }: { modul: UyeModul; color: string; onClose: () => void }) {
   const [kopyalandi, setKopyalandi] = useState(false);
-  const ic = modul.icerik as { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; gorseller?: { url: string; baslik?: string; aciklama?: string }[] };
+  const ic = modul.icerik as { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gorseller?: { url: string; baslik?: string; aciklama?: string }[] };
 
   const kopyala = (metin: string) => {
     navigator.clipboard.writeText(metin).then(() => {
@@ -438,6 +431,21 @@ function UyeModulLightbox({ modul, color, onClose }: { modul: UyeModul; color: s
   } else if (modul.tip === "GALERI") {
     const gorseller = Array.isArray(ic.gorseller) ? ic.gorseller : [];
     body = <GaleriSlider color={color} gorseller={gorseller} />;
+  } else if (modul.tip === "LINK") {
+    const url = String(ic.url ?? "");
+    body = (
+      <div className="space-y-4 text-center">
+        {ic.aciklama && <p className="text-sm text-on-surface-variant whitespace-pre-line leading-relaxed">{ic.aciklama}</p>}
+        {url && (
+          <a href={disLink(url)} target="_blank" rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 w-full py-3.5 font-bold rounded-xl text-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
+            style={{ background: color, color: "#000" }}>
+            <span className="material-symbols-outlined text-base">open_in_new</span>
+            {ic.butonAdi?.trim() || "Bağlantıyı Aç"}
+          </a>
+        )}
+      </div>
+    );
   } else if (modul.tip === "VIDEO") {
     const embed = ic.videoUrl ? youtubeEmbed(String(ic.videoUrl)) : null;
     body = embed ? (
