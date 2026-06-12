@@ -321,6 +321,7 @@ model Product {
   aciklama  String   @default("")
   fiyat     Int      @default(0)
   gorsel    String   @default("")
+  gorseller String   @default("") // ek galeri görselleri — JSON string dizisi
   aktif     Boolean  @default(true)
   tip       String   @default("NFC_KART")
   sira      Int      @default(0)

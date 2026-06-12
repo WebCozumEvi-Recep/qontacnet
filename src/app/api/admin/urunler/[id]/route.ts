@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { normalizeGorseller } from "../route";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireRole("admin");
@@ -12,6 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.aciklama === "string") data.aciklama = body.aciklama.trim();
   if (typeof body.fiyat === "number") data.fiyat = body.fiyat;
   if (typeof body.gorsel === "string") data.gorsel = body.gorsel.trim();
+  if (Array.isArray(body.gorseller)) data.gorseller = normalizeGorseller(body.gorseller);
   if (typeof body.aktif === "boolean") data.aktif = body.aktif;
   if (typeof body.tip === "string") data.tip = body.tip.trim();
   if (typeof body.sira === "number") data.sira = body.sira;

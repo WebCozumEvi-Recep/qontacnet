@@ -3,15 +3,26 @@ import { useEffect, useRef, useState } from "react";
 
 interface Product {
   id: string; ad: string; aciklama: string; fiyat: number;
-  gorsel: string; aktif: boolean; tip: string; sira: number;
+  gorsel: string; gorseller: string; aktif: boolean; tip: string; sira: number;
 }
 
 interface ProductForm {
   ad: string; aciklama: string; fiyat: string;
-  gorsel: string; aktif: boolean; tip: string; sira: string;
+  gorsel: string; gorseller: string[]; aktif: boolean; tip: string; sira: string;
 }
 
-const emptyForm: ProductForm = { ad: "", aciklama: "", fiyat: "", gorsel: "", aktif: true, tip: "NFC_KART", sira: "0" };
+const emptyForm: ProductForm = { ad: "", aciklama: "", fiyat: "", gorsel: "", gorseller: [], aktif: true, tip: "NFC_KART", sira: "0" };
+
+// Veritabanındaki JSON string'i diziye çevirir
+function parseGorseller(raw: string): string[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
 
 const TIP_OPTIONS = [
   { value: "NFC_KART", label: "NFC Kart" },
@@ -81,6 +92,64 @@ function GorselYukle({ value, onChange }: { value: string; onChange: (url: strin
   );
 }
 
+function GaleriYukle({ value, onChange }: { value: string[]; onChange: (urls: string[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploading(true); setUploadError("");
+    const eklenen: string[] = [];
+    try {
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+        const j = await res.json();
+        if (!j.ok) { setUploadError(j.error || "Yükleme başarısız."); continue; }
+        eklenen.push(j.url);
+      }
+      if (eklenen.length) onChange([...value, ...eklenen].slice(0, 12));
+    } catch {
+      setUploadError("Yükleme başarısız.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs text-on-surface-variant block">Ek Galeri Görselleri <span className="opacity-60">(opsiyonel, en fazla 12)</span></label>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {value.map((url, i) => (
+            <div key={i} className="relative group w-16 h-16">
+              <img src={url} alt={`galeri ${i + 1}`} className="w-16 h-16 rounded-lg object-cover border border-white/10"
+                onError={e => { (e.target as HTMLImageElement).style.opacity = "0.3"; }} />
+              <button type="button" onClick={() => onChange(value.filter((_, idx) => idx !== i))}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all">
+                <span className="material-symbols-outlined text-[14px]">close</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading || value.length >= 12}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all disabled:opacity-50">
+        {uploading
+          ? <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+          : <span className="material-symbols-outlined text-base">add_photo_alternate</span>}
+        {uploading ? "Yükleniyor..." : "Görsel Ekle"}
+      </button>
+      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
+      {uploadError && <p className="text-xs text-red-400">{uploadError}</p>}
+    </div>
+  );
+}
+
 export default function AdminUrunlerPage() {
   const [urunler, setUrunler] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +173,7 @@ export default function AdminUrunlerPage() {
 
   function openEdit(u: Product) {
     setEditUrun(u);
-    setEditForm({ ad: u.ad, aciklama: u.aciklama, fiyat: String(u.fiyat), gorsel: u.gorsel, aktif: u.aktif, tip: u.tip, sira: String(u.sira) });
+    setEditForm({ ad: u.ad, aciklama: u.aciklama, fiyat: String(u.fiyat), gorsel: u.gorsel, gorseller: parseGorseller(u.gorseller), aktif: u.aktif, tip: u.tip, sira: String(u.sira) });
     setEditError("");
   }
 
@@ -282,6 +351,7 @@ export default function AdminUrunlerPage() {
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all resize-none" />
               </div>
               <GorselYukle value={newForm.gorsel} onChange={url => setNewForm(p => ({ ...p, gorsel: url }))} />
+              <GaleriYukle value={newForm.gorseller} onChange={urls => setNewForm(p => ({ ...p, gorseller: urls }))} />
               {newError && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{newError}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setNewModal(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">İptal</button>
@@ -343,6 +413,7 @@ export default function AdminUrunlerPage() {
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all resize-none" />
               </div>
               <GorselYukle value={editForm.gorsel} onChange={url => setEditForm(p => ({ ...p, gorsel: url }))} />
+              <GaleriYukle value={editForm.gorseller} onChange={urls => setEditForm(p => ({ ...p, gorseller: urls }))} />
               {editError && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setEditUrun(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">İptal</button>

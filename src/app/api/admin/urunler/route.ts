@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
+// Galeri görsellerini JSON string'e çevirir — sadece geçerli http(s)/relatif url'leri tutar
+export function normalizeGorseller(v: unknown): string {
+  if (!Array.isArray(v)) return "";
+  const list = v
+    .filter((x): x is string => typeof x === "string")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+  return list.length ? JSON.stringify(list) : "";
+}
+
 export async function GET() {
   const session = await requireRole("admin");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
@@ -22,6 +33,7 @@ export async function POST(req: NextRequest) {
       aciklama: typeof body.aciklama === "string" ? body.aciklama.trim() : "",
       fiyat: typeof body.fiyat === "number" ? body.fiyat : 0,
       gorsel: typeof body.gorsel === "string" ? body.gorsel.trim() : "",
+      gorseller: normalizeGorseller(body.gorseller),
       aktif: body.aktif !== false,
       tip: typeof body.tip === "string" ? body.tip.trim() : "NFC_KART",
       sira: typeof body.sira === "number" ? body.sira : 0,
