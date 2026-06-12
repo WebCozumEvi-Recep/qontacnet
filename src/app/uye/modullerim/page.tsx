@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { ModulIkon } from "@/components/ModulIkon";
 
-type Tip = "GALERI" | "TEXT" | "VIDEO";
+type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK";
 type IkonAlan = { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string };
 interface Tanim extends IkonAlan { id: string; ad: string; tip: Tip }
-interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; gorseller?: { url: string }[] }
+interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; gorseller?: { url: string }[] }
 interface Modul {
   id: string;
   tip: Tip;
@@ -18,7 +18,7 @@ interface Modul {
   tanim?: ({ ad: string } & IkonAlan) | null;
 }
 
-const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video" };
+const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link" };
 
 async function uploadFile(file: File): Promise<string> {
   const fd = new FormData();
@@ -79,6 +79,16 @@ function ModulEditor({ modul, onChange }: { modul: Modul; onChange: (icerik: Ice
         <input value={i.aciklama ?? ""} onChange={e => onChange({ ...i, aciklama: e.target.value })}
           placeholder="Açıklama (opsiyonel)"
           className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+      </div>
+    );
+  }
+  if (modul.tip === "LINK") {
+    return (
+      <div className="space-y-3">
+        <input value={i.url ?? ""} onChange={e => onChange({ ...i, url: e.target.value })}
+          placeholder="https://... (web sitesi, menü, ödeme linki vb.)"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <p className="text-[11px] text-on-surface-variant/60">Kartta bu modülün ikonuna tıklanınca bu bağlantı yeni sekmede açılır.</p>
       </div>
     );
   }

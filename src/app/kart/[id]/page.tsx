@@ -25,14 +25,19 @@ interface Card {
 type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | "SSS" | "HERO";
 interface Modul { id: string; tip: Tip; baslik: string; icerik: Record<string, unknown> }
 
-type UyeTip = "GALERI" | "TEXT" | "VIDEO";
+type UyeTip = "GALERI" | "TEXT" | "VIDEO" | "LINK";
 interface UyeModul { id: string; tip: UyeTip; baslik: string; icerik: Record<string, unknown>; tanim?: { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string } | null }
 
 function uyeModulDolu(m: UyeModul): boolean {
   const ic = m.icerik;
   if (m.tip === "TEXT") return Boolean(ic.metin || ic.gorsel);
   if (m.tip === "GALERI") return Array.isArray(ic.gorseller) && ic.gorseller.length > 0;
+  if (m.tip === "LINK") return Boolean(ic.url);
   return Boolean(ic.videoUrl);
+}
+
+function disLink(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 export default function KartPage({ params }: { params: Promise<{ id: string }> }) {
@@ -180,10 +185,17 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
             );
           })}
           {uyeModuller.filter(uyeModulDolu).map(m => (
-            <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
-              className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
-              <ModulIkon veri={m.tanim ?? {}} size={56} />
-            </button>
+            m.tip === "LINK" ? (
+              <a key={m.id} href={disLink(String(m.icerik.url))} target="_blank" rel="noreferrer" aria-label={m.baslik} title={m.baslik}
+                className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
+                <ModulIkon veri={m.tanim ?? {}} size={56} />
+              </a>
+            ) : (
+              <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
+                className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
+                <ModulIkon veri={m.tanim ?? {}} size={56} />
+              </button>
+            )
           ))}
         </div>
 

@@ -73,6 +73,7 @@ enum UyeModulTip {
   GALERI
   TEXT
   VIDEO
+  LINK
 }
 
 model Firma {
