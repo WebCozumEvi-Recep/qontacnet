@@ -10,6 +10,7 @@ interface MemberData {
   unvan: string;
   firmaAdi?: string;
   kartRenk: string;
+  kartArkaplan?: string;
   aktif: boolean;
   kartAktif?: boolean;
   whatsapp: string;
@@ -52,6 +53,15 @@ function CardPreview({ member, color }: { member: Pick<MemberData, "ad" | "soyad
   );
 }
 
+async function uploadMemberFile(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const r = await fetch("/api/me/upload", { method: "POST", body: fd });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error ?? "Yükleme hatası");
+  return j.url as string;
+}
+
 function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
@@ -73,9 +83,12 @@ export default function KartimPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [kartArkaplan, setKartArkaplan] = useState("");
+  const [bgUploading, setBgUploading] = useState(false);
 
   useEffect(() => {
     if (!member) return;
+    setKartArkaplan(member.kartArkaplan ?? "");
     setToggles({
       showWhatsapp: member.showWhatsapp ?? true,
       showLinkedin: member.showLinkedin ?? true,
@@ -103,7 +116,7 @@ export default function KartimPage() {
       const res = await fetch("/api/me/card", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...toggles }),
+        body: JSON.stringify({ ...toggles, kartArkaplan }),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Kaydedilemedi.");
@@ -200,6 +213,37 @@ export default function KartimPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="glass-card rounded-2xl p-6">
+            <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Profil Kutusu Arkaplanı</h3>
+            <p className="text-xs text-on-surface-variant mb-4">İstersen profil kartının arkasına bir görsel ekle (opsiyonel). Metnin okunması için görsel hafif karartılır.</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              {kartArkaplan && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={kartArkaplan} alt="" className="w-20 h-20 rounded-xl object-cover border border-white/10" />
+              )}
+              <label className="px-3 py-2 rounded-xl glass-card text-xs text-on-surface flex items-center gap-2 cursor-pointer hover:bg-white/5 transition-all">
+                <span className={`material-symbols-outlined text-sm ${bgUploading ? "animate-spin" : ""}`}>{bgUploading ? "progress_activity" : "upload"}</span>
+                {bgUploading ? "Yükleniyor..." : kartArkaplan ? "Değiştir" : "Görsel Yükle"}
+                <input type="file" accept="image/*" className="hidden" disabled={bgUploading}
+                  onChange={async e => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    setBgUploading(true);
+                    try { setKartArkaplan(await uploadMemberFile(f)); }
+                    catch (err) { setError(err instanceof Error ? err.message : "Yükleme hatası"); }
+                    setBgUploading(false);
+                    e.target.value = "";
+                  }} />
+              </label>
+              {kartArkaplan && (
+                <button type="button" onClick={() => setKartArkaplan("")}
+                  className="px-3 py-2 rounded-xl text-xs text-red-400 hover:text-red-300">
+                  Kaldır
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-on-surface-variant/60 mt-2">Değişikliğin kaydolması için aşağıdaki “Kaydet” butonuna bas.</p>
           </div>
 
           {error && (

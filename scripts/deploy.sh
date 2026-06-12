@@ -25,6 +25,8 @@ echo "--- Image build ediliyor ---"
 docker compose -f docker-compose.prod.yml build
 
 echo "--- Servisler güncelleniyor (postgres + migrate + app) ---"
+# tek seferlik migrate container'ı bayat kalırsa isim çakışması verir; önce temizle
+docker compose -f docker-compose.prod.yml rm -fs migrate 2>/dev/null || true
 docker compose -f docker-compose.prod.yml up -d
 
 # app yeniden oluşturulduysa yeni IP alır; ayrıca restart yeni volume/config

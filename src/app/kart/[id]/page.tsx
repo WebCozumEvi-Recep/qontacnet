@@ -18,6 +18,7 @@ interface Card {
   website: string;
   biyografi: string;
   avatar?: string;
+  kartArkaplan?: string;
 }
 
 type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | "SSS" | "HERO";
@@ -120,6 +121,12 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
 
       <div className="w-full max-w-sm mx-auto px-4 py-8 relative z-10">
         <div className="glass-card rounded-[2rem] p-6 mb-4 text-center relative overflow-hidden">
+          {card.kartArkaplan && (
+            <>
+              <div className="absolute inset-0 pointer-events-none bg-cover bg-center" style={{ backgroundImage: `url(${card.kartArkaplan})` }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(5,8,22,0.45) 0%, rgba(5,8,22,0.78) 100%)" }} />
+            </>
+          )}
           <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% -20%, ${color}15 0%, transparent 60%)` }} />
           <div className="absolute inset-0 shimmer opacity-10" />
           <div className="relative inline-block mb-4">

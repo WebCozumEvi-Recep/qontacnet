@@ -150,6 +150,7 @@ model Member {
   aktif        Boolean @default(true)
   kartAktif    Boolean @default(false)  // fiziksel kart aktive edildi mi
   kartRenk     String  @default("#00d4ff")
+  kartArkaplan String  @default("")  // üyenin yüklediği profil kutusu arkaplan görseli
   templateId   String?
 
   physicalCard PhysicalCard?

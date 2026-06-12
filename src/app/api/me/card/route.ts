@@ -15,6 +15,9 @@ export async function PUT(req: NextRequest) {
       if (typeof body[f] === "boolean") data[f] = body[f];
     }
 
+    // Üyenin yüklediği profil kutusu arkaplan görseli (boş string = kaldır)
+    if (typeof body.kartArkaplan === "string") data.kartArkaplan = body.kartArkaplan;
+
     const updated = await prisma.member.update({
       where: { id: session.sub },
       data,

@@ -51,6 +51,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       unvan: member.unvan,
       firmaAdi: member.firma?.ad ?? "",
       avatar: member.avatar,
+      kartArkaplan: member.kartArkaplan,
       kartRenk: firmaRenk ?? member.kartRenk,
       telefon: member.telefon,
       email: member.email,
