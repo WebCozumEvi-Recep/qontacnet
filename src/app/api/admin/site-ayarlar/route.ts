@@ -10,7 +10,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     settings: settings ?? {
-      id: "site", logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "",
+      id: "site", logoUrl: "", faviconUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "",
       iletisimEmail: "info@qontac.net", iletisimTelefon: "+90 (850) 302 40 04", iletisimAdres: "Ümraniye, İstanbul / Türkiye",
       iletisimAciklama: "Geleceğin networking dünyasında yerinizi alın. Dijital, akıllı ve prestijli.",
       sosyalLinkedin: "", sosyalInstagram: "", sosyalX: "", sosyalFacebook: "", sosyalYoutube: "", sosyalWebsite: "",
@@ -25,6 +25,7 @@ export async function PUT(req: NextRequest) {
   const body = (await req.json()) as Record<string, unknown>;
   const data = {
     logoUrl: String(body.logoUrl ?? ""),
+    faviconUrl: String(body.faviconUrl ?? ""),
     logoText: String(body.logoText ?? "QONTAC").slice(0, 60),
     googleSiteVerification: String(body.googleSiteVerification ?? "").trim(),
     headKod: String(body.headKod ?? ""),

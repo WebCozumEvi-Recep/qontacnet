@@ -2,24 +2,37 @@ import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { prisma } from "@/lib/prisma";
 
 const inter = Inter({ subsets: ["latin"], variable: "--inter" });
 const sora = Sora({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--sora" });
 
-export const metadata: Metadata = {
-  title: "QONTAC Network Card | Akıllı Dijital Kartvizit Sistemi",
-  description:
-    "QONTAC Network Card ile üyelerinize NFC ve QR destekli, firma onaylı, kişiselleştirilebilir dijital temsilci sayfaları sunun.",
-  keywords: "NFC kartvizit, dijital kartvizit, network marketing, QR kod kartvizit",
-  openGraph: {
-    title: "QONTAC Network Card",
-    description: "Network ekipleriniz için akıllı dijital kartvizit sistemi.",
-    url: "https://qontac.net",
-    siteName: "QONTAC",
-    locale: "tr_TR",
-    type: "website",
-  },
-};
+// Favicon ayardan okunduğu için metadata her istekte üretilir
+export async function generateMetadata(): Promise<Metadata> {
+  let faviconUrl = "";
+  try {
+    const s = await prisma.siteSettings.findUnique({ where: { id: "site" }, select: { faviconUrl: true } });
+    faviconUrl = s?.faviconUrl ?? "";
+  } catch {
+    // DB erişilemezse varsayılan favicon kullanılır
+  }
+
+  return {
+    title: "QONTAC Network Card | Akıllı Dijital Kartvizit Sistemi",
+    description:
+      "QONTAC Network Card ile üyelerinize NFC ve QR destekli, firma onaylı, kişiselleştirilebilir dijital temsilci sayfaları sunun.",
+    keywords: "NFC kartvizit, dijital kartvizit, network marketing, QR kod kartvizit",
+    ...(faviconUrl ? { icons: { icon: faviconUrl, shortcut: faviconUrl, apple: faviconUrl } } : {}),
+    openGraph: {
+      title: "QONTAC Network Card",
+      description: "Network ekipleriniz için akıllı dijital kartvizit sistemi.",
+      url: "https://qontac.net",
+      siteName: "QONTAC",
+      locale: "tr_TR",
+      type: "website",
+    },
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

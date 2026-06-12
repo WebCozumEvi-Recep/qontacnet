@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null;
     if (!file) return NextResponse.json({ ok: false, error: "Dosya bulunamadı." }, { status: 400 });
 
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"];
     if (!allowed.includes(file.type)) {
-      return NextResponse.json({ ok: false, error: "Sadece JPG, PNG, WEBP veya GIF yüklenebilir." }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Sadece JPG, PNG, WEBP, GIF, SVG veya ICO yüklenebilir." }, { status: 400 });
     }
 
     if (file.size > 5 * 1024 * 1024) {

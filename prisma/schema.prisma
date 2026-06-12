@@ -282,6 +282,7 @@ model Order {
 model SiteSettings {
   id                     String   @id @default("site")
   logoUrl                String   @default("")
+  faviconUrl             String   @default("") // tarayıcı sekmesi favicon görseli
   logoText               String   @default("QONTAC")
   googleSiteVerification String   @default("")
   headKod                String   @default("") // <head> içine eklenecek kodlar (analytics vb.)

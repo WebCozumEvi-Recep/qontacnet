@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 interface AdminUser { id: string; ad: string; email: string; rol: string }
 interface SiteSettings {
-  logoUrl: string; logoText: string; googleSiteVerification: string; headKod: string; bodyKod: string;
+  logoUrl: string; faviconUrl: string; logoText: string; googleSiteVerification: string; headKod: string; bodyKod: string;
   iletisimEmail: string; iletisimTelefon: string; iletisimAdres: string; iletisimAciklama: string;
   sosyalLinkedin: string; sosyalInstagram: string; sosyalX: string; sosyalFacebook: string; sosyalYoutube: string; sosyalWebsite: string;
 }
@@ -159,14 +159,16 @@ export default function AdminAyarlarPage() {
 
 function SiteKimligi() {
   const [s, setS] = useState<SiteSettings>({
-    logoUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "",
+    logoUrl: "", faviconUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "",
     iletisimEmail: "", iletisimTelefon: "", iletisimAdres: "", iletisimAciklama: "",
     sosyalLinkedin: "", sosyalInstagram: "", sosyalX: "", sosyalFacebook: "", sosyalYoutube: "", sosyalWebsite: "",
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [faviconUploading, setFaviconUploading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const faviconRef = useRef<HTMLInputElement>(null);
 
   const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all";
 
@@ -174,6 +176,7 @@ function SiteKimligi() {
     fetch("/api/admin/site-ayarlar").then(r => r.json()).then(j => {
       if (j.ok && j.settings) setS({
         logoUrl: j.settings.logoUrl ?? "",
+        faviconUrl: j.settings.faviconUrl ?? "",
         logoText: j.settings.logoText ?? "QONTAC",
         googleSiteVerification: j.settings.googleSiteVerification ?? "",
         headKod: j.settings.headKod ?? "",
@@ -205,6 +208,21 @@ function SiteKimligi() {
     if (j.ok) setS(p => ({ ...p, logoUrl: j.url }));
     else setMsg({ ok: false, text: j.error || "Logo yüklenemedi." });
     if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function handleFavicon(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFaviconUploading(true); setMsg(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "site");
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const j = await res.json();
+    setFaviconUploading(false);
+    if (j.ok) setS(p => ({ ...p, faviconUrl: j.url }));
+    else setMsg({ ok: false, text: j.error || "Favicon yüklenemedi." });
+    if (faviconRef.current) faviconRef.current.value = "";
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -244,6 +262,30 @@ function SiteKimligi() {
               className="px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-400/10 transition-all">Kaldır</button>
           )}
         </div>
+      </div>
+
+      {/* Favicon */}
+      <div className="mb-5">
+        <label className="block text-xs text-on-surface-variant mb-1.5">Favicon (tarayıcı sekmesi ikonu)</label>
+        <div className="flex items-center gap-4 flex-wrap">
+          {s.faviconUrl ? (
+            <img src={s.faviconUrl} alt="favicon" className="h-10 w-10 object-contain rounded-lg border border-white/10 bg-white/5 p-1" />
+          ) : (
+            <div className="h-10 w-10 rounded-lg border border-dashed border-white/15 flex items-center justify-center text-on-surface-variant">
+              <span className="material-symbols-outlined text-base">public</span>
+            </div>
+          )}
+          <input ref={faviconRef} type="file" accept="image/png,image/x-icon,image/svg+xml,image/jpeg,image/webp" className="hidden" onChange={handleFavicon} />
+          <button type="button" onClick={() => faviconRef.current?.click()} disabled={faviconUploading}
+            className="px-4 py-2 rounded-xl glass-card text-xs font-semibold hover:bg-white/10 transition-all disabled:opacity-60">
+            {faviconUploading ? "Yükleniyor..." : "Favicon Yükle"}
+          </button>
+          {s.faviconUrl && (
+            <button type="button" onClick={() => setS(p => ({ ...p, faviconUrl: "" }))}
+              className="px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-400/10 transition-all">Kaldır</button>
+          )}
+        </div>
+        <p className="text-[11px] text-on-surface-variant mt-1.5">Önerilen: kare, 512×512 px PNG veya .ico/.svg dosyası. Kaydedip yayınladıktan sonra tarayıcı sekmesinde görünür.</p>
       </div>
 
       <div className="mb-5">
