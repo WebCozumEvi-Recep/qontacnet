@@ -142,7 +142,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           )}
           <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% -20%, ${color}15 0%, transparent 60%)` }} />
           <div className="absolute inset-0 shimmer opacity-10" />
-          <div className="relative inline-block mb-4">
+          <div className="relative z-10 inline-block mb-4">
             <div className="w-24 h-24 rounded-full border-4 overflow-hidden flex items-center justify-center mx-auto" style={{ borderColor: `${color}50`, background: `${color}15` }}>
               {card.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -155,12 +155,14 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
               <span className="material-symbols-outlined text-sm text-black">verified</span>
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>{card.ad} {card.soyad}</h1>
-          <p className="text-sm font-medium mb-1" style={{ color }}>{card.unvan}</p>
-          <p className="text-sm text-on-surface-variant">{card.firmaAdi}</p>
-          {card.biyografi && (
-            <p className="text-xs text-on-surface-variant mt-3 leading-relaxed border-t border-white/10 pt-3">{card.biyografi}</p>
-          )}
+          <div className="relative z-10">
+            <h1 className="text-2xl font-bold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>{card.ad} {card.soyad}</h1>
+            <p className="text-sm font-medium mb-1" style={{ color }}>{card.unvan}</p>
+            <p className="text-sm text-on-surface-variant">{card.firmaAdi}</p>
+            {card.biyografi && (
+              <p className="text-xs text-on-surface-variant mt-3 leading-relaxed border-t border-white/10 pt-3">{card.biyografi}</p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-4 gap-x-4 gap-y-5 justify-items-center mb-5 px-2">
