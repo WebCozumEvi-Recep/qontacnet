@@ -25,6 +25,7 @@ const firmaNav: NavItem[] = [
   { href: "/firma/template", icon: "style", label: "Şablonlar" },
   { href: "/firma/basvurular", icon: "inbox", label: "Başvurular" },
   { href: "/firma/analitik", icon: "bar_chart", label: "Analitik" },
+  { href: "/firma/urun-tanitim", icon: "campaign", label: "Ürün Tanıtımı" },
   { href: "/firma/ayarlar", icon: "settings", label: "Ayarlar" },
 ];
 
@@ -37,6 +38,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/gelir", icon: "trending_up", label: "Gelir Raporu" },
   { href: "/admin/urunler", icon: "inventory_2", label: "Ürünler" },
   { href: "/admin/uye-modulleri", icon: "widgets", label: "Üye Modülleri" },
+  { href: "/admin/urun-tanitim", icon: "campaign", label: "Ürün Tanıtımı" },
   { href: "/admin/basvurular", icon: "mark_email_unread", label: "Başvurular" },
   { href: "/admin/sayfalar", icon: "description", label: "Özel Sayfalar" },
   { href: "/admin/ayarlar", icon: "settings", label: "Ayarlar" },

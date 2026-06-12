@@ -326,6 +326,16 @@ model Order {
 }
 
 // Tekil satır: site kimliği ve kod enjeksiyon ayarları (id = "site")
+// Tüm firma sitelerinde aynı görünen ürün tanıtım içeriği (admin yönetir, tekil kayıt)
+model UrunTanitim {
+  id        String   @id @default("urun-tanitim")
+  ozet      String   @default("")
+  detay     String   @default("")
+  gorseller Json     @default("[]") // [{ url, baslik }]
+  videolar  Json     @default("[]") // [{ url, baslik }]
+  updatedAt DateTime @updatedAt
+}
+
 model SiteSettings {
   id                     String   @id @default("site")
   logoUrl                String   @default("")
