@@ -22,7 +22,7 @@ export default function Header({ logoUrl = "", logoText = "QONTAC" }: { logoUrl?
         {/* Logo */}
         <div className="flex items-center gap-xs">
           {logoUrl ? (
-            <img src={logoUrl} alt={logoText} className="h-10 w-auto object-contain" />
+            <img src={logoUrl} alt={logoText} className="h-9 md:h-10 w-auto max-w-[150px] md:max-w-[190px] object-contain" />
           ) : (
             <span className="text-headline-md font-bold text-primary tracking-tight" style={{ fontFamily: "Sora, sans-serif" }}>
               {logoText}
