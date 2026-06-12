@@ -124,7 +124,10 @@ model UyeModulTanim {
   id        String      @id @default(cuid())
   ad        String
   tip       UyeModulTip
-  ikon      String      @default("")
+  ikon      String      @default("")        // yüklenen görsel url (varsa öncelikli)
+  ikonAd    String      @default("")        // Material Symbols ikon adı (galeriden seçilen)
+  butonRenk String      @default("#d4af37") // ikon yuvarlağı arkaplan rengi
+  ikonRenk  String      @default("#000000") // ikon rengi
   sira      Int         @default(0)
   aktif     Boolean     @default(true)
   createdAt DateTime    @default(now())

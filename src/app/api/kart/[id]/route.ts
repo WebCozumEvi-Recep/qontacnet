@@ -40,7 +40,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const uyeModuller = await prisma.memberModul.findMany({
     where: { memberId: id, aktif: true },
     orderBy: [{ sira: "asc" }, { createdAt: "asc" }],
-    select: { id: true, tip: true, baslik: true, icerik: true, tanim: { select: { ikon: true } } },
+    select: { id: true, tip: true, baslik: true, icerik: true, tanim: { select: { ikon: true, ikonAd: true, butonRenk: true, ikonRenk: true } } },
   });
 
   // Görüntülenme sayacı (await etmeden)

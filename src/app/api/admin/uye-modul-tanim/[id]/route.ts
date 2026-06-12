@@ -13,6 +13,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.ad === "string" && body.ad.trim()) data.ad = body.ad.trim();
   if (typeof body.tip === "string" && TIPLER.includes(body.tip as (typeof TIPLER)[number])) data.tip = body.tip;
   if (typeof body.ikon === "string") data.ikon = body.ikon.trim();
+  if (typeof body.ikonAd === "string") data.ikonAd = body.ikonAd.trim();
+  if (typeof body.butonRenk === "string") data.butonRenk = body.butonRenk.trim();
+  if (typeof body.ikonRenk === "string") data.ikonRenk = body.ikonRenk.trim();
   if (typeof body.aktif === "boolean") data.aktif = body.aktif;
   if (typeof body.sira === "number") data.sira = body.sira;
   const tanim = await prisma.uyeModulTanim.update({ where: { id }, data });

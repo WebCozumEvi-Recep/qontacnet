@@ -2,9 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { ModulIkon } from "@/components/ModulIkon";
 
 type Tip = "GALERI" | "TEXT" | "VIDEO";
-interface Tanim { id: string; ad: string; tip: Tip; ikon: string }
+type IkonAlan = { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string };
+interface Tanim extends IkonAlan { id: string; ad: string; tip: Tip }
 interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; gorseller?: { url: string }[] }
 interface Modul {
   id: string;
@@ -13,11 +15,10 @@ interface Modul {
   aktif: boolean;
   sira: number;
   icerik: Icerik;
-  tanim?: { ad: string; ikon: string } | null;
+  tanim?: ({ ad: string } & IkonAlan) | null;
 }
 
 const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video" };
-const TIP_IKON: Record<Tip, string> = { GALERI: "photo_library", TEXT: "article", VIDEO: "smart_display" };
 
 async function uploadFile(file: File): Promise<string> {
   const fd = new FormData();
@@ -175,12 +176,7 @@ export default function ModullerimPage() {
             {tanimlar.map(t => (
               <button key={t.id} onClick={() => ekle(t.id)}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl glass-card text-sm text-on-surface hover:bg-white/5 transition-all">
-                {t.ikon ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={t.ikon} alt="" className="w-6 h-6 rounded-md object-cover" />
-                ) : (
-                  <span className="material-symbols-outlined text-base text-primary">{TIP_IKON[t.tip]}</span>
-                )}
+                <ModulIkon veri={t} size={28} />
                 {t.ad}
                 <span className="material-symbols-outlined text-sm text-on-surface-variant">add</span>
               </button>
@@ -197,12 +193,7 @@ export default function ModullerimPage() {
           {moduller.map(m => (
             <div key={m.id} className="glass-card rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-3">
-                {m.tanim?.ikon ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={m.tanim.ikon} alt="" className="w-8 h-8 rounded-lg object-cover" />
-                ) : (
-                  <span className="material-symbols-outlined text-primary">{TIP_IKON[m.tip]}</span>
-                )}
+                <ModulIkon veri={m.tanim ?? {}} size={32} />
                 <input value={m.baslik}
                   onChange={e => setLocal(m.id, { baslik: e.target.value })}
                   onBlur={() => kaydet(m.id, { baslik: m.baslik })}

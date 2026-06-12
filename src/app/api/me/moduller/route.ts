@@ -9,7 +9,7 @@ export async function GET() {
   const moduller = await prisma.memberModul.findMany({
     where: { memberId: session.sub },
     orderBy: [{ sira: "asc" }, { createdAt: "asc" }],
-    include: { tanim: { select: { ad: true, ikon: true } } },
+    include: { tanim: { select: { ad: true, ikon: true, ikonAd: true, butonRenk: true, ikonRenk: true } } },
   });
   return NextResponse.json({ ok: true, moduller });
 }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       sira: (son?.sira ?? -1) + 1,
       aktif: true,
     },
-    include: { tanim: { select: { ad: true, ikon: true } } },
+    include: { tanim: { select: { ad: true, ikon: true, ikonAd: true, butonRenk: true, ikonRenk: true } } },
   });
   return NextResponse.json({ ok: true, modul });
 }

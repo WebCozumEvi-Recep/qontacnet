@@ -2,6 +2,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
+import { ModulIkon } from "@/components/ModulIkon";
 
 interface Card {
   id: string;
@@ -25,7 +26,7 @@ type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | 
 interface Modul { id: string; tip: Tip; baslik: string; icerik: Record<string, unknown> }
 
 type UyeTip = "GALERI" | "TEXT" | "VIDEO";
-interface UyeModul { id: string; tip: UyeTip; baslik: string; icerik: Record<string, unknown>; tanim?: { ikon: string } | null }
+interface UyeModul { id: string; tip: UyeTip; baslik: string; icerik: Record<string, unknown>; tanim?: { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string } | null }
 
 export default function KartPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -390,12 +391,7 @@ function UyeModulRender({ modul, color }: { modul: UyeModul; color: string }) {
     <div>
       {modul.baslik && (
         <div className="flex items-center gap-2 mb-2 px-1">
-          {modul.tanim?.ikon ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={modul.tanim.ikon} alt="" className="w-5 h-5 rounded object-cover" />
-          ) : (
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-          )}
+          <ModulIkon veri={modul.tanim ?? {}} size={22} />
           <h2 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{modul.baslik}</h2>
         </div>
       )}

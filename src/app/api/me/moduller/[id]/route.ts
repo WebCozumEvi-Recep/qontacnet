@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const modul = await prisma.memberModul.update({
     where: { id },
     data,
-    include: { tanim: { select: { ad: true, ikon: true } } },
+    include: { tanim: { select: { ad: true, ikon: true, ikonAd: true, butonRenk: true, ikonRenk: true } } },
   });
   return NextResponse.json({ ok: true, modul });
 }

@@ -9,7 +9,7 @@ export async function GET() {
   const tanimlar = await prisma.uyeModulTanim.findMany({
     where: { aktif: true },
     orderBy: [{ sira: "asc" }, { createdAt: "asc" }],
-    select: { id: true, ad: true, tip: true, ikon: true },
+    select: { id: true, ad: true, tip: true, ikon: true, ikonAd: true, butonRenk: true, ikonRenk: true },
   });
   return NextResponse.json({ ok: true, tanimlar });
 }
