@@ -90,7 +90,7 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
       }`}>
         {/* Logo */}
         <div className="p-6 border-b border-white/5">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex flex-col items-start gap-2">
             {siteLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={siteLogo} alt={siteText} className="h-7 w-auto object-contain" />
