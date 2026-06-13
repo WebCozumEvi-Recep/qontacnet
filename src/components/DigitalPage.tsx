@@ -11,45 +11,55 @@ export default function DigitalPage() {
       <div className="max-w-container-max mx-auto px-10 grid lg:grid-cols-2 gap-lg items-center">
         {/* Phone Mockup */}
         <div className="order-2 lg:order-1">
-          <div className="relative mx-auto w-[320px] h-[640px] bg-black rounded-[3rem] border-[10px] border-surface-dim shadow-2xl overflow-hidden p-1">
+          <div className="relative mx-auto w-[320px] h-[640px] rounded-[3rem] border-[10px] border-surface-dim shadow-2xl overflow-hidden p-1" style={{ background: "#000" }}>
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20" />
-            <div className="h-full w-full bg-surface-container-lowest overflow-y-auto pt-12 pb-8 px-4">
-              {/* Profile */}
-              <div className="flex flex-col items-center mb-8">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary p-1 mb-4">
-                  <div className="w-full h-full rounded-full bg-surface-dim flex items-center justify-center">
+            <div className="h-full w-full overflow-y-auto pt-10 pb-8 px-4" style={{ background: "#050816" }}>
+              {/* Profil kutusu */}
+              <div className="relative rounded-[1.75rem] p-5 mb-4 text-center overflow-hidden glass-card">
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(212,175,55,0.18) 0%, transparent 60%)" }} />
+                <div className="relative z-10 inline-block mb-3">
+                  <div className="w-20 h-20 rounded-full border-4 overflow-hidden flex items-center justify-center mx-auto" style={{ borderColor: "rgba(212,175,55,0.5)", background: "rgba(212,175,55,0.12)" }}>
                     <span className="material-symbols-outlined text-4xl text-primary">person</span>
                   </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-surface-dim flex items-center justify-center" style={{ background: "#d4af37" }}>
+                    <span className="material-symbols-outlined text-[13px] text-black">verified</span>
+                  </div>
                 </div>
-                <h4 className="text-white font-bold text-xl">Ahmet Yılmaz</h4>
-                <p className="text-primary text-sm">Üst Düzey Yönetici</p>
+                <div className="relative z-10">
+                  <h4 className="text-white font-bold text-lg" style={{ fontFamily: "Sora, sans-serif" }}>Ahmet Yılmaz</h4>
+                  <p className="text-primary text-sm font-medium">Üst Düzey Yönetici</p>
+                  <p className="text-xs text-on-surface-variant">Qontac Network</p>
+                </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="space-y-3">
-                <div className="w-full p-4 glass-card rounded-2xl flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-base">chat</span>
+              {/* Yuvarlak ikon grid — aksiyonlar + üye modülleri */}
+              <div className="grid grid-cols-4 gap-x-3 gap-y-4 justify-items-center mb-5 px-1">
+                {[
+                  { icon: "person_add", bg: "#d4af37", color: "#000" },
+                  { icon: "call", bg: "#22c55e" },
+                  { icon: "mail", bg: "#3b82f6" },
+                  { icon: "chat", bg: "#16a34a" },
+                  { icon: "shopping_bag", bg: "#8b5cf6" },
+                  { icon: "photo_library", bg: "#ec4899" },
+                  { icon: "play_circle", bg: "#ef4444" },
+                  { icon: "link", bg: "#0ea5e9" },
+                ].map((a, i) => (
+                  <div key={i} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg" style={{ background: a.bg }}>
+                    <span className="material-symbols-outlined text-lg" style={{ color: a.color ?? "#fff" }}>{a.icon}</span>
                   </div>
-                  <span className="text-sm font-medium text-on-surface">WhatsApp İle İletişim</span>
+                ))}
+              </div>
+
+              {/* Firma modülü kartı */}
+              <div className="glass-card rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined text-primary text-base">collections</span>
+                  <span className="text-sm font-semibold text-on-surface">Öne Çıkan Ürünler</span>
                 </div>
-                <div className="w-full p-4 glass-card rounded-2xl flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-base">shopping_bag</span>
-                  </div>
-                  <span className="text-sm font-medium text-on-surface">Ürün Kataloğu</span>
-                </div>
-                <div className="w-full p-4 glass-card rounded-2xl flex items-center gap-3 border-tertiary/30 bg-tertiary/5">
-                  <div className="w-10 h-10 rounded-full bg-tertiary/20 text-tertiary flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-base">rocket_launch</span>
-                  </div>
-                  <span className="text-sm font-medium text-on-surface">Hemen Üye Ol</span>
-                </div>
-                <div className="w-full p-4 glass-card rounded-2xl flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-secondary/20 text-secondary flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-base">event</span>
-                  </div>
-                  <span className="text-sm font-medium text-on-surface">Randevu Al</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="aspect-square rounded-lg bg-white/5 border border-white/10" />
+                  ))}
                 </div>
               </div>
             </div>

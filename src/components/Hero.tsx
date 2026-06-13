@@ -113,26 +113,48 @@ export default function Hero() {
 
           {/* Phone Mockup */}
           <div className="absolute z-30 translate-x-24 translate-y-12 transform rotate-6 hidden md:block">
-            <div className="w-56 h-[440px] rounded-[2.5rem] border-[8px] border-surface-container-highest glass-card p-4 overflow-hidden relative shadow-2xl">
-              <div className="w-1/3 h-5 bg-surface-container-highest mx-auto rounded-b-xl mb-4" />
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-16 h-16 rounded-full bg-primary-container/20 border border-primary/40 p-1">
-                  <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center">
-                    <span className="material-symbols-outlined text-primary text-2xl">person</span>
+            <div className="w-56 h-[440px] rounded-[2.5rem] border-[8px] border-surface-container-highest p-3 overflow-hidden relative shadow-2xl" style={{ background: "#050816" }}>
+              <div className="w-1/3 h-5 bg-surface-container-highest mx-auto rounded-b-xl mb-3" />
+              {/* Profil kutusu */}
+              <div className="relative rounded-2xl p-3 mb-3 text-center overflow-hidden glass-card">
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(212,175,55,0.18) 0%, transparent 60%)" }} />
+                <div className="relative z-10 inline-block mb-2">
+                  <div className="w-14 h-14 rounded-full border-2 flex items-center justify-center mx-auto" style={{ borderColor: "rgba(212,175,55,0.5)", background: "rgba(212,175,55,0.12)" }}>
+                    <span className="material-symbols-outlined text-2xl text-primary">person</span>
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: "#d4af37" }}>
+                    <span className="material-symbols-outlined text-[10px] text-black">verified</span>
                   </div>
                 </div>
-                <div className="w-24 h-3 bg-white/20 rounded-full" />
-                <div className="w-16 h-2 bg-white/10 rounded-full mb-4" />
-                <div className="grid grid-cols-2 gap-2 w-full">
-                  <div className="h-12 glass-card rounded-lg flex items-center justify-center text-[10px] text-white/40">
-                    WhatsApp
-                  </div>
-                  <div className="h-12 glass-card rounded-lg flex items-center justify-center text-[10px] text-white/40">
-                    Katalog
-                  </div>
+                <div className="relative z-10">
+                  <div className="w-20 h-2.5 bg-white/25 rounded-full mx-auto mb-1.5" />
+                  <div className="w-14 h-2 rounded-full mx-auto" style={{ background: "rgba(212,175,55,0.5)" }} />
                 </div>
-                <div className="w-full h-32 glass-card rounded-xl mt-2 flex items-center justify-center text-[10px] text-white/30 p-2 text-center">
-                  Öne Çıkan Ürünler Alanı
+              </div>
+              {/* Yuvarlak ikon grid */}
+              <div className="grid grid-cols-4 gap-x-2 gap-y-2.5 justify-items-center mb-3 px-1">
+                {[
+                  { icon: "person_add", bg: "#d4af37", color: "#000" },
+                  { icon: "call", bg: "#22c55e" },
+                  { icon: "chat", bg: "#16a34a" },
+                  { icon: "shopping_bag", bg: "#8b5cf6" },
+                  { icon: "photo_library", bg: "#ec4899" },
+                  { icon: "play_circle", bg: "#ef4444" },
+                  { icon: "link", bg: "#0ea5e9" },
+                  { icon: "mail", bg: "#3b82f6" },
+                ].map((a, i) => (
+                  <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center shadow" style={{ background: a.bg }}>
+                    <span className="material-symbols-outlined text-[15px]" style={{ color: a.color ?? "#fff" }}>{a.icon}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Firma modülü */}
+              <div className="glass-card rounded-xl p-2.5">
+                <div className="w-20 h-2 bg-white/20 rounded-full mb-2" />
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="aspect-square rounded-md bg-white/5 border border-white/10" />
+                  ))}
                 </div>
               </div>
             </div>
