@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { uyeLimiti } from "@/lib/labels";
 
 function tempPassword() {
   return Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6);
@@ -14,6 +15,14 @@ export async function POST(req: NextRequest) {
   try {
     const { ad, soyad, email, unvan, departman, telefon } = (await req.json()) as Record<string, string>;
     if (!ad || !email) return NextResponse.json({ ok: false, error: "Ad ve e-posta zorunlu." }, { status: 400 });
+
+    // Pakete göre üye limiti
+    const firma = await prisma.firma.findUnique({ where: { id: session.sub }, select: { paket: true } });
+    const limit = uyeLimiti[firma?.paket ?? "BASLANGIC"] ?? 50;
+    const mevcut = await prisma.member.count({ where: { firmaId: session.sub } });
+    if (mevcut >= limit) {
+      return NextResponse.json({ ok: false, error: `Paketiniz en fazla ${limit} üyeye izin veriyor. Daha fazlası için paketinizi yükseltin.` }, { status: 403 });
+    }
 
     const lower = email.toLowerCase().trim();
     const exists = await prisma.member.findUnique({ where: { email: lower } });

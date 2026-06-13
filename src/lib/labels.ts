@@ -9,7 +9,14 @@ export const paketLabel: Record<string, string> = {
 // Pakete göre oluşturulabilecek maksimum kart teması sayısı
 export const temaLimiti: Record<string, number> = {
   BASLANGIC: 1,
-  PROFESYONEL: 5,
+  PROFESYONEL: 3,
+  KURUMSAL: Infinity,
+};
+
+// Pakete göre eklenebilecek maksimum üye sayısı
+export const uyeLimiti: Record<string, number> = {
+  BASLANGIC: 50,
+  PROFESYONEL: 500,
   KURUMSAL: Infinity,
 };
 
