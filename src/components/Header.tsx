@@ -1,19 +1,36 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import type { Locale } from "@/lib/i18n/config";
 
-const navLinks = [
-  { label: "Ana Sayfa", href: "#", active: true },
-  { label: "Firmalar İçin", href: "#firmalar" },
-  { label: "Üyeler İçin", href: "#uyeler" },
-  { label: "Özellikler", href: "#ozellikler" },
-  { label: "Ürünler", href: "#urunler" },
-  { label: "S.S.S.", href: "#sss" },
-  { label: "İletişim", href: "#iletisim" },
-];
+type NavDict = {
+  home: string; forFirms: string; forMembers: string; features: string;
+  products: string; faq: string; contact: string; login: string; apply: string;
+};
 
-export default function Header({ logoUrl = "", logoText = "QONTAC" }: { logoUrl?: string; logoText?: string }) {
+export default function Header({
+  logoUrl = "",
+  logoText = "QONTAC",
+  nav,
+  locale,
+}: {
+  logoUrl?: string;
+  logoText?: string;
+  nav: NavDict;
+  locale: Locale;
+}) {
   const [open, setOpen] = useState(false);
+
+  const navLinks = [
+    { label: nav.home, href: "#", active: true },
+    { label: nav.forFirms, href: "#firmalar" },
+    { label: nav.forMembers, href: "#uyeler" },
+    { label: nav.features, href: "#ozellikler" },
+    { label: nav.products, href: "#urunler" },
+    { label: nav.faq, href: "#sss" },
+    { label: nav.contact, href: "#iletisim" },
+  ];
 
   return (
     <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
@@ -48,14 +65,15 @@ export default function Header({ logoUrl = "", logoText = "QONTAC" }: { logoUrl?
 
         {/* CTAs */}
         <div className="flex items-center gap-2 md:gap-sm">
+          <LanguageSwitcher current={locale} />
           <Link href="/auth/login" className="hidden lg:block text-on-surface-variant font-medium hover:text-primary transition-colors text-label-md px-4 py-2">
-            Giriş Yap
+            {nav.login}
           </Link>
           <Link
             href="/auth/register"
             className="bg-primary-container text-on-primary-container font-bold px-3.5 py-2 md:px-6 md:py-3 rounded-xl hover:scale-105 active:scale-95 transition-all text-label-sm md:text-label-md whitespace-nowrap"
           >
-            Firma Başvurusu
+            {nav.apply}
           </Link>
           {/* Mobile hamburger */}
           <button className="md:hidden text-on-surface p-2" onClick={() => setOpen(!open)}>
@@ -83,7 +101,7 @@ export default function Header({ logoUrl = "", logoText = "QONTAC" }: { logoUrl?
             href="#demo"
             className="mt-4 block text-center bg-primary-container text-on-primary-container font-bold px-6 py-3 rounded-xl text-label-md"
           >
-            Firma Başvurusu
+            {nav.apply}
           </a>
         </div>
       )}

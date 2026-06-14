@@ -1,4 +1,9 @@
-export default function Hero() {
+type HeroDict = {
+  badge: string; titleLine1: string; titleHighlight: string; titleLine2: string;
+  subtitle: string; ctaDemo: string; ctaHow: string;
+};
+
+export default function Hero({ t }: { t: HeroDict }) {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden grid-pattern">
       {/* Right glow */}
@@ -10,22 +15,20 @@ export default function Hero() {
           {/* Badge */}
           <div className="inline-flex items-center gap-xs px-4 py-2 rounded-full glass-card border border-primary/20 text-primary-fixed-dim text-label-sm font-semibold">
             <span className="flex h-2 w-2 rounded-full bg-primary pulse-dot" />
-            Geleceğin Network Teknolojisi
+            {t.badge}
           </div>
 
           <h1
             className="text-display-lg-mobile md:text-display-lg font-bold text-on-background max-w-[36rem] leading-tight tracking-tight"
             style={{ fontFamily: "Sora, sans-serif", letterSpacing: "-0.02em" }}
           >
-            Network ekipleriniz için{" "}
-            <span className="gradient-text">akıllı dijital kartvizit</span>{" "}
-            sistemi
+            {t.titleLine1}{" "}
+            <span className="gradient-text">{t.titleHighlight}</span>
+            {t.titleLine2 ? <> {t.titleLine2}</> : null}
           </h1>
 
           <p className="text-body-lg text-on-surface-variant max-w-[32rem] leading-relaxed">
-            QONTAC Network Card ile üyelerinize NFC ve QR destekli, firma onaylı,
-            kişiselleştirilebilir dijital temsilci sayfaları sunun. Kurumsal kimliğinizi
-            sahada tek merkezden yönetin.
+            {t.subtitle}
           </p>
 
           <div className="flex flex-wrap gap-sm pt-xs">
@@ -33,14 +36,14 @@ export default function Hero() {
               href="#demo"
               className="px-8 py-4 bg-primary-container text-on-primary-container font-bold rounded-xl hover:shadow-[0_0_20px_rgba(212, 175, 55,0.4)] transition-all flex items-center gap-2"
             >
-              Demo Talep Et
+              {t.ctaDemo}
               <span className="material-symbols-outlined">arrow_forward</span>
             </a>
             <a
               href="#sistem"
               className="px-8 py-4 glass-card text-on-surface font-medium rounded-xl hover:bg-white/10 transition-all"
             >
-              Nasıl Çalışır?
+              {t.ctaHow}
             </a>
           </div>
         </div>

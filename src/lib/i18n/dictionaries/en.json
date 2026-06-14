@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "home": "Home",
+    "forFirms": "For Companies",
+    "forMembers": "For Members",
+    "features": "Features",
+    "products": "Products",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "login": "Log In",
+    "apply": "Company Application"
+  },
+  "hero": {
+    "badge": "The Network Technology of the Future",
+    "titleLine1": "A smart digital business card",
+    "titleHighlight": "system for your network teams",
+    "titleLine2": "",
+    "subtitle": "With QONTAC Network Card, offer your members NFC and QR enabled, company-approved, customizable digital representative pages. Manage your corporate identity in the field from a single hub.",
+    "ctaDemo": "Request a Demo",
+    "ctaHow": "How It Works?"
+  },
+  "footer": {
+    "contact": "Contact",
+    "rights": "All rights reserved."
+  },
+  "lang": {
+    "select": "Select language"
+  }
+}

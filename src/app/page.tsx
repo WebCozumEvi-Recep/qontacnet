@@ -14,6 +14,7 @@ import DemoForm from "@/components/DemoForm";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import { prisma } from "@/lib/prisma";
+import { getI18n } from "@/lib/i18n/server";
 
 // Site ayarları (logo, doğrulama, kod enjeksiyonu) her istekte DB'den okunur
 export const dynamic = "force-dynamic";
@@ -35,14 +36,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const s = await getSiteSettings();
+  const [s, { locale, t }] = await Promise.all([getSiteSettings(), getI18n()]);
 
   return (
     <>
       {s?.headKod ? <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: s.headKod }} /> : null}
-      <Header logoUrl={s?.logoUrl || ""} logoText={s?.logoText || "QONTAC"} />
+      <Header logoUrl={s?.logoUrl || ""} logoText={s?.logoText || "QONTAC"} nav={t.nav} locale={locale} />
       <main className="pt-20">
-        <Hero />
+        <Hero t={t.hero} />
         <ProblemSolution />
         <HowItWorks />
         <DigitalPage />

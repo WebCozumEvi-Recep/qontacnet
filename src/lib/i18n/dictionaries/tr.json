@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "home": "Ana Sayfa",
+    "forFirms": "Firmalar İçin",
+    "forMembers": "Üyeler İçin",
+    "features": "Özellikler",
+    "products": "Ürünler",
+    "faq": "S.S.S.",
+    "contact": "İletişim",
+    "login": "Giriş Yap",
+    "apply": "Firma Başvurusu"
+  },
+  "hero": {
+    "badge": "Geleceğin Network Teknolojisi",
+    "titleLine1": "Network ekipleriniz için",
+    "titleHighlight": "akıllı dijital kartvizit",
+    "titleLine2": "sistemi",
+    "subtitle": "QONTAC Network Card ile üyelerinize NFC ve QR destekli, firma onaylı, kişiselleştirilebilir dijital temsilci sayfaları sunun. Kurumsal kimliğinizi sahada tek merkezden yönetin.",
+    "ctaDemo": "Demo Talep Et",
+    "ctaHow": "Nasıl Çalışır?"
+  },
+  "footer": {
+    "contact": "İletişim",
+    "rights": "Tüm hakları saklıdır."
+  },
+  "lang": {
+    "select": "Dil seçin"
+  }
+}

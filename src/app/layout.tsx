@@ -3,6 +3,8 @@ import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
+import { getLocale } from "@/lib/i18n/server";
+import { dir } from "@/lib/i18n/config";
 
 const inter = Inter({ subsets: ["latin"], variable: "--inter" });
 const sora = Sora({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--sora" });
@@ -34,9 +36,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="tr" className="dark scroll-smooth">
+    <html lang={locale} dir={dir(locale)} className="dark scroll-smooth">
       <head>
         <link
           rel="stylesheet"
