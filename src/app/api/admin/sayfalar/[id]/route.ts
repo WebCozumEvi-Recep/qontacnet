@@ -7,12 +7,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
   const { id } = await params;
 
-  const body = (await req.json()) as { baslik?: string; icerik?: string; aktif?: boolean; sira?: number };
+  const body = (await req.json()) as {
+    baslik?: string; icerik?: string; aktif?: boolean; sira?: number;
+    ceviriler?: Record<string, { baslik?: string; icerik?: string }>;
+  };
   const data: Record<string, unknown> = {};
   if (typeof body.baslik === "string") data.baslik = body.baslik.trim();
   if (typeof body.icerik === "string") data.icerik = body.icerik;
   if (typeof body.aktif === "boolean") data.aktif = body.aktif;
   if (typeof body.sira === "number") data.sira = body.sira;
+  if (body.ceviriler && typeof body.ceviriler === "object") data.ceviriler = body.ceviriler;
 
   const sayfa = await prisma.customPage.update({ where: { id }, data });
   return NextResponse.json({ ok: true, sayfa });

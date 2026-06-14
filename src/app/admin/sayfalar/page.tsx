@@ -1,11 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { LOCALES, LOCALE_LABELS, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
 const RichEditor = dynamic(() => import("@/components/RichEditor"), {
   ssr: false,
   loading: () => <div className="h-64 rounded-xl bg-surface-dim border border-white/10 animate-pulse" />,
 });
+
+type Ceviri = { baslik?: string; icerik?: string };
 
 interface Sayfa {
   id: string;
@@ -14,6 +17,7 @@ interface Sayfa {
   icerik: string;
   aktif: boolean;
   sira: number;
+  ceviriler?: Record<string, Ceviri>;
 }
 
 export default function AdminSayfalarPage() {
@@ -115,14 +119,36 @@ function SayfaDuzenle({ sayfa, onClose, onSaved }: { sayfa: Sayfa; onClose: () =
   const [baslik, setBaslik] = useState(sayfa.baslik);
   const [icerik, setIcerik] = useState(sayfa.icerik);
   const [aktif, setAktif] = useState(sayfa.aktif);
+  const [ceviriler, setCeviriler] = useState<Record<string, Ceviri>>(sayfa.ceviriler ?? {});
+  const [aktifDil, setAktifDil] = useState<Locale>(DEFAULT_LOCALE);
   const [saving, setSaving] = useState(false);
+  const [cevirenDil, setCevirenDil] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const kaynak = aktifDil === DEFAULT_LOCALE;
+  const cv = ceviriler[aktifDil] ?? {};
+
+  function setCv(patch: Ceviri) {
+    setCeviriler((p) => ({ ...p, [aktifDil]: { ...p[aktifDil], ...patch } }));
+  }
+
+  async function otomatikCevir() {
+    if (kaynak) return;
+    setCevirenDil(aktifDil); setMsg(null);
+    const j = await (await fetch(`/api/admin/sayfalar/${sayfa.id}/ceviri`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale: aktifDil }),
+    })).json();
+    setCevirenDil(null);
+    if (j.ok) { setCv({ baslik: j.ceviri.baslik, icerik: j.ceviri.icerik }); setMsg({ ok: true, text: "Otomatik çeviri taslağı hazır. Düzenleyip kaydedin." }); }
+    else setMsg({ ok: false, text: j.error || "Çeviri başarısız. ANTHROPIC_API_KEY tanımlı mı?" });
+  }
 
   async function kaydet() {
     setSaving(true); setMsg(null);
     const j = await (await fetch(`/api/admin/sayfalar/${sayfa.id}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ baslik, icerik, aktif }),
+      body: JSON.stringify({ baslik, icerik, aktif, ceviriler }),
     })).json();
     setSaving(false);
     if (j.ok) { setMsg({ ok: true, text: "Kaydedildi." }); onSaved(j.sayfa); }
@@ -149,15 +175,54 @@ function SayfaDuzenle({ sayfa, onClose, onSaved }: { sayfa: Sayfa; onClose: () =
         </button>
       </div>
 
+      {/* Dil sekmeleri */}
+      <div className="flex flex-wrap gap-1.5">
+        {LOCALES.map((l) => {
+          const dolu = l === DEFAULT_LOCALE || ceviriler[l]?.baslik || ceviriler[l]?.icerik;
+          return (
+            <button key={l} onClick={() => setAktifDil(l)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                aktifDil === l ? "bg-primary/15 text-primary border-primary/40" : "border-white/10 text-on-surface-variant hover:bg-white/5"
+              }`}>
+              <span>{LOCALE_LABELS[l].flag}</span>
+              {LOCALE_LABELS[l].native}
+              {l === DEFAULT_LOCALE && <span className="text-[9px] opacity-70">(kaynak)</span>}
+              {l !== DEFAULT_LOCALE && dolu && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="glass-card rounded-2xl p-6 space-y-4">
+        {!kaynak && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
+            <p className="text-xs text-on-surface-variant">
+              <span className="font-semibold text-on-surface">{LOCALE_LABELS[aktifDil].native}</span> çevirisi — otomatik taslak oluşturup düzenleyebilirsiniz.
+            </p>
+            <button onClick={() => void otomatikCevir()} disabled={cevirenDil === aktifDil}
+              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 bg-primary-container text-on-primary-container rounded-lg text-xs font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
+              <span className={`material-symbols-outlined text-sm ${cevirenDil === aktifDil ? "animate-spin" : ""}`}>
+                {cevirenDil === aktifDil ? "progress_activity" : "translate"}
+              </span>
+              {cevirenDil === aktifDil ? "Çevriliyor..." : "Otomatik Çevir"}
+            </button>
+          </div>
+        )}
         <div>
           <label className="block text-xs text-on-surface-variant mb-1.5">Sayfa Başlığı</label>
-          <input value={baslik} onChange={e => setBaslik(e.target.value)}
+          <input
+            value={kaynak ? baslik : (cv.baslik ?? "")}
+            onChange={e => (kaynak ? setBaslik(e.target.value) : setCv({ baslik: e.target.value }))}
+            placeholder={kaynak ? "" : baslik}
             className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all" />
         </div>
         <div>
           <label className="block text-xs text-on-surface-variant mb-1.5">İçerik</label>
-          <RichEditor value={icerik} onChange={setIcerik} />
+          {kaynak ? (
+            <RichEditor value={icerik} onChange={setIcerik} />
+          ) : (
+            <RichEditor key={aktifDil} value={cv.icerik ?? ""} onChange={(v) => setCv({ icerik: v })} />
+          )}
         </div>
         {msg && (
           <p className={`text-xs flex items-center gap-1 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
