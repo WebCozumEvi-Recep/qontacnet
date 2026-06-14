@@ -13,10 +13,8 @@ const SOSYAL: { key: string; label: string; icon: React.ReactNode }[] = [
 export default async function Footer() {
   const [s, sayfalar] = await Promise.all([getSiteSettings(), getAktifSayfalar()]);
 
-  const logoUrl = s?.logoUrl || "";
   const logoText = s?.logoText || "QONTAC";
-  const aciklama = s?.iletisimAciklama || "Geleceğin networking dünyasında yerinizi alın. Dijital, akıllı ve prestijli.";
-  const firmaUnvan = "WAQUR TEKNOLOJİ TARIM MADENCİLİK SAN. VE TİC. LTD. ŞTİ.";
+  const firmaUnvan ="WAQUR TEKNOLOJİ TARIM MADENCİLİK SAN. VE TİC. LTD. ŞTİ.";
   const email = s?.iletisimEmail || "info@qontac.net";
   const telefon = s?.iletisimTelefon || "+90 850 302 40 04";
   const adres = s?.iletisimAdres || "Çakmak Mh. Alemdağ Cd. No:488/3 Ümraniye / İstanbul";
@@ -25,79 +23,61 @@ export default async function Footer() {
 
   return (
     <footer id="iletisim" className="bg-surface-container-lowest w-full py-xl border-t border-white/5">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-md px-6 md:px-10 max-w-container-max mx-auto">
-        {/* Brand */}
-        <div className="col-span-1 space-y-md">
-          <div className="flex items-center gap-xs">
-            {logoUrl ? (
-              <img src={logoUrl} alt={logoText} className="h-9 max-w-[170px] object-contain" />
-            ) : (
-              <span className="text-headline-sm font-bold text-primary" style={{ fontFamily: "Sora, sans-serif" }}>{logoText}</span>
-            )}
-          </div>
-          <p className="text-body-md text-on-surface-variant text-sm">{aciklama}</p>
-          {sosyal.length > 0 && (
-            <div className="flex gap-sm flex-wrap">
-              {sosyal.map(x => (
-                <a key={x.key} href={sRec[x.key]} target="_blank" rel="noopener noreferrer" title={x.label}
-                  className="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:text-primary transition-all text-on-surface-variant">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">{x.icon}</svg>
-                </a>
-              ))}
-            </div>
+      <div className="px-6 md:px-10 max-w-container-max mx-auto flex flex-col items-center text-center">
+        {/* İletişim — ortalanmış */}
+        <h5 className="text-headline-sm text-sm mb-md text-white font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
+          İletişim
+        </h5>
+        <ul className="flex flex-col items-center gap-sm text-body-md text-on-surface-variant text-sm">
+          <li className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-base">business</span>
+            <span className="font-semibold text-white/90">{firmaUnvan}</span>
+          </li>
+          {email && (
+            <li className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-base">mail</span>
+              <a href={`mailto:${email}`} className="hover:text-primary transition-colors">{email}</a>
+            </li>
           )}
-        </div>
+          {telefon && (
+            <li className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-base">phone</span>
+              <a href={`tel:${telefon.replace(/[^\d+]/g, "")}`} className="hover:text-primary transition-colors">{telefon}</a>
+            </li>
+          )}
+          {adres && (
+            <li className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-base">location_on</span>
+              {adres}
+            </li>
+          )}
+        </ul>
 
-        {/* Kurumsal — admin'den yönetilen özel sayfalar (yoksa gizle) */}
-        {sayfalar.length > 0 && (
-          <div>
-            <h5 className="text-headline-sm text-sm mb-md text-white font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
-              Kurumsal
-            </h5>
-            <ul className="space-y-sm text-body-md text-on-surface-variant text-sm">
-              {sayfalar.map((p) => (
-                <li key={p.slug}>
-                  <Link href={`/sayfa/${p.slug}`} className="hover:text-primary transition-colors">{p.baslik}</Link>
-                </li>
-              ))}
-            </ul>
+        {/* Sosyal medya — ortalanmış */}
+        {sosyal.length > 0 && (
+          <div className="flex gap-sm flex-wrap justify-center mt-lg">
+            {sosyal.map(x => (
+              <a key={x.key} href={sRec[x.key]} target="_blank" rel="noopener noreferrer" title={x.label}
+                className="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:text-primary transition-all text-on-surface-variant">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">{x.icon}</svg>
+              </a>
+            ))}
           </div>
         )}
-
-        {/* İletişim — admin'den yönetilir */}
-        <div>
-          <h5 className="text-headline-sm text-sm mb-md text-white font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
-            İletişim
-          </h5>
-          <ul className="space-y-sm text-body-md text-on-surface-variant text-sm">
-            <li className="flex items-start gap-2">
-              <span className="material-symbols-outlined text-primary text-base">business</span>
-              <span className="font-semibold text-white/90">{firmaUnvan}</span>
-            </li>
-            {email && (
-              <li className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-primary text-base">mail</span>
-                <a href={`mailto:${email}`} className="hover:text-primary transition-colors">{email}</a>
-              </li>
-            )}
-            {telefon && (
-              <li className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-primary text-base">phone</span>
-                <a href={`tel:${telefon.replace(/[^\d+]/g, "")}`} className="hover:text-primary transition-colors">{telefon}</a>
-              </li>
-            )}
-            {adres && (
-              <li className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-primary text-base">location_on</span>
-                {adres}
-              </li>
-            )}
-          </ul>
-        </div>
       </div>
 
-      <div className="max-w-container-max mx-auto px-6 md:px-10 pt-lg mt-lg border-t border-white/5 text-center">
-        <p className="text-label-sm text-on-surface-variant">
+      {/* Sözleşmeler / Kurumsal — altta yatay ortalı */}
+      <div className="max-w-container-max mx-auto px-6 md:px-10 pt-lg mt-lg border-t border-white/5 flex flex-col items-center gap-sm">
+        {sayfalar.length > 0 && (
+          <nav className="flex flex-wrap justify-center gap-x-md gap-y-2 text-label-sm text-on-surface-variant">
+            {sayfalar.map((p) => (
+              <Link key={p.slug} href={`/sayfa/${p.slug}`} className="hover:text-primary transition-colors">
+                {p.baslik}
+              </Link>
+            ))}
+          </nav>
+        )}
+        <p className="text-label-sm text-on-surface-variant text-center">
           © {new Date().getFullYear()} {logoText} Network. Tüm hakları saklıdır.
         </p>
       </div>
