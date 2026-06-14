@@ -51,7 +51,7 @@ export default function Hero() {
           <div className="absolute w-72 h-72 sm:w-96 sm:h-96 bg-amber-400/15 rounded-full blur-[100px] animate-pulse" />
 
           {/* NFC Card Mockup — premium siyah + altın */}
-          <div className="absolute z-20 transform -rotate-12 hover:rotate-0 transition-transform duration-700 cursor-pointer">
+          <div className="absolute z-30 translate-x-4 translate-y-20 transform -rotate-12 hover:rotate-0 transition-transform duration-700 cursor-pointer">
             <div
               className="w-72 sm:w-80 h-44 sm:h-48 rounded-2xl p-6 flex flex-col items-center justify-center shadow-2xl overflow-hidden group relative"
               style={{
@@ -112,7 +112,7 @@ export default function Hero() {
           </div>
 
           {/* Phone Mockup */}
-          <div className="absolute z-30 translate-x-24 translate-y-12 transform rotate-6 hidden md:block">
+          <div className="absolute z-20 translate-x-16 -translate-y-8 transform rotate-6 hidden md:block">
             <div className="w-56 h-[440px] rounded-[2.5rem] border-[8px] border-surface-container-highest p-3 overflow-hidden relative shadow-2xl" style={{ background: "#050816" }}>
               <div className="w-1/3 h-5 bg-surface-container-highest mx-auto rounded-b-xl mb-3" />
               {/* Profil kutusu */}

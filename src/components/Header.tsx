@@ -4,7 +4,6 @@ import Link from "next/link";
 
 const navLinks = [
   { label: "Ana Sayfa", href: "#", active: true },
-  { label: "Sistem", href: "#sistem" },
   { label: "Firmalar İçin", href: "#firmalar" },
   { label: "Üyeler İçin", href: "#uyeler" },
   { label: "Özellikler", href: "#ozellikler" },

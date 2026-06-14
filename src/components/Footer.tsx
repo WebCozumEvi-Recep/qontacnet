@@ -16,9 +16,10 @@ export default async function Footer() {
   const logoUrl = s?.logoUrl || "";
   const logoText = s?.logoText || "QONTAC";
   const aciklama = s?.iletisimAciklama || "Geleceğin networking dünyasında yerinizi alın. Dijital, akıllı ve prestijli.";
+  const firmaUnvan = "WAQUR TEKNOLOJİ TARIM MADENCİLİK SAN. VE TİC. LTD. ŞTİ.";
   const email = s?.iletisimEmail || "info@qontac.net";
-  const telefon = s?.iletisimTelefon || "+90 (850) 302 40 04";
-  const adres = s?.iletisimAdres || "Ümraniye, İstanbul / Türkiye";
+  const telefon = s?.iletisimTelefon || "+90 850 302 40 04";
+  const adres = s?.iletisimAdres || "Çakmak Mh. Alemdağ Cd. No:488/3 Ümraniye / İstanbul";
   const sRec = (s ?? {}) as unknown as Record<string, string>;
   const sosyal = SOSYAL.filter(x => sRec[x.key]);
 
@@ -63,24 +64,16 @@ export default async function Footer() {
           </div>
         )}
 
-        {/* Sistem */}
-        <div>
-          <h5 className="text-headline-sm text-sm mb-md text-white font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
-            Sistem
-          </h5>
-          <ul className="space-y-sm text-body-md text-on-surface-variant text-sm">
-            <li><Link href="/firma" className="hover:text-primary transition-colors">Firma Paneli</Link></li>
-            <li><Link href="/auth/login" className="hover:text-primary transition-colors">Üye Girişi</Link></li>
-            <li><Link href="/#urunler" className="hover:text-primary transition-colors">NFC Kart Siparişi</Link></li>
-          </ul>
-        </div>
-
         {/* İletişim — admin'den yönetilir */}
         <div>
           <h5 className="text-headline-sm text-sm mb-md text-white font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>
             İletişim
           </h5>
           <ul className="space-y-sm text-body-md text-on-surface-variant text-sm">
+            <li className="flex items-start gap-2">
+              <span className="material-symbols-outlined text-primary text-base">business</span>
+              <span className="font-semibold text-white/90">{firmaUnvan}</span>
+            </li>
             {email && (
               <li className="flex items-start gap-2">
                 <span className="material-symbols-outlined text-primary text-base">mail</span>
