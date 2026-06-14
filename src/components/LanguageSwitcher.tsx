@@ -45,14 +45,17 @@ export default function LanguageSwitcher({ current }: { current: Locale }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-44 rounded-xl glass-card border border-white/10 shadow-xl overflow-hidden z-50">
+        <div
+          className="absolute right-0 mt-2 w-44 rounded-xl border border-white/15 shadow-2xl overflow-hidden z-[60]"
+          style={{ background: "#15151a" }}
+        >
           {LOCALES.map((l) => (
             <button
               key={l}
               type="button"
               onClick={() => pick(l)}
               className={`flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-white/10 ${
-                l === current ? "text-primary font-semibold" : "text-on-surface-variant"
+                l === current ? "text-primary font-semibold bg-white/5" : "text-on-surface"
               }`}
             >
               <span className="text-base leading-none">{LOCALE_LABELS[l].flag}</span>
