@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { tx, txContent } from "@/lib/i18n/auto";
+import { isLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const langParam = new URL(req.url).searchParams.get("lang");
+  const locale: Locale = isLocale(langParam) ? langParam : DEFAULT_LOCALE;
 
   const member = await prisma.member.findUnique({
     where: { id },
@@ -49,13 +53,35 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   // Firma aktif teması varsa onu kullan; firma yoksa üyenin varsayılan rengi
   const firmaRenk = member.firma?.templates[0]?.renk ?? null;
 
+  const biyografi = member.showBio ? member.biyografi : "";
+
+  // İstenen dile çevir (tr ise olduğu gibi; çeviriler DB'de önbelleğe alınır)
+  const [ceviri, cevModuller, cevUyeModuller] = await Promise.all([
+    tx({ unvan: member.unvan ?? "", biyografi: biyografi ?? "" }, locale),
+    Promise.all(
+      moduller.map(async (m) => ({
+        ...m,
+        baslik: (await tx({ b: m.baslik ?? "" }, locale)).b,
+        icerik: await txContent(m.icerik, locale),
+      })),
+    ),
+    Promise.all(
+      uyeModuller.map(async (m) => ({
+        ...m,
+        baslik: (await tx({ b: m.baslik ?? "" }, locale)).b,
+        icerik: await txContent(m.icerik, locale),
+      })),
+    ),
+  ]);
+
   return NextResponse.json({
     ok: true,
+    locale,
     card: {
       id: member.id,
       ad: member.ad,
       soyad: member.soyad,
-      unvan: member.unvan,
+      unvan: ceviri.unvan,
       firmaAdi: member.firma?.ad ?? "",
       avatar: member.avatar,
       kartArkaplan: member.kartArkaplan,
@@ -66,9 +92,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       linkedin: member.showLinkedin ? member.linkedin : "",
       instagram: member.showInstagram ? member.instagram : "",
       website: member.showWebsite ? member.website : "",
-      biyografi: member.showBio ? member.biyografi : "",
+      biyografi: ceviri.biyografi,
     },
-    moduller,
-    uyeModuller,
+    moduller: cevModuller,
+    uyeModuller: cevUyeModuller,
   });
 }

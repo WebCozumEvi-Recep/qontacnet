@@ -98,6 +98,51 @@ export async function tx<T extends Record<string, string>>(
   return result;
 }
 
+// Modül içeriğinde çevrilecek metin taşıyan alan adları (URL/renk/görsel hariç).
+const TEXT_KEYS = new Set([
+  "metin", "aciklama", "baslik", "altbaslik", "buton", "butonMetin", "soru", "cevap",
+  "q", "a", "text", "title", "subtitle", "label", "icerik", "html", "not",
+]);
+const SKIP_VALUE = /^(https?:\/\/|data:|#|\/|mailto:|tel:)/i;
+
+/**
+ * Bir JSON nesnesi/dizisi içindeki metin alanlarını (TEXT_KEYS) yerinde çevirir.
+ * URL, renk, görsel gibi değerleri atlar. Modül içerikleri için kullanılır.
+ */
+export async function txContent<T>(content: T, locale: Locale): Promise<T> {
+  if (locale === DEFAULT_LOCALE || content == null) return content;
+
+  // Çevrilecek string'leri topla
+  const collected: { ref: Record<string, unknown>; key: string; value: string }[] = [];
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+    } else if (node && typeof node === "object") {
+      for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+        if (typeof v === "string") {
+          if (TEXT_KEYS.has(k) && v.trim() && !SKIP_VALUE.test(v.trim())) {
+            collected.push({ ref: node as Record<string, unknown>, key: k, value: v });
+          }
+        } else {
+          walk(v);
+        }
+      }
+    }
+  };
+  // Derin kopya üzerinde çalış (orijinali bozmamak için)
+  const clone = JSON.parse(JSON.stringify(content)) as T;
+  walk(clone);
+  if (collected.length === 0) return clone;
+
+  const fields: Record<string, string> = {};
+  collected.forEach((c, i) => (fields[`f${i}`] = c.value));
+  const translated = await tx(fields, locale, { isHtml: true });
+  collected.forEach((c, i) => {
+    c.ref[c.key] = translated[`f${i}`];
+  });
+  return clone;
+}
+
 /** Bir dizi metni sırayla çevirir (index korunur). */
 export async function txList(items: string[], locale: Locale, opts: { isHtml?: boolean } = {}): Promise<string[]> {
   if (locale === DEFAULT_LOCALE || items.length === 0) return items;

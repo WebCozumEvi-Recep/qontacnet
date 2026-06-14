@@ -3,6 +3,9 @@ import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { ModulIkon } from "@/components/ModulIkon";
+import { LOCALES, LOCALE_LABELS } from "@/lib/i18n/config";
+
+const CARD_LOCALES: string[] = [...LOCALES];
 
 interface Card {
   id: string;
@@ -54,9 +57,19 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
   const [leadLoading, setLeadLoading] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [leadForm, setLeadForm] = useState({ ad: "", email: "", telefon: "", sirket: "" });
+  const [lang, setLang] = useState<string>("tr");
+
+  // Dil kaynağı: ?lang= > NEXT_LOCALE çerezi > tr
+  useEffect(() => {
+    const urlLang = new URLSearchParams(window.location.search).get("lang");
+    const cookieLang = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/)?.[1];
+    const picked = urlLang || cookieLang || "tr";
+    if (CARD_LOCALES.includes(picked)) setLang(picked);
+  }, []);
 
   useEffect(() => {
-    fetch(`/api/kart/${id}`)
+    setLoading(true);
+    fetch(`/api/kart/${id}?lang=${lang}`)
       .then(r => r.json())
       .then(j => {
         if (j.ok) { setCard(j.card); setModuller(j.moduller ?? []); setUyeModuller(j.uyeModuller ?? []); }
@@ -65,7 +78,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
       .catch(() => setCard(null))
       .finally(() => setLoading(false));
     fetch("/api/site-info").then(r => r.json()).then(j => { if (j.ok) setSiteText(j.logoText || "QONTAC"); }).catch(() => {});
-  }, [id]);
+  }, [id, lang]);
 
   if (loading) {
     return (
@@ -136,6 +149,26 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
   return (
     <div className="min-h-screen flex flex-col items-center" style={{ background: "#050816" }}>
       <div className="fixed top-0 left-0 w-full h-64 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}20 0%, transparent 70%)` }} />
+
+      {/* Dil seçici */}
+      <div className="fixed top-3 right-3 z-50 flex gap-1 rounded-full px-1.5 py-1 backdrop-blur-md" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+        {CARD_LOCALES.map((l) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => {
+              setLang(l);
+              const u = new URL(window.location.href);
+              u.searchParams.set("lang", l);
+              window.history.replaceState({}, "", u);
+            }}
+            title={LOCALE_LABELS[l as keyof typeof LOCALE_LABELS].native}
+            className={`w-7 h-7 rounded-full text-sm leading-none transition-all ${lang === l ? "ring-2 ring-white/70 scale-110" : "opacity-60 hover:opacity-100"}`}
+          >
+            {LOCALE_LABELS[l as keyof typeof LOCALE_LABELS].flag}
+          </button>
+        ))}
+      </div>
 
       <div className="w-full max-w-sm mx-auto px-4 py-8 relative z-10">
         <div className="glass-card rounded-[2rem] p-6 mb-4 text-center relative overflow-hidden">
