@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PRODUCTS_TEXT, type ProductsText } from "@/lib/i18n/ui-text";
 
 interface Urun {
   id: string;
@@ -31,7 +32,7 @@ const TIP_LABEL: Record<string, string> = {
   LISANS: "Lisans",
 };
 
-export default function Products() {
+export default function Products({ t = PRODUCTS_TEXT }: { t?: ProductsText }) {
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [secili, setSecili] = useState<Urun | null>(null);
   const [galeri, setGaleri] = useState<{ gorseller: string[]; index: number; ad: string } | null>(null);
@@ -50,10 +51,10 @@ export default function Products() {
       <div className="max-w-container-max mx-auto px-10">
         <div className="text-center mb-xl">
           <h2 className="text-headline-md md:text-display-lg font-bold text-on-background" style={{ fontFamily: "Sora, sans-serif" }}>
-            Ürünler
+            {t.title}
           </h2>
           <p className="text-on-surface-variant mt-2 text-sm md:text-base">
-            NFC kartlarınızı ve aksesuarlarınızı doğrudan sipariş edin.
+            {t.subtitle}
           </p>
         </div>
 
@@ -99,7 +100,7 @@ export default function Products() {
                   onClick={() => setSecili(u)}
                   className="bg-primary-container text-on-primary-container font-bold px-5 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all text-label-md"
                 >
-                  Satın Al
+                  {t.buy}
                 </button>
               </div>
             </div>
@@ -107,22 +108,23 @@ export default function Products() {
         </div>
       </div>
 
-      {secili && <SiparisModal urun={secili} onClose={() => setSecili(null)} />}
+      {secili && <SiparisModal urun={secili} onClose={() => setSecili(null)} t={t} />}
       {galeri && (
         <Lightbox
           gorseller={galeri.gorseller}
           baslangic={galeri.index}
           ad={galeri.ad}
           onClose={() => setGaleri(null)}
+          t={t}
         />
       )}
-      <OdemeSonuc />
+      <OdemeSonuc t={t} />
     </section>
   );
 }
 
 // Ürün görsellerini tam ekran galeri/lightbox olarak gösterir
-function Lightbox({ gorseller, baslangic, ad, onClose }: { gorseller: string[]; baslangic: number; ad: string; onClose: () => void }) {
+function Lightbox({ gorseller, baslangic, ad, onClose, t }: { gorseller: string[]; baslangic: number; ad: string; onClose: () => void; t: ProductsText }) {
   const [index, setIndex] = useState(baslangic);
   const coklu = gorseller.length > 1;
   const ileri = () => setIndex((i) => (i + 1) % gorseller.length);
@@ -148,7 +150,7 @@ function Lightbox({ gorseller, baslangic, ad, onClose }: { gorseller: string[]; 
         type="button"
         onClick={onClose}
         className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
-        aria-label="Kapat"
+        aria-label={t.close}
       >
         <span className="material-symbols-outlined">close</span>
       </button>
@@ -159,7 +161,7 @@ function Lightbox({ gorseller, baslangic, ad, onClose }: { gorseller: string[]; 
             type="button"
             onClick={geri}
             className="absolute left-0 sm:-left-14 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-10"
-            aria-label="Önceki"
+            aria-label={t.prev}
           >
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
@@ -174,7 +176,7 @@ function Lightbox({ gorseller, baslangic, ad, onClose }: { gorseller: string[]; 
             type="button"
             onClick={ileri}
             className="absolute right-0 sm:-right-14 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-10"
-            aria-label="Sonraki"
+            aria-label={t.next}
           >
             <span className="material-symbols-outlined">chevron_right</span>
           </button>
@@ -202,7 +204,7 @@ function Lightbox({ gorseller, baslangic, ad, onClose }: { gorseller: string[]; 
 }
 
 // Banka callback'inden dönüşte ?odeme=... parametresine göre sonuç gösterir
-function OdemeSonuc() {
+function OdemeSonuc({ t }: { t: ProductsText }) {
   const [sonuc, setSonuc] = useState<{ tip: string; no: string } | null>(null);
 
   useEffect(() => {
@@ -225,20 +227,18 @@ function OdemeSonuc() {
           {ok ? "check_circle" : "error"}
         </span>
         <h3 className="text-headline-sm font-semibold text-on-surface mb-2" style={{ fontFamily: "Sora, sans-serif" }}>
-          {ok ? "Ödemeniz Alındı" : "Ödeme Tamamlanamadı"}
+          {ok ? t.payOk : t.payFail}
         </h3>
         {sonuc.no && (
           <p className="text-sm text-on-surface-variant mb-2">
-            Sipariş No: <span className="text-primary font-bold">{sonuc.no}</span>
+            {t.orderNo}: <span className="text-primary font-bold">{sonuc.no}</span>
           </p>
         )}
         <p className="text-xs text-on-surface-variant mb-6">
-          {ok
-            ? "Siparişiniz onaylandı. Faturanız ve kargo bilgileriniz e-posta adresinize iletilecek."
-            : "Ödeme işlemi tamamlanamadı. Kart bilgilerinizi kontrol edip tekrar deneyebilirsiniz."}
+          {ok ? t.payOkDesc : t.payFailDesc}
         </p>
         <button onClick={() => setSonuc(null)} className="px-6 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold">
-          Kapat
+          {t.close}
         </button>
       </div>
     </div>
@@ -261,7 +261,7 @@ function redirectToBank(paymentForm: { url: string; fields: Record<string, strin
   form.submit();
 }
 
-function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
+function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t: ProductsText }) {
   const [form, setForm] = useState({
     musteriAd: "", firma: "", email: "", telefon: "", adres: "", adet: "1", notlar: "",
     faturaTip: "BIREYSEL", tcKimlik: "", vergiNo: "", vergiDairesi: "", firmaUnvan: "",
@@ -292,7 +292,7 @@ function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
       return;
     }
     setSaving(false);
-    setError(j.error || "Sipariş oluşturulamadı.");
+    setError(j.error || t.orderFailed);
   }
 
   const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all text-on-surface";
@@ -304,7 +304,7 @@ function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
         <form onSubmit={handleSubmit}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-headline-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
-                {urun.ad} — Sipariş
+                {urun.ad} — {t.order}
               </h3>
               <button type="button" onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1">
                 <span className="material-symbols-outlined">close</span>
@@ -313,62 +313,62 @@ function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
 
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-xs text-on-surface-variant mb-1.5">Ad Soyad *</label>
+                <label className="block text-xs text-on-surface-variant mb-1.5">{t.nameLabel} *</label>
                 <input value={form.musteriAd} onChange={(e) => set("musteriAd", e.target.value)} required className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs text-on-surface-variant mb-1.5">Firma</label>
+                <label className="block text-xs text-on-surface-variant mb-1.5">{t.firmLabel}</label>
                 <input value={form.firma} onChange={(e) => set("firma", e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs text-on-surface-variant mb-1.5">Telefon *</label>
+                <label className="block text-xs text-on-surface-variant mb-1.5">{t.phoneLabel} *</label>
                 <input type="tel" value={form.telefon} onChange={(e) => set("telefon", e.target.value)} required className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs text-on-surface-variant mb-1.5">E-posta *</label>
+                <label className="block text-xs text-on-surface-variant mb-1.5">{t.emailLabel} *</label>
                 <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required className={inputCls} />
               </div>
             </div>
 
             <div className="mb-4">
-              <label className="block text-xs text-on-surface-variant mb-1.5">Teslimat Adresi *</label>
+              <label className="block text-xs text-on-surface-variant mb-1.5">{t.addressLabel} *</label>
               <textarea value={form.adres} onChange={(e) => set("adres", e.target.value)} rows={2} required className={inputCls} />
             </div>
 
             {/* Fatura bilgileri */}
             <div className="mb-4 p-4 rounded-xl bg-white/3 border border-white/8">
-              <p className="text-xs font-semibold text-on-surface mb-3">Fatura Bilgileri</p>
+              <p className="text-xs font-semibold text-on-surface mb-3">{t.invoiceInfo}</p>
               <div className="flex gap-2 mb-3">
-                {(["BIREYSEL", "KURUMSAL"] as const).map((t) => (
-                  <button key={t} type="button" onClick={() => set("faturaTip", t)}
+                {(["BIREYSEL", "KURUMSAL"] as const).map((ft) => (
+                  <button key={ft} type="button" onClick={() => set("faturaTip", ft)}
                     className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all border ${
-                      form.faturaTip === t
+                      form.faturaTip === ft
                         ? "bg-primary/15 text-primary border-primary/40"
                         : "border-white/10 text-on-surface-variant hover:bg-white/5"
                     }`}>
-                    {t === "BIREYSEL" ? "Bireysel" : "Kurumsal"}
+                    {ft === "BIREYSEL" ? t.individual : t.corporate}
                   </button>
                 ))}
               </div>
               {form.faturaTip === "BIREYSEL" ? (
                 <div>
-                  <label className="block text-xs text-on-surface-variant mb-1.5">T.C. Kimlik No *</label>
+                  <label className="block text-xs text-on-surface-variant mb-1.5">{t.tcNo} *</label>
                   <input inputMode="numeric" pattern="[0-9]{11}" maxLength={11} title="11 haneli T.C. kimlik numarası"
                     value={form.tcKimlik} onChange={(e) => set("tcKimlik", e.target.value.replace(/\D/g, ""))} required className={inputCls} />
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 gap-3">
                   <div className="md:col-span-2">
-                    <label className="block text-xs text-on-surface-variant mb-1.5">Firma Unvanı *</label>
+                    <label className="block text-xs text-on-surface-variant mb-1.5">{t.firmTitle} *</label>
                     <input value={form.firmaUnvan} onChange={(e) => set("firmaUnvan", e.target.value)} required className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs text-on-surface-variant mb-1.5">Vergi No *</label>
+                    <label className="block text-xs text-on-surface-variant mb-1.5">{t.taxNo} *</label>
                     <input inputMode="numeric" pattern="[0-9]{10,11}" maxLength={11} title="10-11 haneli vergi numarası"
                       value={form.vergiNo} onChange={(e) => set("vergiNo", e.target.value.replace(/\D/g, ""))} required className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs text-on-surface-variant mb-1.5">Vergi Dairesi *</label>
+                    <label className="block text-xs text-on-surface-variant mb-1.5">{t.taxOffice} *</label>
                     <input value={form.vergiDairesi} onChange={(e) => set("vergiDairesi", e.target.value)} required className={inputCls} />
                   </div>
                 </div>
@@ -377,11 +377,11 @@ function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
 
             <div className="grid grid-cols-2 gap-4 mb-4 items-end">
               <div>
-                <label className="block text-xs text-on-surface-variant mb-1.5">Adet</label>
+                <label className="block text-xs text-on-surface-variant mb-1.5">{t.quantity}</label>
                 <input type="number" min={1} max={1000} value={form.adet} onChange={(e) => set("adet", e.target.value)} className={inputCls} />
               </div>
               <div className="text-right">
-                <p className="text-xs text-on-surface-variant mb-1">Toplam</p>
+                <p className="text-xs text-on-surface-variant mb-1">{t.total}</p>
                 <p className="text-headline-sm font-bold text-primary" style={{ fontFamily: "Sora, sans-serif" }}>
                   ₺{toplam.toLocaleString("tr-TR")}
                 </p>
@@ -389,7 +389,7 @@ function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
             </div>
 
             <div className="mb-5">
-              <label className="block text-xs text-on-surface-variant mb-1.5">Not</label>
+              <label className="block text-xs text-on-surface-variant mb-1.5">{t.note}</label>
               <textarea value={form.notlar} onChange={(e) => set("notlar", e.target.value)} rows={2} className={inputCls} />
             </div>
 
@@ -402,15 +402,15 @@ function SiparisModal({ urun, onClose }: { urun: Urun; onClose: () => void }) {
 
             <div className="flex gap-3">
               <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl glass-card text-sm font-semibold text-on-surface hover:bg-white/10 transition-all">
-                İptal
+                {t.cancel}
               </button>
               <button type="submit" disabled={saving} className="flex-1 py-3 rounded-xl bg-primary-container text-on-primary-container text-sm font-bold hover:scale-[1.02] transition-all disabled:opacity-60">
-                {saving ? "Ödemeye yönlendiriliyor..." : "Ödemeye Geç"}
+                {saving ? t.redirecting : t.toPayment}
               </button>
             </div>
             <p className="text-[11px] text-on-surface-variant mt-3 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">lock</span>
-              Ödeme, QNB sanal POS güvenli ödeme sayfasında 3D Secure ile alınır.
+              {t.securePay}
             </p>
           </form>
       </div>

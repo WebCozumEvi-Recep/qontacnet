@@ -1,22 +1,14 @@
 "use client";
 import { useState } from "react";
+import { FAQ_DATA } from "@/lib/i18n/ui-text";
 
-const faqs = [
-  {
-    q: "NFC kartlar her telefonla çalışır mı?",
-    a: "Evet, son 10 yılda üretilen akıllı telefonların %95'inde NFC özelliği mevcuttur. NFC özelliği olmayan eski modeller için ise her kartın arkasında bulunan dinamik QR kod kullanılabilir.",
-  },
-  {
-    q: "Kart bilgileri güncellenebilir mi?",
-    a: "Kesinlikle. Dijital profilinizdeki tüm bilgiler anlık olarak güncellenebilir. Fiziksel kartı değiştirmenize gerek kalmadan saniyeler içinde yeni verileri yayınlayabilirsiniz.",
-  },
-  {
-    q: "Firma olarak tüm üyeleri görebilir miyiz?",
-    a: "Evet, merkezi firma paneli üzerinden tüm üyelerinizi listeleyebilir, profillerini onaylayabilir veya pasife alabilirsiniz.",
-  },
-];
-
-export default function FAQ() {
+export default function FAQ({
+  title = FAQ_DATA.title,
+  faqs = FAQ_DATA.faqs,
+}: {
+  title?: string;
+  faqs?: { q: string; a: string }[];
+}) {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
@@ -26,7 +18,7 @@ export default function FAQ() {
           className="text-headline-md md:text-display-lg font-bold text-center mb-xl text-on-background"
           style={{ fontFamily: "Sora, sans-serif" }}
         >
-          Sıkça Sorulan Sorular
+          {title}
         </h2>
 
         <div className="space-y-sm">

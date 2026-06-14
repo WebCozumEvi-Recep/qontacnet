@@ -1,3 +1,6 @@
+import { getLocale } from "@/lib/i18n/server";
+import { tx } from "@/lib/i18n/auto";
+
 const problems = [
   {
     icon: "distance",
@@ -23,7 +26,20 @@ const problems = [
   },
 ];
 
-export default function ProblemSolution() {
+export default async function ProblemSolution() {
+  const locale = await getLocale();
+  const ui = await tx(
+    {
+      h1: "Üyeleriniz sahada aynı",
+      h2: "kurumsal dili",
+      h3: "kullanıyor mu?",
+      sub: "Geleneksel yöntemler ekiplerinizi yavaşlatır ve markanızı kontrolsüz bırakır.",
+    },
+    locale,
+  );
+  const items = await Promise.all(
+    problems.map(async (p) => ({ ...p, ...(await tx({ title: p.title, desc: p.desc }, locale)) })),
+  );
   return (
     <section className="py-xl bg-surface-container-lowest relative overflow-hidden">
       <div className="max-w-container-max mx-auto px-10">
@@ -32,16 +48,16 @@ export default function ProblemSolution() {
             className="text-headline-md md:text-display-lg font-bold mb-4 text-on-background"
             style={{ fontFamily: "Sora, sans-serif", lineHeight: 1.2 }}
           >
-            Üyeleriniz sahada aynı{" "}
-            <span className="text-primary">kurumsal dili</span> kullanıyor mu?
+            {ui.h1}{" "}
+            <span className="text-primary">{ui.h2}</span> {ui.h3}
           </h2>
           <p className="text-body-md text-on-surface-variant max-w-[42rem] mx-auto">
-            Geleneksel yöntemler ekiplerinizi yavaşlatır ve markanızı kontrolsüz bırakır.
+            {ui.sub}
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-md">
-          {problems.map((p) => (
+          {items.map((p) => (
             <div
               key={p.title}
               className={`glass-card p-md rounded-2xl glow-hover ${

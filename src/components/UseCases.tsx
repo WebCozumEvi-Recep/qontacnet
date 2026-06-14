@@ -1,4 +1,6 @@
 import SectionTitle from "./ui/SectionTitle";
+import { getLocale } from "@/lib/i18n/server";
+import { tx, txList } from "@/lib/i18n/auto";
 
 const useCases = [
   { icon: "🤝", label: "Birebir görüşmeler" },
@@ -13,19 +15,31 @@ const useCases = [
   { icon: "👑", label: "Lider ekip yönetimi" },
 ];
 
-export default function UseCases() {
+export default async function UseCases() {
+  const locale = await getLocale();
+  const ui = await tx(
+    {
+      badge: "Kullanım Alanları",
+      title: "Network ekiplerinin her",
+      highlight: "temas noktasında kullanılır",
+      subtitle: "Fiziksel veya dijital, her ortamda profesyonel temsilci deneyimi.",
+    },
+    locale,
+  );
+  const labels = await txList(useCases.map((u) => u.label), locale);
+  const items = useCases.map((u, i) => ({ ...u, label: labels[i] }));
   return (
     <section className="py-24 grid-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionTitle
-          badge="Kullanım Alanları"
-          title="Network ekiplerinin her"
-          highlight="temas noktasında kullanılır"
-          subtitle="Fiziksel veya dijital, her ortamda profesyonel temsilci deneyimi."
+          badge={ui.badge}
+          title={ui.title}
+          highlight={ui.highlight}
+          subtitle={ui.subtitle}
         />
 
         <div className="flex flex-wrap justify-center gap-4">
-          {useCases.map((u) => (
+          {items.map((u) => (
             <div key={u.label}
               className="flex items-center gap-3 px-5 py-3 rounded-full glass glass-hover cursor-default">
               <span className="text-xl">{u.icon}</span>

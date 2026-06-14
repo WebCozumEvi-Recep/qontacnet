@@ -1,4 +1,6 @@
 import SectionTitle from "./ui/SectionTitle";
+import { getLocale } from "@/lib/i18n/server";
+import { tx, txList } from "@/lib/i18n/auto";
 
 const panels = [
   {
@@ -36,19 +38,44 @@ const panels = [
   },
 ];
 
-export default function Panels() {
+export default async function Panels() {
+  const locale = await getLocale();
+  const ui = await tx(
+    {
+      badge: "Yönetim Panelleri",
+      title: "Firma, üye ve platform yönetimi",
+      highlight: "tek yapıda",
+      subtitle: "Her rol için özel panel: firma kontrolü, üye özgürlüğü, platform şeffaflığı.",
+    },
+    locale,
+  );
+  const items = await Promise.all(
+    panels.map(async (p) => {
+      const [title, itemLabels, rowLabels] = await Promise.all([
+        tx({ t: p.title }, locale).then((r) => r.t),
+        txList(p.items, locale),
+        txList(p.mockupRows.map((r) => r.label), locale),
+      ]);
+      return {
+        ...p,
+        title,
+        items: itemLabels,
+        mockupRows: p.mockupRows.map((r, i) => ({ ...r, label: rowLabels[i] })),
+      };
+    }),
+  );
   return (
     <section className="py-24" style={{ background: "#0d0b09" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionTitle
-          badge="Yönetim Panelleri"
-          title="Firma, üye ve platform yönetimi"
-          highlight="tek yapıda"
-          subtitle="Her rol için özel panel: firma kontrolü, üye özgürlüğü, platform şeffaflığı."
+          badge={ui.badge}
+          title={ui.title}
+          highlight={ui.highlight}
+          subtitle={ui.subtitle}
         />
 
         <div className="grid md:grid-cols-3 gap-6">
-          {panels.map((p) => (
+          {items.map((p) => (
             <div key={p.title} className="glass p-6 glass-hover">
               {/* Header */}
               <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/10">

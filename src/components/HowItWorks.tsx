@@ -1,3 +1,6 @@
+import { getLocale } from "@/lib/i18n/server";
+import { tx } from "@/lib/i18n/auto";
+
 const steps = [
   {
     icon: "corporate_fare",
@@ -16,19 +19,24 @@ const steps = [
   },
 ];
 
-export default function HowItWorks() {
+export default async function HowItWorks() {
+  const locale = await getLocale();
+  const ui = await tx({ label: "Süreç", title: "Sistem Nasıl Çalışır?" }, locale);
+  const items = await Promise.all(
+    steps.map(async (s) => ({ ...s, ...(await tx({ title: s.title, desc: s.desc }, locale)) })),
+  );
   return (
     <section id="sistem" className="py-xl relative">
       <div className="max-w-container-max mx-auto px-10">
         <div className="text-center mb-xl">
           <span className="text-primary font-bold tracking-widest text-label-sm uppercase mb-4 block">
-            Süreç
+            {ui.label}
           </span>
           <h2
             className="text-headline-md md:text-display-lg font-bold text-on-background"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            Sistem Nasıl Çalışır?
+            {ui.title}
           </h2>
         </div>
 
@@ -36,7 +44,7 @@ export default function HowItWorks() {
           {/* Connector line */}
           <div className="absolute top-24 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-white/10 to-transparent hidden md:block" />
 
-          {steps.map((s) => (
+          {items.map((s) => (
             <div key={s.title} className="relative z-10 flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-full glass-card border-primary/50 flex items-center justify-center mb-md bg-surface-container shadow-[0_0_30px_rgba(212, 175, 55,0.2)]">
                 <span className="material-symbols-outlined text-4xl text-primary">{s.icon}</span>

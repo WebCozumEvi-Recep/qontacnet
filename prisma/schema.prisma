@@ -365,6 +365,8 @@ model CustomPage {
   slug      String   @unique
   baslik    String
   icerik    String   @default("") // CKEditor HTML çıktısı
+  // Dil başına { baslik, icerik } — admin'den düzenlenebilir çeviriler.
+  ceviriler Json     @default("{}")
   aktif     Boolean  @default(true)
   sira      Int      @default(0)
   createdAt DateTime @default(now())
@@ -418,4 +420,19 @@ model RevenueSnapshot {
   mrr       Int
   yeniFirma Int    @default(0)
   iptal     Int    @default(0)
+}
+
+// Otomatik çeviri önbelleği — kaynak metin (hash) + hedef dil başına bir kayıt.
+// Marka sayfaları, kart içerikleri ve sözleşmeler için kullanılır.
+model Translation {
+  id        String   @id @default(cuid())
+  locale    String
+  hash      String   // kaynak metnin sha256'sı
+  source    String   // kaynak (tr) metin
+  value     String   // çeviri
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([locale, hash])
+  @@index([locale])
 }

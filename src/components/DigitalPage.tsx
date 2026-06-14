@@ -1,3 +1,6 @@
+import { getLocale } from "@/lib/i18n/server";
+import { tx, txList } from "@/lib/i18n/auto";
+
 const featureList = [
   "WhatsApp, Telegram ve Arama butonları",
   "Ürün ve servis listeleme modülleri",
@@ -5,7 +8,21 @@ const featureList = [
   "Dinamik video ve doküman paylaşımı",
 ];
 
-export default function DigitalPage() {
+export default async function DigitalPage() {
+  const locale = await getLocale();
+  const ui = await tx(
+    {
+      name: "Ahmet Yılmaz",
+      role: "Üst Düzey Yönetici",
+      org: "Qontac Network",
+      products: "Öne Çıkan Ürünler",
+      h1: "Kartvizitten fazlası:",
+      h2: "kişisel satış sayfası",
+      desc: "Üyeleriniz artık sadece telefon numarası paylaşmıyor. Tek bir dokunuşla tüm iş dünyasını müşterilerine sunuyor.",
+    },
+    locale,
+  );
+  const features = await txList(featureList, locale);
   return (
     <section className="py-xl bg-surface-container-high overflow-hidden">
       <div className="max-w-container-max mx-auto px-10 grid lg:grid-cols-2 gap-lg items-center">
@@ -26,9 +43,9 @@ export default function DigitalPage() {
                   </div>
                 </div>
                 <div className="relative z-10">
-                  <h4 className="text-white font-bold text-lg" style={{ fontFamily: "Sora, sans-serif" }}>Ahmet Yılmaz</h4>
-                  <p className="text-primary text-sm font-medium">Üst Düzey Yönetici</p>
-                  <p className="text-xs text-on-surface-variant">Qontac Network</p>
+                  <h4 className="text-white font-bold text-lg" style={{ fontFamily: "Sora, sans-serif" }}>{ui.name}</h4>
+                  <p className="text-primary text-sm font-medium">{ui.role}</p>
+                  <p className="text-xs text-on-surface-variant">{ui.org}</p>
                 </div>
               </div>
 
@@ -54,7 +71,7 @@ export default function DigitalPage() {
               <div className="glass-card rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="material-symbols-outlined text-primary text-base">collections</span>
-                  <span className="text-sm font-semibold text-on-surface">Öne Çıkan Ürünler</span>
+                  <span className="text-sm font-semibold text-on-surface">{ui.products}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -72,15 +89,14 @@ export default function DigitalPage() {
             className="text-headline-md md:text-display-lg font-bold text-on-background"
             style={{ fontFamily: "Sora, sans-serif", lineHeight: 1.2 }}
           >
-            Kartvizitten fazlası:{" "}
-            <span className="text-primary">kişisel satış sayfası</span>
+            {ui.h1}{" "}
+            <span className="text-primary">{ui.h2}</span>
           </h2>
           <p className="text-body-lg text-on-surface-variant leading-relaxed">
-            Üyeleriniz artık sadece telefon numarası paylaşmıyor. Tek bir dokunuşla tüm iş
-            dünyasını müşterilerine sunuyor.
+            {ui.desc}
           </p>
           <ul className="space-y-sm">
-            {featureList.map((f) => (
+            {features.map((f) => (
               <li key={f} className="flex items-center gap-xs font-medium text-on-surface">
                 <span className="material-symbols-outlined text-tertiary">check_circle</span>
                 {f}

@@ -1,3 +1,6 @@
+import { getLocale } from "@/lib/i18n/server";
+import { tx } from "@/lib/i18n/auto";
+
 const benefits = [
   {
     icon: "branding_watermark",
@@ -31,7 +34,19 @@ const benefits = [
   },
 ];
 
-export default function ForFirms() {
+export default async function ForFirms() {
+  const locale = await getLocale();
+  const ui = await tx(
+    {
+      title: "Firmalar İçin Güçlü Avantajlar",
+      sub: "Network organizasyonunuzu veriye dayalı yönetin, kontrolü elinize alın.",
+      cta: "Firma Demo Talep Et",
+    },
+    locale,
+  );
+  const items = await Promise.all(
+    benefits.map(async (b) => ({ ...b, ...(await tx({ title: b.title, desc: b.desc }, locale)) })),
+  );
   return (
     <section id="firmalar" className="py-xl">
       <div className="max-w-container-max mx-auto px-10">
@@ -41,22 +56,22 @@ export default function ForFirms() {
               className="text-headline-md md:text-display-lg font-bold mb-4 text-on-background"
               style={{ fontFamily: "Sora, sans-serif", lineHeight: 1.2 }}
             >
-              Firmalar İçin Güçlü Avantajlar
+              {ui.title}
             </h2>
             <p className="text-on-surface-variant text-body-md">
-              Network organizasyonunuzu veriye dayalı yönetin, kontrolü elinize alın.
+              {ui.sub}
             </p>
           </div>
           <a
             href="#demo"
             className="bg-primary text-black font-bold px-8 py-3 rounded-xl hover:scale-105 transition-all whitespace-nowrap"
           >
-            Firma Demo Talep Et
+            {ui.cta}
           </a>
         </div>
 
         <div className="grid md:grid-cols-3 gap-md">
-          {benefits.map((b) => (
+          {items.map((b) => (
             <div
               key={b.title}
               className="glass-card p-md rounded-2xl hover:bg-primary/5 transition-all"

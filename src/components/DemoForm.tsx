@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
+import { DEMO_FORM_TEXT, type DemoFormText } from "@/lib/i18n/ui-text";
 
-export default function DemoForm() {
+export default function DemoForm({ t = DEMO_FORM_TEXT }: { t?: DemoFormText }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,10 +22,10 @@ export default function DemoForm() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error ?? "Bir hata oluştu.");
+      if (!res.ok || !data.ok) throw new Error(data.error ?? t.errGeneric);
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bir hata oluştu.");
+      setError(err instanceof Error ? err.message : t.errGeneric);
     } finally {
       setLoading(false);
     }
@@ -39,12 +40,11 @@ export default function DemoForm() {
             className="text-headline-md md:text-display-lg font-bold mb-6 text-on-background"
             style={{ fontFamily: "Sora, sans-serif", lineHeight: 1.2 }}
           >
-            Firmanız için örnek{" "}
-            <span className="text-primary">dijital demo</span> hazırlayalım
+            {t.h1}{" "}
+            <span className="text-primary">{t.h2}</span> {t.h3}
           </h2>
           <p className="text-body-lg text-on-surface-variant mb-lg leading-relaxed">
-            Ekibinizin büyüklüğünü ve ihtiyaçlarınızı paylaşın, size özel sunumumuzu
-            hazırlayıp iletişime geçelim.
+            {t.desc}
           </p>
         </div>
 
@@ -59,10 +59,10 @@ export default function DemoForm() {
                 className="text-white text-xl font-bold mb-2"
                 style={{ fontFamily: "Sora, sans-serif" }}
               >
-                Talebiniz alındı!
+                {t.successTitle}
               </h3>
               <p className="text-on-surface-variant text-sm">
-                En kısa sürede sizinle iletişime geçeceğiz.
+                {t.successDesc}
               </p>
             </div>
           ) : (
@@ -70,21 +70,21 @@ export default function DemoForm() {
               <div className="grid md:grid-cols-2 gap-sm">
                 <input value={form.ad} onChange={upd("ad")}
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 focus:border-primary focus:ring-0 outline-none transition-all text-on-surface placeholder:text-on-surface-variant/50 text-sm"
-                  placeholder="Ad Soyad" type="text" required />
+                  placeholder={t.name} type="text" required />
                 <input value={form.firma} onChange={upd("firma")}
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 focus:border-primary focus:ring-0 outline-none transition-all text-on-surface placeholder:text-on-surface-variant/50 text-sm"
-                  placeholder="Firma Adı" type="text" required />
+                  placeholder={t.firm} type="text" required />
               </div>
               <input value={form.email} onChange={upd("email")}
                 className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 focus:border-primary focus:ring-0 outline-none transition-all text-on-surface placeholder:text-on-surface-variant/50 text-sm"
-                placeholder="E-Posta Adresi" type="email" required />
+                placeholder={t.email} type="email" required />
               <div className="grid md:grid-cols-2 gap-sm">
                 <input value={form.telefon} onChange={upd("telefon")}
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 focus:border-primary focus:ring-0 outline-none transition-all text-on-surface placeholder:text-on-surface-variant/50 text-sm"
-                  placeholder="Telefon" type="tel" />
+                  placeholder={t.phone} type="tel" />
                 <select value={form.uyeSayisi} onChange={upd("uyeSayisi")}
                   className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 focus:border-primary focus:ring-0 outline-none transition-all text-on-surface-variant text-sm">
-                  <option value="">Üye Sayısı</option>
+                  <option value="">{t.memberCount}</option>
                   <option value="0-100">0-100</option>
                   <option value="100-500">100-500</option>
                   <option value="500+">500+</option>
@@ -92,7 +92,7 @@ export default function DemoForm() {
               </div>
               <textarea value={form.mesaj} onChange={upd("mesaj")}
                 className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 focus:border-primary focus:ring-0 outline-none transition-all text-on-surface placeholder:text-on-surface-variant/50 text-sm resize-none"
-                placeholder="Mesajınız..." rows={3} />
+                placeholder={t.message} rows={3} />
               {error && (
                 <div className="flex items-center gap-2 text-red-400 text-sm">
                   <span className="material-symbols-outlined text-base">error</span>
@@ -107,10 +107,10 @@ export default function DemoForm() {
                 {loading ? (
                   <>
                     <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                    Gönderiliyor...
+                    {t.sending}
                   </>
                 ) : (
-                  "Talep Gönder"
+                  t.submit
                 )}
               </button>
             </form>
