@@ -18,6 +18,14 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Basit doğrulama (captcha): admin girişinde matematik sorusu
+  const [captcha, setCaptcha] = useState({ a: 0, b: 0 });
+  const [captchaInput, setCaptchaInput] = useState("");
+
+  const newCaptcha = () => {
+    setCaptcha({ a: Math.floor(Math.random() * 9) + 1, b: Math.floor(Math.random() * 9) + 1 });
+    setCaptchaInput("");
+  };
 
   // Kayıtlı bilgileri yükle + ?next= parametresini oku
   useEffect(() => {
@@ -36,11 +44,20 @@ export default function LoginPage() {
       setAdminMode(true);
       setRole("admin");
     }
+    newCaptcha();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    // Admin girişinde basit doğrulama
+    if (adminMode) {
+      if (parseInt(captchaInput, 10) !== captcha.a + captcha.b) {
+        setError("Doğrulama yanlış. Lütfen tekrar deneyin.");
+        newCaptcha();
+        return;
+      }
+    }
     setLoading(true);
     const ok = await login(email, password, role);
     setLoading(false);
@@ -54,19 +71,7 @@ export default function LoginPage() {
       router.push(dest);
     } else {
       setError("E-posta veya şifre hatalı.");
-    }
-  };
-
-  const fillDemo = () => {
-    if (role === "firma") {
-      setEmail("firma@qontac.net");
-      setPassword("123456");
-    } else if (role === "admin") {
-      setEmail("admin@qontac.net");
-      setPassword("qontac123");
-    } else {
-      setEmail("demo@qontac.net");
-      setPassword("123456");
+      if (adminMode) newCaptcha();
     }
   };
 
@@ -166,6 +171,35 @@ export default function LoginPage() {
               <span className="text-sm text-on-surface-variant">Beni Hatırla</span>
             </label>
 
+            {/* Basit doğrulama (captcha) — admin girişi */}
+            {adminMode && (
+              <div>
+                <label className="text-xs text-on-surface-variant mb-1.5 block">Doğrulama</label>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-surface-dim border border-white/10 rounded-xl px-4 py-3 select-none">
+                    <span className="text-on-surface text-sm font-semibold tracking-wider">{captcha.a} + {captcha.b} =</span>
+                    <button
+                      type="button"
+                      onClick={newCaptcha}
+                      className="text-on-surface-variant hover:text-primary transition-colors"
+                      tabIndex={-1}
+                      aria-label="Yenile"
+                    >
+                      <span className="material-symbols-outlined text-base">refresh</span>
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    required
+                    value={captchaInput}
+                    onChange={e => setCaptchaInput(e.target.value)}
+                    placeholder="?"
+                    className="flex-1 w-0 bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/40 text-sm focus:border-primary focus:ring-0 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="flex items-center gap-2 text-red-400 text-sm">
                 <span className="material-symbols-outlined text-base">error</span>
@@ -189,17 +223,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {adminMode && (
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <button
-                onClick={fillDemo}
-                className="w-full py-2.5 glass-card rounded-xl text-on-surface-variant text-sm hover:text-primary transition-all flex items-center justify-center gap-2"
-              >
-                <span className="material-symbols-outlined text-base">bolt</span>
-                Demo ile dene
-              </button>
-            </div>
-          )}
         </div>
 
         <p className="text-center text-sm text-on-surface-variant mt-6">
