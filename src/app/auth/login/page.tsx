@@ -50,13 +50,11 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    // Admin girişinde basit doğrulama
-    if (adminMode) {
-      if (parseInt(captchaInput, 10) !== captcha.a + captcha.b) {
-        setError("Doğrulama yanlış. Lütfen tekrar deneyin.");
-        newCaptcha();
-        return;
-      }
+    // Basit doğrulama (captcha) — tüm girişlerde
+    if (parseInt(captchaInput, 10) !== captcha.a + captcha.b) {
+      setError("Doğrulama yanlış. Lütfen tekrar deneyin.");
+      newCaptcha();
+      return;
     }
     setLoading(true);
     const ok = await login(email, password, role);
@@ -71,7 +69,7 @@ export default function LoginPage() {
       router.push(dest);
     } else {
       setError("E-posta veya şifre hatalı.");
-      if (adminMode) newCaptcha();
+      newCaptcha();
     }
   };
 
@@ -171,9 +169,8 @@ export default function LoginPage() {
               <span className="text-sm text-on-surface-variant">Beni Hatırla</span>
             </label>
 
-            {/* Basit doğrulama (captcha) — admin girişi */}
-            {adminMode && (
-              <div>
+            {/* Basit doğrulama (captcha) — tüm girişler */}
+            <div>
                 <label className="text-xs text-on-surface-variant mb-1.5 block">Doğrulama</label>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 bg-surface-dim border border-white/10 rounded-xl px-4 py-3 select-none">
@@ -198,7 +195,6 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-            )}
 
             {error && (
               <div className="flex items-center gap-2 text-red-400 text-sm">
