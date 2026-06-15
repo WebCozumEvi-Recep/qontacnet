@@ -3,12 +3,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { AUTH_TEXT, readLocaleFromCookie } from "@/lib/i18n/auth-text";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
 const REMEMBER_KEY = "qontac_remember";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const t = AUTH_TEXT[locale];
   const [nextUrl, setNextUrl] = useState<string | null>(null);
   const [role, setRole] = useState<"uye" | "firma" | "admin">("uye");
   const [adminMode, setAdminMode] = useState(false);
@@ -26,6 +31,9 @@ export default function LoginPage() {
     setCaptcha({ a: Math.floor(Math.random() * 9) + 1, b: Math.floor(Math.random() * 9) + 1 });
     setCaptchaInput("");
   };
+
+  // Aktif dili çerezden oku
+  useEffect(() => { setLocale(readLocaleFromCookie()); }, []);
 
   // Kayıtlı bilgileri yükle + ?next= parametresini oku
   useEffect(() => {
@@ -52,7 +60,7 @@ export default function LoginPage() {
     setError("");
     // Basit doğrulama (captcha) — tüm girişlerde
     if (parseInt(captchaInput, 10) !== captcha.a + captcha.b) {
-      setError("Doğrulama yanlış. Lütfen tekrar deneyin.");
+      setError(t.captchaWrong);
       newCaptcha();
       return;
     }
@@ -68,7 +76,7 @@ export default function LoginPage() {
       const dest = nextUrl ?? (role === "firma" ? "/firma" : role === "admin" ? "/admin" : "/uye");
       router.push(dest);
     } else {
-      setError("E-posta veya şifre hatalı.");
+      setError(t.errInvalid);
       newCaptcha();
     }
   };
@@ -78,6 +86,9 @@ export default function LoginPage() {
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
 
       <div className="w-full max-w-[26rem] relative z-10">
+        <div className="flex justify-end mb-2">
+          <LanguageSwitcher current={locale} />
+        </div>
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
@@ -85,7 +96,7 @@ export default function LoginPage() {
               QONTAC
             </span>
           </Link>
-          <p className="text-on-surface-variant text-sm mt-2">Hesabınıza giriş yapın</p>
+          <p className="text-on-surface-variant text-sm mt-2">{t.loginSubtitle}</p>
         </div>
 
         {/* Role Tabs */}
@@ -98,7 +109,7 @@ export default function LoginPage() {
                 : "text-on-surface-variant hover:text-on-surface"
             }`}
           >
-            Üye
+            {t.tabMember}
           </button>
           <button
             onClick={() => setRole("firma")}
@@ -108,7 +119,7 @@ export default function LoginPage() {
                 : "text-on-surface-variant hover:text-on-surface"
             }`}
           >
-            Firma
+            {t.tabCompany}
           </button>
           {adminMode && (
             <button
@@ -119,7 +130,7 @@ export default function LoginPage() {
                   : "text-on-surface-variant hover:text-on-surface"
               }`}
             >
-              Admin
+              {t.tabAdmin}
             </button>
           )}
         </div>
@@ -128,7 +139,7 @@ export default function LoginPage() {
         <div className="glass-card rounded-[2rem] p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs text-on-surface-variant mb-1.5 block">E-Posta</label>
+              <label className="text-xs text-on-surface-variant mb-1.5 block">{t.email}</label>
               <input
                 type="email"
                 required
@@ -139,7 +150,7 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-on-surface-variant mb-1.5 block">Şifre</label>
+              <label className="text-xs text-on-surface-variant mb-1.5 block">{t.password}</label>
               <div className="relative">
                 <input
                   type={showPw ? "text" : "password"}
@@ -166,12 +177,12 @@ export default function LoginPage() {
                 className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${remember ? "bg-primary border-primary" : "bg-surface-dim border-white/20 hover:border-white/40"}`}>
                 {remember && <span className="material-symbols-outlined text-black text-sm">check</span>}
               </div>
-              <span className="text-sm text-on-surface-variant">Beni Hatırla</span>
+              <span className="text-sm text-on-surface-variant">{t.remember}</span>
             </label>
 
             {/* Basit doğrulama (captcha) — tüm girişler */}
             <div>
-                <label className="text-xs text-on-surface-variant mb-1.5 block">Doğrulama</label>
+                <label className="text-xs text-on-surface-variant mb-1.5 block">{t.captchaLabel}</label>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 bg-surface-dim border border-white/10 rounded-xl px-4 py-3 select-none">
                     <span className="text-on-surface text-sm font-semibold tracking-wider">{captcha.a} + {captcha.b} =</span>
@@ -211,10 +222,10 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                  Giriş yapılıyor...
+                  {t.loggingIn}
                 </>
               ) : (
-                "Giriş Yap"
+                t.login
               )}
             </button>
           </form>
@@ -222,21 +233,21 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-sm text-on-surface-variant mt-6">
-          Hesabınız yok mu?{" "}
+          {t.noAccount}{" "}
           <Link href="/auth/register" className="text-primary hover:underline font-medium">
-            Kayıt Ol
+            {t.register}
           </Link>
         </p>
         {role === "firma" && (
           <p className="text-center text-sm text-on-surface-variant mt-2">
             <Link href="/auth/forgot-password" className="text-on-surface-variant/60 hover:text-primary transition-all text-xs">
-              Şifremi Unuttum
+              {t.forgot}
             </Link>
           </p>
         )}
         <p className="text-center mt-3">
           <Link href="/" className="text-xs text-on-surface-variant/60 hover:text-on-surface-variant transition-all">
-            ← Ana Sayfaya Dön
+            {t.backHome}
           </Link>
         </p>
       </div>
