@@ -54,6 +54,11 @@ export type AuthText = {
   kvkkPost: string;
   saving: string;
   haveAccount: string;
+  // sözleşme popup
+  modalLoading: string;
+  modalAccept: string;
+  modalClose: string;
+  modalError: string;
 };
 
 const tr: AuthText = {
@@ -103,6 +108,10 @@ const tr: AuthText = {
   kvkkPost: "'nı okudum, kabul ediyorum.",
   saving: "Kaydediliyor...",
   haveAccount: "Zaten hesabınız var mı?",
+  modalLoading: "Yükleniyor...",
+  modalAccept: "Okudum, Kabul Ediyorum",
+  modalClose: "Kapat",
+  modalError: "İçerik yüklenemedi.",
 };
 
 const en: AuthText = {
@@ -152,6 +161,10 @@ const en: AuthText = {
   kvkkPost: ".",
   saving: "Saving...",
   haveAccount: "Already have an account?",
+  modalLoading: "Loading...",
+  modalAccept: "I Have Read and Accept",
+  modalClose: "Close",
+  modalError: "Content could not be loaded.",
 };
 
 const ar: AuthText = {
@@ -201,6 +214,10 @@ const ar: AuthText = {
   kvkkPost: ".",
   saving: "جارٍ الحفظ...",
   haveAccount: "هل لديك حساب بالفعل؟",
+  modalLoading: "جارٍ التحميل...",
+  modalAccept: "قرأت وأوافق",
+  modalClose: "إغلاق",
+  modalError: "تعذّر تحميل المحتوى.",
 };
 
 const bg: AuthText = {
@@ -250,6 +267,10 @@ const bg: AuthText = {
   kvkkPost: ".",
   saving: "Запазване...",
   haveAccount: "Вече имате профил?",
+  modalLoading: "Зареждане...",
+  modalAccept: "Прочетох и приемам",
+  modalClose: "Затвори",
+  modalError: "Съдържанието не може да се зареди.",
 };
 
 const ru: AuthText = {
@@ -299,6 +320,10 @@ const ru: AuthText = {
   kvkkPost: ".",
   saving: "Сохранение...",
   haveAccount: "Уже есть аккаунт?",
+  modalLoading: "Загрузка...",
+  modalAccept: "Прочитал(а) и принимаю",
+  modalClose: "Закрыть",
+  modalError: "Не удалось загрузить содержимое.",
 };
 
 export const AUTH_TEXT: Record<Locale, AuthText> = { tr, en, ar, bg, ru };

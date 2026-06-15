@@ -23,7 +23,43 @@ export default function RegisterPage() {
     kvkk: false,
   });
 
+  // Sözleşme onayları — her iki belge de okunup kabul edilmeli
+  const [accepted, setAccepted] = useState({ kvkk: false, kosul: false });
+  // Açık popup: ilgili sayfa slug'ı + içerik durumu
+  const [modal, setModal] = useState<null | {
+    slug: "kvkk" | "kullanim-kosullari";
+    which: "kvkk" | "kosul";
+    baslik: string;
+    icerik: string;
+    loading: boolean;
+    error: boolean;
+  }>(null);
+
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+
+  // Her iki belge kabul edilince checkbox otomatik işaretli
+  const bothAccepted = accepted.kvkk && accepted.kosul;
+  useEffect(() => { set("kvkk", bothAccepted); }, [bothAccepted]);
+
+  const openDoc = async (slug: "kvkk" | "kullanim-kosullari", which: "kvkk" | "kosul") => {
+    setModal({ slug, which, baslik: "", icerik: "", loading: true, error: false });
+    try {
+      const r = await fetch(`/api/sayfa/${slug}?lang=${locale}`);
+      const d = await r.json();
+      if (d?.ok) {
+        setModal({ slug, which, baslik: d.baslik, icerik: d.icerik, loading: false, error: false });
+      } else {
+        setModal({ slug, which, baslik: "", icerik: "", loading: false, error: true });
+      }
+    } catch {
+      setModal({ slug, which, baslik: "", icerik: "", loading: false, error: true });
+    }
+  };
+
+  const acceptDoc = () => {
+    if (modal) setAccepted(a => ({ ...a, [modal.which]: true }));
+    setModal(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,15 +188,36 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" required checked={form.kvkk} onChange={e => set("kvkk", e.target.checked)}
-                className="mt-0.5 accent-primary" />
-              <span className="text-xs text-on-surface-variant">
+            <div className="flex items-start gap-2.5">
+              {/* Onay kutusu: yalnız her iki belge okunup kabul edilince işaretlenir */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (bothAccepted) setAccepted({ kvkk: false, kosul: false });
+                  else if (!accepted.kvkk) openDoc("kvkk", "kvkk");
+                  else openDoc("kullanim-kosullari", "kosul");
+                }}
+                className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
+                  bothAccepted ? "bg-primary border-primary" : "bg-surface-dim border-white/25 hover:border-primary"
+                }`}
+                aria-label="KVKK ve Kullanım Koşulları onayı"
+              >
+                {bothAccepted && <span className="material-symbols-outlined text-black text-sm">check</span>}
+              </button>
+              {/* Form doğrulaması için gizli zorunlu alan */}
+              <input type="checkbox" required checked={form.kvkk} onChange={() => {}} className="hidden" />
+              <span className="text-xs text-on-surface-variant leading-relaxed">
                 {t.kvkkPre}
-                <a href="#" className="text-primary hover:underline">{t.kvkkDoc}</a>{t.kvkkMid}
-                <a href="#" className="text-primary hover:underline">{t.kvkkTerms}</a>{t.kvkkPost}
+                <button type="button" onClick={() => openDoc("kvkk", "kvkk")}
+                  className={`underline hover:text-primary ${accepted.kvkk ? "text-primary font-medium" : "text-primary"}`}>
+                  {t.kvkkDoc}{accepted.kvkk ? " ✓" : ""}
+                </button>{t.kvkkMid}
+                <button type="button" onClick={() => openDoc("kullanim-kosullari", "kosul")}
+                  className={`underline hover:text-primary ${accepted.kosul ? "text-primary font-medium" : "text-primary"}`}>
+                  {t.kvkkTerms}{accepted.kosul ? " ✓" : ""}
+                </button>{t.kvkkPost}
               </span>
-            </label>
+            </div>
 
             <button type="submit" disabled={loading || (!!form.password2 && form.password !== form.password2)}
               className="w-full py-3.5 bg-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
@@ -179,6 +236,58 @@ export default function RegisterPage() {
           <Link href="/" className="text-xs text-on-surface-variant/60 hover:text-on-surface-variant transition-all">{t.backHome}</Link>
         </p>
       </div>
+
+      {/* Sözleşme popup'ı */}
+      {modal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setModal(null)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[85vh] flex flex-col glass-card rounded-2xl border border-white/10 overflow-hidden"
+            style={{ background: "#15151a" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
+              <h3 className="text-on-surface font-bold text-base pr-4">
+                {modal.loading ? t.modalLoading : modal.error ? t.modalError : modal.baslik}
+              </h3>
+              <button type="button" onClick={() => setModal(null)}
+                className="text-on-surface-variant hover:text-on-surface flex-shrink-0">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="px-6 py-5 overflow-y-auto flex-1">
+              {modal.loading ? (
+                <div className="flex items-center justify-center py-12 text-on-surface-variant gap-2">
+                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                  {t.modalLoading}
+                </div>
+              ) : modal.error ? (
+                <p className="text-red-400 text-sm py-8 text-center">{t.modalError}</p>
+              ) : (
+                <div
+                  className="ck-content prose-custom text-on-surface-variant text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: modal.icerik }}
+                />
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10 flex-shrink-0">
+              <button type="button" onClick={() => setModal(null)}
+                className="px-5 py-2.5 rounded-xl text-on-surface-variant hover:text-on-surface text-sm transition-all">
+                {t.modalClose}
+              </button>
+              <button type="button" onClick={acceptDoc} disabled={modal.loading || modal.error}
+                className="px-6 py-2.5 rounded-xl bg-primary-container text-on-primary-container font-bold text-sm hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center gap-2">
+                <span className="material-symbols-outlined text-base">check_circle</span>
+                {t.modalAccept}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
