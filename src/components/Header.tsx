@@ -23,7 +23,7 @@ export default function Header({
   const [open, setOpen] = useState(false);
 
   const navLinks = [
-    { label: nav.home, href: "#", active: true },
+    { label: nav.home, href: "/", active: true },
     { label: nav.forFirms, href: "#firmalar" },
     { label: nav.forMembers, href: "#uyeler" },
     { label: nav.features, href: "#ozellikler" },
@@ -35,8 +35,8 @@ export default function Header({
   return (
     <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
       <nav className="flex justify-between items-center h-20 px-4 md:px-10 max-w-container-max mx-auto">
-        {/* Logo */}
-        <div className="flex items-center gap-xs">
+        {/* Logo — ana sayfaya döner */}
+        <Link href="/" className="flex items-center gap-xs" aria-label={logoText}>
           {logoUrl ? (
             <img src={logoUrl} alt={logoText} className="h-9 md:h-10 w-auto max-w-[150px] md:max-w-[190px] object-contain" />
           ) : (
@@ -44,23 +44,22 @@ export default function Header({
               {logoText}
             </span>
           )}
-        </div>
+        </Link>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-md">
-          {navLinks.map((l) => (
-            <a
-              key={l.label}
-              href={l.href}
-              className={`text-label-md transition-all ${
-                l.active
-                  ? "text-primary font-bold border-b-2 border-primary pb-1"
-                  : "text-on-surface-variant font-medium hover:text-primary duration-300"
-              }`}
-            >
-              {l.label}
-            </a>
-          ))}
+          {navLinks.map((l) => {
+            const cls = `text-label-md transition-all ${
+              l.active
+                ? "text-primary font-bold border-b-2 border-primary pb-1"
+                : "text-on-surface-variant font-medium hover:text-primary duration-300"
+            }`;
+            return l.href.startsWith("/") ? (
+              <Link key={l.label} href={l.href} className={cls}>{l.label}</Link>
+            ) : (
+              <a key={l.label} href={l.href} className={cls}>{l.label}</a>
+            );
+          })}
         </div>
 
         {/* CTAs */}
@@ -87,16 +86,14 @@ export default function Header({
       {/* Mobile menu */}
       {open && (
         <div className="md:hidden px-6 pb-4 border-t border-white/10 bg-surface-container-low">
-          {navLinks.map((l) => (
-            <a
-              key={l.label}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className="block py-3 text-sm text-on-surface-variant hover:text-primary transition-colors border-b border-white/5"
-            >
-              {l.label}
-            </a>
-          ))}
+          {navLinks.map((l) => {
+            const cls = "block py-3 text-sm text-on-surface-variant hover:text-primary transition-colors border-b border-white/5";
+            return l.href.startsWith("/") ? (
+              <Link key={l.label} href={l.href} onClick={() => setOpen(false)} className={cls}>{l.label}</Link>
+            ) : (
+              <a key={l.label} href={l.href} onClick={() => setOpen(false)} className={cls}>{l.label}</a>
+            );
+          })}
           <a
             href="#demo"
             className="mt-4 block text-center bg-primary-container text-on-primary-container font-bold px-6 py-3 rounded-xl text-label-md"
