@@ -11,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [nextUrl, setNextUrl] = useState<string | null>(null);
   const [role, setRole] = useState<"uye" | "firma" | "admin">("uye");
+  const [adminMode, setAdminMode] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -30,6 +31,11 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const next = params.get("next");
     if (next) setNextUrl(next);
+    // Admin girişi gizli: yalnızca ?admin=1 (veya ?role=admin) ile erişilir
+    if (params.get("admin") === "1" || params.get("role") === "admin") {
+      setAdminMode(true);
+      setRole("admin");
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,16 +107,18 @@ export default function LoginPage() {
           >
             Firma
           </button>
-          <button
-            onClick={() => setRole("admin")}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-              role === "admin"
-                ? "bg-primary-container text-on-primary-container"
-                : "text-on-surface-variant hover:text-on-surface"
-            }`}
-          >
-            Admin
-          </button>
+          {adminMode && (
+            <button
+              onClick={() => setRole("admin")}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                role === "admin"
+                  ? "bg-primary-container text-on-primary-container"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              Admin
+            </button>
+          )}
         </div>
 
         {/* Form Card */}
@@ -181,15 +189,17 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <button
-              onClick={fillDemo}
-              className="w-full py-2.5 glass-card rounded-xl text-on-surface-variant text-sm hover:text-primary transition-all flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-base">bolt</span>
-              Demo ile dene
-            </button>
-          </div>
+          {adminMode && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <button
+                onClick={fillDemo}
+                className="w-full py-2.5 glass-card rounded-xl text-on-surface-variant text-sm hover:text-primary transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">bolt</span>
+                Demo ile dene
+              </button>
+            </div>
+          )}
         </div>
 
         <p className="text-center text-sm text-on-surface-variant mt-6">
