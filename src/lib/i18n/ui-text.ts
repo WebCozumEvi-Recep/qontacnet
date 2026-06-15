@@ -71,5 +71,7 @@ export const PRODUCTS_TEXT = {
   payFailDesc: "Ödeme işlemi tamamlanamadı. Kart bilgilerinizi kontrol edip tekrar deneyebilirsiniz.",
   prev: "Önceki",
   next: "Sonraki",
+  tcHint: "11 haneli T.C. kimlik numarası",
+  taxHint: "10-11 haneli vergi numarası",
 };
 export type ProductsText = typeof PRODUCTS_TEXT;

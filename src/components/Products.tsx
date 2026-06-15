@@ -353,7 +353,7 @@ function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t
               {form.faturaTip === "BIREYSEL" ? (
                 <div>
                   <label className="block text-xs text-on-surface-variant mb-1.5">{t.tcNo} *</label>
-                  <input inputMode="numeric" pattern="[0-9]{11}" maxLength={11} title="11 haneli T.C. kimlik numarası"
+                  <input inputMode="numeric" pattern="[0-9]{11}" maxLength={11} title={t.tcHint}
                     value={form.tcKimlik} onChange={(e) => set("tcKimlik", e.target.value.replace(/\D/g, ""))} required className={inputCls} />
                 </div>
               ) : (
@@ -364,7 +364,7 @@ function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t
                   </div>
                   <div>
                     <label className="block text-xs text-on-surface-variant mb-1.5">{t.taxNo} *</label>
-                    <input inputMode="numeric" pattern="[0-9]{10,11}" maxLength={11} title="10-11 haneli vergi numarası"
+                    <input inputMode="numeric" pattern="[0-9]{10,11}" maxLength={11} title={t.taxHint}
                       value={form.vergiNo} onChange={(e) => set("vergiNo", e.target.value.replace(/\D/g, ""))} required className={inputCls} />
                   </div>
                   <div>

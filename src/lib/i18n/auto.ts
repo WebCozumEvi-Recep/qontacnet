@@ -3,9 +3,15 @@ import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { translateFields } from "./translate";
 import { DEFAULT_LOCALE, type Locale } from "./config";
+import { SEED } from "./homepage-seed";
 
 function hash(s: string): string {
   return createHash("sha256").update(s).digest("hex");
+}
+
+// Koda gömülü hazır çeviri (API/DB gerektirmez). Bulunamazsa undefined.
+function fromSeed(locale: Locale, source: string): string | undefined {
+  return SEED[locale]?.[source.trim()];
 }
 
 /**
@@ -26,10 +32,21 @@ export async function tx<T extends Record<string, string>>(
   if (locale === DEFAULT_LOCALE) return fields;
 
   const keys = Object.keys(fields) as (keyof T)[];
-  const nonEmpty = keys.filter((k) => typeof fields[k] === "string" && (fields[k] as string).trim());
+  let nonEmpty = keys.filter((k) => typeof fields[k] === "string" && (fields[k] as string).trim());
   if (nonEmpty.length === 0) return fields;
 
   const result = { ...fields };
+
+  // 0) Koda gömülü hazır çeviri (seed) — API/DB gerektirmez, anında hazır
+  nonEmpty = nonEmpty.filter((k) => {
+    const seeded = fromSeed(locale, fields[k] as string);
+    if (seeded !== undefined) {
+      result[k] = seeded as T[keyof T];
+      return false;
+    }
+    return true;
+  });
+  if (nonEmpty.length === 0) return result;
 
   // 1) Önbellekten oku
   const hashes = nonEmpty.map((k) => hash(fields[k] as string));
