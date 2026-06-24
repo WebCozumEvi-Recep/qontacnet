@@ -52,13 +52,13 @@ export default function BaglantilarPage() {
           { label: "NFC ile Gelen", value: allLeads.filter(l => l.kaynak === "NFC").length, icon: "nfc", color: "#42faba" },
           { label: "QR ile Gelen", value: allLeads.filter(l => l.kaynak === "QR").length, icon: "qr_code_2", color: "#6001d1" },
         ].map(s => (
-          <div key={s.label} className="glass-card rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${s.color}15`, border: `1px solid ${s.color}25` }}>
+          <div key={s.label} className="glass-card rounded-2xl p-3 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-4">
+            <div className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center flex-shrink-0" style={{ background: `${s.color}15`, border: `1px solid ${s.color}25` }}>
               <span className="material-symbols-outlined text-xl" style={{ color: s.color }}>{s.icon}</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-2xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{s.value}</p>
-              <p className="text-xs text-on-surface-variant">{s.label}</p>
+              <p className="text-[10.5px] sm:text-xs text-on-surface-variant leading-tight">{s.label}</p>
             </div>
           </div>
         ))}

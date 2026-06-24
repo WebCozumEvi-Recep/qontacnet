@@ -182,7 +182,7 @@ export default function ModullerimPage() {
     <div className="max-w-[800px] space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Modüllerim</h2>
+          <h2 className="hidden lg:block text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Modüllerim</h2>
           <p className="text-sm text-on-surface-variant mt-1">Kartında görünecek modülleri ekle ve içeriğini doldur.</p>
         </div>
         <Link href={`/kart/${user?.id}`} target="_blank"

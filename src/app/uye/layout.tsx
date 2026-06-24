@@ -43,14 +43,14 @@ export default function UyeLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex">
       <DashboardSidebar role="uye" open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0">
         {/* Masaüstü üst bar */}
         <div className="hidden lg:block">
           <DashboardTopBar title={title} onMenuClick={() => setSidebarOpen(true)} />
         </div>
         {/* Mobil uygulama görünümü başlığı */}
         <UyeMobileHeader title={title} initials={initials} />
-        <main className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6 overflow-x-hidden">{children}</main>
       </div>
       {/* Mobil alt tab bar */}
       <UyeMobileNav />
