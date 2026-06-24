@@ -238,9 +238,9 @@ export default function LoginPage() {
             {t.register}
           </Link>
         </p>
-        {role === "firma" && (
+        {role !== "admin" && (
           <p className="text-center text-sm text-on-surface-variant mt-2">
-            <Link href="/auth/forgot-password" className="text-on-surface-variant/60 hover:text-primary transition-all text-xs">
+            <Link href={`/auth/forgot-password?role=${role}`} className="text-on-surface-variant/60 hover:text-primary transition-all text-xs">
               {t.forgot}
             </Link>
           </p>

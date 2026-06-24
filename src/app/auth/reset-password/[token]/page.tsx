@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 export default function ResetPasswordPage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role") === "uye" ? "uye" : "firma";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,7 @@ export default function ResetPasswordPage() {
     const res = await fetch("/api/auth/reset-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password }),
+      body: JSON.stringify({ token, password, role }),
     });
     const j = await res.json();
     setLoading(false);
