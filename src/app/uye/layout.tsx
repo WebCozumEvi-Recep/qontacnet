@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
+import UyeMobileNav, { UyeMobileHeader } from "@/components/dashboard/UyeMobileNav";
 
 const pageTitles: Record<string, string> = {
   "/uye": "Panel",
@@ -36,13 +37,23 @@ export default function UyeLayout({ children }: { children: React.ReactNode }) {
 
   const title = pageTitles[pathname] ?? "Üye Paneli";
 
+  const m = (user.data ?? {}) as { ad?: string; soyad?: string };
+  const initials = `${(m.ad ?? user.email ?? "Ü").charAt(0)}${(m.soyad ?? "").charAt(0)}`.toUpperCase();
+
   return (
     <div className="min-h-screen bg-background flex">
       <DashboardSidebar role="uye" open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-        <DashboardTopBar title={title} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-6">{children}</main>
+        {/* Masaüstü üst bar */}
+        <div className="hidden lg:block">
+          <DashboardTopBar title={title} onMenuClick={() => setSidebarOpen(true)} />
+        </div>
+        {/* Mobil uygulama görünümü başlığı */}
+        <UyeMobileHeader title={title} initials={initials} />
+        <main className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6">{children}</main>
       </div>
+      {/* Mobil alt tab bar */}
+      <UyeMobileNav />
     </div>
   );
 }
