@@ -218,6 +218,20 @@ model Member {
 
   leads     Lead[]
   uyeModuller MemberModul[]
+  pushTokens PushToken[]
+}
+
+// Mobil uygulama push bildirim cihaz token'ları (Expo)
+model PushToken {
+  id        String   @id @default(cuid())
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+  token     String   @unique
+  platform  String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
 }
 
 model Admin {

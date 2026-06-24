@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMail, htmlLayout, row } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
+import { sendPushToMember } from "@/lib/push";
 
 interface Payload {
   uyeId?: string;
@@ -39,6 +40,12 @@ export async function POST(req: NextRequest) {
         },
       });
       await prisma.member.update({ where: { id: uye.id }, data: { leadSayisi: { increment: 1 } } }).catch(() => {});
+      // Mobil uygulamaya anlık bildirim (token yoksa sessiz geçer)
+      await sendPushToMember(uye.id, {
+        title: "Yeni bağlantı 🎉",
+        body: `${ad}${sirket ? " · " + sirket : ""} kartın üzerinden seninle iletişime geçti.`,
+        data: { yol: "/uye/baglantilar" },
+      }).catch(() => {});
     }
 
     const bodyHtml = `
