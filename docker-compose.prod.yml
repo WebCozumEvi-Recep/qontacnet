@@ -43,28 +43,13 @@ services:
       - NODE_ENV=production
     volumes:
       - uploads:/app/public/uploads
-    expose:
-      - "3000"
+    ports:
+      - "127.0.0.1:3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    networks:
-      - qontac
-
-  nginx:
-    image: nginx:1.25-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - uploads:/var/www/uploads:ro
-    depends_on:
-      - app
     networks:
       - qontac
 

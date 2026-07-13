@@ -1,0 +1,16 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  tags:
+    - qontact-net-recep-deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  environment:
+    name: production
+    url: https://qontac.net
+  script:
+    - docker compose -f docker-compose.prod.yml build
+    - docker compose -f docker-compose.prod.yml up -d
+    - docker image prune -f

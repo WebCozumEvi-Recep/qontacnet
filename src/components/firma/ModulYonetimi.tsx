@@ -35,7 +35,15 @@ async function uploadFile(file: File): Promise<string> {
 }
 
 // Belirli bir şablonun modüllerini yönetir
-export default function ModulYonetimi({ templateId, aktif }: { templateId: string; aktif: boolean }) {
+export default function ModulYonetimi({
+  templateId,
+  aktif,
+  onModulesChange,
+}: {
+  templateId: string;
+  aktif: boolean;
+  onModulesChange?: () => void;
+}) {
   const [moduller, setModuller] = useState<Modul[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -51,6 +59,7 @@ export default function ModulYonetimi({ templateId, aktif }: { templateId: strin
     const j = await r.json();
     if (j.ok) setModuller(j.moduller);
     setLoading(false);
+    onModulesChange?.();
   }
 
   async function ekle(tip: Tip) {

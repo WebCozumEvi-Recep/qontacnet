@@ -148,8 +148,15 @@ export default function KartimPage() {
           <div className="glass-card rounded-2xl p-6">
             <h3 className="text-sm font-semibold text-on-surface mb-5" style={{ fontFamily: "Sora, sans-serif" }}>Kart Önizlemesi</h3>
             <CardPreview member={member} color={firmaColor} />
-            <p className="text-xs text-on-surface-variant/60 text-center mt-3">Kart rengi ve teması firma tarafından belirlenir</p>
-            <div className="mt-4 flex gap-3 justify-center">
+            <p className="text-xs text-on-surface-variant/60 text-center mt-3">
+              Tema ve kurumsal modüller seçtiğin şablondan gelir
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3 justify-center">
+              <Link href="/uye/template"
+                className="flex items-center gap-2 px-4 py-2 bg-primary-container/80 text-on-primary-container rounded-xl text-sm font-medium hover:scale-[1.02] transition-all">
+                <span className="material-symbols-outlined text-base">style</span>
+                Şablon Seç
+              </Link>
               <Link href={`/kart/${user?.id}`} target="_blank"
                 className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl text-sm text-on-surface-variant hover:text-primary transition-all">
                 <span className="material-symbols-outlined text-base">open_in_new</span>
