@@ -378,15 +378,18 @@ function SiteKimligi() {
 
 interface QnbSettings {
   qnbAktif: boolean; qnbTest: boolean;
-  qnbMerchantId: string; qnbUserCode: string; qnbMbrId: string;
-  qnbMerchantPassSet: boolean;
+  qnbMerchantId: string; qnbUserCode: string; qnbMbrId: string; qnbTerminalId: string;
+  qnbCurrency: string; qnbLang: string;
+  qnbMerchantPassSet: boolean; qnbApiPasswordSet: boolean;
 }
 
 function SanalPos() {
   const [s, setS] = useState<QnbSettings>({
-    qnbAktif: false, qnbTest: true, qnbMerchantId: "", qnbUserCode: "", qnbMbrId: "5", qnbMerchantPassSet: false,
+    qnbAktif: false, qnbTest: true, qnbMerchantId: "", qnbUserCode: "", qnbMbrId: "5", qnbTerminalId: "",
+    qnbCurrency: "949", qnbLang: "tr", qnbMerchantPassSet: false, qnbApiPasswordSet: false,
   });
-  const [pass, setPass] = useState(""); // yeni anahtar; boşsa mevcut korunur
+  const [pass, setPass] = useState(""); // yeni 3D anahtarı; boşsa mevcut korunur
+  const [apiPass, setApiPass] = useState(""); // yeni API şifresi; boşsa mevcut korunur
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -404,13 +407,13 @@ function SanalPos() {
     const res = await fetch("/api/admin/sanal-pos", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...s, qnbMerchantPass: pass }),
+      body: JSON.stringify({ ...s, qnbMerchantPass: pass, qnbApiPassword: apiPass }),
     });
     const j = await res.json();
     setSaving(false);
     if (j.ok) {
       setS(j.settings);
-      setPass("");
+      setPass(""); setApiPass("");
       setMsg({ ok: true, text: "Sanal POS ayarları kaydedildi." });
     } else {
       setMsg({ ok: false, text: j.error || "Kaydedilemedi." });
@@ -460,10 +463,38 @@ function SanalPos() {
           <p className="text-[11px] text-on-surface-variant mt-1">Güvenlik için kayıtlı anahtar geri gösterilmez. Boş bırakırsanız mevcut anahtar korunur.</p>
         </div>
         <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">API Şifresi (UserPass)</label>
+          <input type="password" value={apiPass} onChange={e => setApiPass(e.target.value)} autoComplete="new-password"
+            className={inputCls} placeholder={s.qnbApiPasswordSet ? "•••••••• (kayıtlı — değiştirmek için yazın)" : "API kullanıcı şifresi"} />
+          <p className="text-[11px] text-on-surface-variant mt-1">API işlemleri için kullanıcı şifresi. Kayıtlıysa geri gösterilmez; boş bırakılırsa korunur.</p>
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Terminal ID</label>
+          <input value={s.qnbTerminalId} onChange={e => setS(p => ({ ...p, qnbTerminalId: e.target.value }))}
+            className={inputCls} placeholder="örn. VP000000" />
+          <p className="text-[11px] text-on-surface-variant mt-1">Üye işyeri terminal numarası (varsa).</p>
+        </div>
+        <div>
           <label className="block text-xs text-on-surface-variant mb-1.5">Kurum Kodu (MbrId)</label>
           <input value={s.qnbMbrId} onChange={e => setS(p => ({ ...p, qnbMbrId: e.target.value }))}
             className={inputCls} placeholder="5" />
           <p className="text-[11px] text-on-surface-variant mt-1">QNB Finansbank için varsayılan &quot;5&quot;.</p>
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Para Birimi</label>
+          <select value={s.qnbCurrency} onChange={e => setS(p => ({ ...p, qnbCurrency: e.target.value }))} className={inputCls}>
+            <option value="949">TL — Türk Lirası (949)</option>
+            <option value="840">USD — Amerikan Doları (840)</option>
+            <option value="978">EUR — Euro (978)</option>
+            <option value="826">GBP — İngiliz Sterlini (826)</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Ödeme Sayfası Dili</label>
+          <select value={s.qnbLang} onChange={e => setS(p => ({ ...p, qnbLang: e.target.value }))} className={inputCls}>
+            <option value="tr">Türkçe</option>
+            <option value="en">İngilizce</option>
+          </select>
         </div>
       </div>
 

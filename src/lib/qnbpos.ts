@@ -23,6 +23,10 @@ export interface QnbConfig {
   merchantId: string;
   userCode: string;
   merchantPass: string;
+  terminalId: string;
+  apiPassword: string;
+  currency: string;
+  lang: string;
   gateUrl: string;
 }
 
@@ -37,6 +41,10 @@ export async function getQnbConfig(): Promise<QnbConfig | null> {
       merchantId: s.qnbMerchantId,
       userCode: s.qnbUserCode,
       merchantPass: s.qnbMerchantPass,
+      terminalId: s.qnbTerminalId || "",
+      apiPassword: s.qnbApiPassword || "",
+      currency: s.qnbCurrency || "949",
+      lang: s.qnbLang || "tr",
       gateUrl: s.qnbTest ? GATE_TEST : GATE_LIVE,
     };
   }
@@ -52,6 +60,10 @@ export async function getQnbConfig(): Promise<QnbConfig | null> {
       merchantId: process.env.QNB_MERCHANT_ID,
       userCode: process.env.QNB_USER_CODE,
       merchantPass: process.env.QNB_MERCHANT_PASS,
+      terminalId: process.env.QNB_TERMINAL_ID || "",
+      apiPassword: process.env.QNB_API_PASSWORD || "",
+      currency: process.env.QNB_CURRENCY || "949",
+      lang: process.env.QNB_LANG || "tr",
       gateUrl: process.env.QNB_GATE_URL,
     };
   }
@@ -75,7 +87,7 @@ export function buildPaymentForm(cfg: QnbConfig, opts: {
   email: string;
   musteriAd: string;
 }): PaymentForm {
-  const { mbrId, merchantId, userCode, merchantPass, gateUrl } = cfg;
+  const { mbrId, merchantId, userCode, merchantPass, terminalId, currency, lang, gateUrl } = cfg;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://qontac.net";
 
   const okUrl = `${baseUrl}/api/odeme/callback`;
@@ -88,25 +100,26 @@ export function buildPaymentForm(cfg: QnbConfig, opts: {
   // Hash = SHA1(MbrId + OrderId + PurchAmount + OkUrl + FailUrl + TxnType + InstallmentCount + Rnd + MerchantPass)
   const hash = sha1b64(mbrId + opts.siparisNo + purchAmount + okUrl + failUrl + txnType + installment + rnd + merchantPass);
 
-  return {
-    url: gateUrl,
-    fields: {
-      MbrId: mbrId,
-      MerchantID: merchantId,
-      UserCode: userCode,
-      OrderId: opts.siparisNo,
-      Lang: "tr",
-      SecureType: "3DHost",
-      TxnType: txnType,
-      PurchAmount: purchAmount,
-      InstallmentCount: installment,
-      Currency: "949",
-      OkUrl: okUrl,
-      FailUrl: failUrl,
-      Rnd: rnd,
-      Hash: hash,
-    },
+  const fields: Record<string, string> = {
+    MbrId: mbrId,
+    MerchantID: merchantId,
+    UserCode: userCode,
+    OrderId: opts.siparisNo,
+    Lang: lang || "tr",
+    SecureType: "3DHost",
+    TxnType: txnType,
+    PurchAmount: purchAmount,
+    InstallmentCount: installment,
+    Currency: currency || "949",
+    OkUrl: okUrl,
+    FailUrl: failUrl,
+    Rnd: rnd,
+    Hash: hash,
   };
+  // Terminal ID tanımlıysa forma eklenir (bazı üye işyeri yapılandırmaları ister).
+  if (terminalId) fields.TerminalID = terminalId;
+
+  return { url: gateUrl, fields };
 }
 
 // Banka callback'inin ResponseHash'ini doğrular:

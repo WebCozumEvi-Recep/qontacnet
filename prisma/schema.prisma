@@ -382,6 +382,10 @@ model SiteSettings {
   qnbUserCode            String   @default("")    // API kullanıcı adı
   qnbMerchantPass        String   @default("")    // Mağaza 3D anahtarı (MerchantPass) — gizli
   qnbMbrId               String   @default("5")   // Kurum kodu (QNB için "5")
+  qnbTerminalId          String   @default("")    // Terminal ID (TerminalID)
+  qnbApiPassword         String   @default("")    // API kullanıcı şifresi (UserPass) — gizli
+  qnbCurrency            String   @default("949") // Para birimi kodu (949=TL, 840=USD, 978=EUR, 826=GBP)
+  qnbLang                String   @default("tr")  // Ödeme sayfası dili (tr/en)
   updatedAt              DateTime @updatedAt
 }
 
