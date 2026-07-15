@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ModulIkon, IkonGaleri } from "@/components/ModulIkon";
 
-type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK";
+type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM";
 interface Tanim {
   id: string;
   ad: string;
@@ -16,7 +16,7 @@ interface Tanim {
 }
 type IkonAlan = Pick<Tanim, "ikon" | "ikonAd" | "butonRenk" | "ikonRenk">;
 
-const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link" };
+const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link", GORSEL: "Görsel", FORM: "İletişim Formu" };
 
 async function uploadIcon(file: File): Promise<string> {
   const fd = new FormData();

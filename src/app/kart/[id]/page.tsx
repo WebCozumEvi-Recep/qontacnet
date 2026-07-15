@@ -28,7 +28,7 @@ interface Card {
 type Tip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | "SSS" | "HERO";
 interface Modul { id: string; tip: Tip; baslik: string; icerik: Record<string, unknown> }
 
-type UyeTip = "GALERI" | "TEXT" | "VIDEO" | "LINK";
+type UyeTip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM";
 interface UyeModul { id: string; tip: UyeTip; baslik: string; icerik: Record<string, unknown>; tanim?: { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string } | null }
 
 function uyeModulDolu(m: UyeModul): boolean {
@@ -36,6 +36,8 @@ function uyeModulDolu(m: UyeModul): boolean {
   if (m.tip === "TEXT") return Boolean(ic.metin || ic.gorsel);
   if (m.tip === "GALERI") return Array.isArray(ic.gorseller) && ic.gorseller.length > 0;
   if (m.tip === "LINK") return Boolean(ic.url);
+  if (m.tip === "GORSEL") return Boolean(ic.gorsel);
+  if (m.tip === "FORM") return true;
   return Boolean(ic.videoUrl);
 }
 
@@ -240,7 +242,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
       </div>
 
       {aktifModul && (
-        <UyeModulLightbox modul={aktifModul} color={color} onClose={() => setAktifModul(null)} />
+        <UyeModulLightbox modul={aktifModul} color={color} memberId={card.id} firmaAdi={card.firmaAdi} onClose={() => setAktifModul(null)} />
       )}
 
       {showQr && (
@@ -429,9 +431,9 @@ function ModulRender({ modul, color, memberId, firmaAdi }: { modul: Modul; color
 }
 
 // Üye modülü lightbox içinde gösterir (text→kopyala, galeri→slider, video→embed)
-function UyeModulLightbox({ modul, color, onClose }: { modul: UyeModul; color: string; onClose: () => void }) {
+function UyeModulLightbox({ modul, color, memberId, firmaAdi, onClose }: { modul: UyeModul; color: string; memberId: string; firmaAdi: string; onClose: () => void }) {
   const [kopyalandi, setKopyalandi] = useState(false);
-  const ic = modul.icerik as { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gorseller?: { url: string; baslik?: string; aciklama?: string }[] };
+  const ic = modul.icerik as { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gonderButon?: string; gorseller?: { url: string; baslik?: string; aciklama?: string }[] };
 
   const kopyala = (metin: string) => {
     navigator.clipboard.writeText(metin).then(() => {
@@ -489,6 +491,26 @@ function UyeModulLightbox({ modul, color, onClose }: { modul: UyeModul; color: s
         {ic.aciklama && <p className="text-xs text-on-surface-variant">{ic.aciklama}</p>}
       </div>
     ) : <p className="text-sm text-on-surface-variant">Geçersiz video bağlantısı.</p>;
+  } else if (modul.tip === "GORSEL") {
+    const url = String(ic.url ?? "");
+    body = (
+      <div className="space-y-3">
+        {ic.gorsel && (
+          url ? (
+            <a href={disLink(url)} target="_blank" rel="noreferrer">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={ic.gorsel} alt={modul.baslik} className="w-full rounded-xl object-cover" />
+            </a>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ic.gorsel} alt={modul.baslik} className="w-full rounded-xl object-cover" />
+          )
+        )}
+        {ic.aciklama && <p className="text-sm text-on-surface-variant whitespace-pre-line leading-relaxed text-center">{ic.aciklama}</p>}
+      </div>
+    );
+  } else if (modul.tip === "FORM") {
+    body = <UyeFormModul memberId={memberId} modulId={modul.id} aciklama={String(ic.aciklama ?? "")} gonderButon={String(ic.gonderButon ?? "")} color={color} firmaAdi={firmaAdi} />;
   }
 
   return (
@@ -506,6 +528,63 @@ function UyeModulLightbox({ modul, color, onClose }: { modul: UyeModul; color: s
         </div>
         {body}
       </div>
+    </div>
+  );
+}
+
+// Üye kartındaki iletişim / lead formu — misafirden veri toplar
+function UyeFormModul({ memberId, modulId, aciklama, gonderButon, color, firmaAdi }: { memberId: string; modulId: string; aciklama: string; gonderButon: string; color: string; firmaAdi: string }) {
+  const [form, setForm] = useState({ ad: "", email: "", telefon: "", mesaj: "" });
+  const [gonderiliyor, setGonderiliyor] = useState(false);
+  const [gonderildi, setGonderildi] = useState(false);
+  const [hata, setHata] = useState("");
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHata(""); setGonderiliyor(true);
+    try {
+      const r = await fetch("/api/kart/basvuru", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, modulId, ...form }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error ?? "Gönderilemedi.");
+      setGonderildi(true);
+    } catch (err) {
+      setHata(err instanceof Error ? err.message : "Gönderilemedi.");
+    } finally { setGonderiliyor(false); }
+  };
+
+  if (gonderildi) {
+    return (
+      <div className="text-center py-4">
+        <span className="material-symbols-outlined text-tertiary text-5xl block mb-3">check_circle</span>
+        <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>İletildi!</p>
+        <p className="text-sm text-on-surface-variant mt-1">{firmaAdi} en kısa sürede sizinle iletişime geçecek.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {aciklama && <p className="text-xs text-on-surface-variant mb-3">{aciklama}</p>}
+      <form onSubmit={onSubmit} className="space-y-2.5">
+        <input value={form.ad} onChange={e => setForm({ ...form, ad: e.target.value })} required placeholder="Ad Soyad"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} type="email" placeholder="E-posta"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <input value={form.telefon} onChange={e => setForm({ ...form, telefon: e.target.value })} type="tel" placeholder="Telefon"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <textarea value={form.mesaj} onChange={e => setForm({ ...form, mesaj: e.target.value })} rows={3} placeholder="Mesaj"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        {hata && <p className="text-xs text-red-400">{hata}</p>}
+        <button type="submit" disabled={gonderiliyor}
+          className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-60"
+          style={{ background: color, color: "#000" }}>
+          {gonderiliyor ? "Gönderiliyor..." : (gonderButon.trim() || "Gönder")}
+        </button>
+      </form>
     </div>
   );
 }

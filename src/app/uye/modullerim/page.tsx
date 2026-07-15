@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { ModulIkon } from "@/components/ModulIkon";
 
-type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK";
+type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM";
 type IkonAlan = { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string };
 interface Tanim extends IkonAlan { id: string; ad: string; tip: Tip }
-interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gorseller?: { url: string }[] }
+interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gonderButon?: string; gorseller?: { url: string }[] }
 interface Modul {
   id: string;
   tip: Tip;
@@ -18,7 +18,7 @@ interface Modul {
   tanim?: ({ ad: string } & IkonAlan) | null;
 }
 
-const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link" };
+const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link", GORSEL: "Görsel", FORM: "İletişim Formu" };
 
 async function uploadFile(file: File): Promise<string> {
   const fd = new FormData();
@@ -104,6 +104,45 @@ function ModulEditor({ modul, onChange }: { modul: Modul; onChange: (icerik: Ice
             className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
         </div>
         <p className="text-[11px] text-on-surface-variant/60">Kartta ikona tıklanınca popup açılır; butona basınca bu bağlantı yeni sekmede gider.</p>
+      </div>
+    );
+  }
+  if (modul.tip === "GORSEL") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {i.gorsel && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={i.gorsel} alt="" className="w-24 h-24 rounded-xl object-cover border border-white/10" />
+          )}
+          <GorselButon label={i.gorsel ? "Görseli Değiştir" : "Görsel Yükle"} onChange={u => onChange({ ...i, gorsel: u })} />
+          {i.gorsel && <button type="button" onClick={() => onChange({ ...i, gorsel: "" })} className="text-xs text-red-400 hover:text-red-300">Kaldır</button>}
+        </div>
+        <input value={i.aciklama ?? ""} onChange={e => onChange({ ...i, aciklama: e.target.value })}
+          placeholder="Açıklama (opsiyonel)"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <input value={i.url ?? ""} onChange={e => onChange({ ...i, url: e.target.value })}
+          placeholder="Tıklanınca gidilecek bağlantı (opsiyonel) — https://..."
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+      </div>
+    );
+  }
+  if (modul.tip === "FORM") {
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Açıklama (formun üstünde görünür)</label>
+          <textarea value={i.aciklama ?? ""} onChange={e => onChange({ ...i, aciklama: e.target.value })}
+            placeholder="ör. Bize bilgilerinizi bırakın, size dönüş yapalım" rows={2}
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary resize-y" />
+        </div>
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Gönder butonu yazısı</label>
+          <input value={i.gonderButon ?? ""} onChange={e => onChange({ ...i, gonderButon: e.target.value })}
+            placeholder="ör. Gönder / Bende bu işi yapmak istiyorum"
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        </div>
+        <p className="text-[11px] text-on-surface-variant/60">Ziyaretçiler ad, e-posta, telefon ve mesaj bırakır. Gelen bilgiler firmanın <b>Başvurular</b> ekranına düşer.</p>
       </div>
     );
   }

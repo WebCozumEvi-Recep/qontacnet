@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
-const TIPLER = ["GALERI", "TEXT", "VIDEO", "LINK"] as const;
+const TIPLER = ["GALERI", "TEXT", "VIDEO", "LINK", "GORSEL", "FORM"] as const;
 
 export async function GET() {
   const session = await requireRole("admin");
