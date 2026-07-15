@@ -403,32 +403,46 @@ export default function TemplatePage() {
 
       {previewOpen && selected && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setPreviewOpen(false)}>
-          <div className="flex flex-col lg:flex-row items-center gap-8 max-w-3xl w-full" onClick={e => e.stopPropagation()}>
-            <div className="w-full max-w-[280px]">
-              <MiniCardPreview
-                name={selected.name}
-                color={selected.color}
-                modules={selected.modules}
-                memberName="Örnek Üye"
-                role="Temsilci"
-              />
+          <div className="flex flex-col lg:flex-row items-start gap-8 max-w-3xl w-full max-h-[92vh]" onClick={e => e.stopPropagation()}>
+            {/* Telefon çerçevesi — gerçek kartın tam görünümü, alt modülleriyle */}
+            <div className="mx-auto w-full max-w-[320px] flex-shrink-0">
+              <div className="relative rounded-[2.2rem] border-[10px] border-black bg-black shadow-2xl overflow-hidden" style={{ aspectRatio: "9 / 19" }}>
+                <iframe
+                  key={selected.id}
+                  src={`/kart/onizle-${selected.id}`}
+                  title={`${selected.name} önizleme`}
+                  className="w-full h-full bg-[#050816]"
+                />
+              </div>
             </div>
-            <div className="flex-1 text-white space-y-4">
+            <div className="flex-1 text-white space-y-4 pt-2">
               <div>
                 <h3 className="text-lg font-bold" style={{ fontFamily: "Sora, sans-serif" }}>{selected.name}</h3>
                 <p className="text-sm text-white/60 mt-1">{selected.description}</p>
               </div>
               <p className="text-sm text-white/70">
-                Üyeler bu şablonu seçtiğinde profil kutusu rengi ve kurumsal modüller böyle görünür.
+                Üyeler bu şablonu seçtiğinde kartları örnekteki gibi görünür — profil kutusu rengi ve
+                tüm kurumsal alt modüller (Tek Görsel, Hakkımızda, Galeri...) dahil.
                 Kişisel modüller üyenin kendi ekledikleriyle birleşir.
               </p>
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(false)}
-                className="px-5 py-2.5 glass-card rounded-xl text-sm text-white/80 hover:text-white"
-              >
-                Kapat
-              </button>
+              <div className="flex gap-2">
+                <a
+                  href={`/kart/onizle-${selected.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 glass-card rounded-xl text-sm text-white/80 hover:text-white inline-flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base">open_in_new</span>
+                  Yeni sekmede aç
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(false)}
+                  className="px-5 py-2.5 glass-card rounded-xl text-sm text-white/80 hover:text-white"
+                >
+                  Kapat
+                </button>
+              </div>
             </div>
           </div>
         </div>

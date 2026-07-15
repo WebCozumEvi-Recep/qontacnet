@@ -8,6 +8,56 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const langParam = new URL(req.url).searchParams.get("lang");
   const locale: Locale = isLocale(langParam) ? langParam : DEFAULT_LOCALE;
 
+  // Şablon önizleme modu: /kart/onizle-<templateId> — firma panelinden bir
+  // şablonun tam kart görünümünü (alt modülleriyle) örnek profil üzerinde gösterir.
+  const ONIZLE = "onizle-";
+  if (id.startsWith(ONIZLE)) {
+    const templateId = id.slice(ONIZLE.length);
+    const template = await prisma.cardTemplate.findUnique({
+      where: { id: templateId },
+      select: { id: true, ad: true, renk: true, firma: { select: { ad: true } } },
+    });
+    if (!template) {
+      return NextResponse.json({ ok: false, error: "Şablon bulunamadı." }, { status: 404 });
+    }
+    const previewModuller = await prisma.firmaModul.findMany({
+      where: { templateId, aktif: true },
+      orderBy: { sira: "asc" },
+      select: { id: true, tip: true, baslik: true, icerik: true },
+    });
+    const cevPreview = await Promise.all(
+      previewModuller.map(async (m) => ({
+        ...m,
+        baslik: (await tx({ b: m.baslik ?? "" }, locale)).b,
+        icerik: await txContent(m.icerik, locale),
+      })),
+    );
+    return NextResponse.json({
+      ok: true,
+      locale,
+      preview: true,
+      card: {
+        id,
+        ad: "Ad",
+        soyad: "Soyad",
+        unvan: "Unvan",
+        firmaAdi: template.firma?.ad ?? "",
+        avatar: null,
+        kartArkaplan: null,
+        kartRenk: template.renk,
+        telefon: "",
+        email: "",
+        whatsapp: "",
+        linkedin: "",
+        instagram: "",
+        website: "",
+        biyografi: "",
+      },
+      moduller: cevPreview,
+      uyeModuller: [],
+    });
+  }
+
   const member = await prisma.member.findUnique({
     where: { id },
     include: {
