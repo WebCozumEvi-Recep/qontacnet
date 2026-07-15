@@ -26,6 +26,9 @@ export default function AdminKartlarPage() {
   const [seriModal, setSeriModal] = useState<BatchDetail | null>(null);
   const [seriSearch, setSeriSearch] = useState("");
   const [nfcKilitAktif, setNfcKilitAktif] = useState(false);
+  const [nfcDestek, setNfcDestek] = useState(false);
+  // Yazma durumu: hangi seri no yazılıyor + sonuç
+  const [nfcYaz, setNfcYaz] = useState<{ seri: string; durum: "yaziliyor" | "ok" | "hata"; mesaj?: string } | null>(null);
 
   const [editBatch, setEditBatch] = useState<Batch | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: "", durum: "", tahsisFirma: "" });
@@ -44,7 +47,27 @@ export default function AdminKartlarPage() {
   useEffect(() => {
     fetch("/api/admin/batches").then(r => r.json()).then(j => { if (j.ok) setBatches(j.batches); }).finally(() => setLoading(false));
     fetch("/api/admin/firmalar").then(r => r.json()).then(j => { if (j.ok) setFirmalar(j.firmalar.map((f: { id: string; ad: string }) => ({ id: f.id, ad: f.ad }))); });
+    // Web NFC yazma desteği (yalnız Android Chrome + HTTPS)
+    setNfcDestek(typeof window !== "undefined" && "NDEFReader" in window);
   }, []);
+
+  // Boş NFC karta URL'yi telefonla doğrudan yaz (Web NFC — Android Chrome).
+  // Not: NDEF URL yazar; donanım kilidini (PWD/PACK) set edemez — o native araç ister.
+  async function yazNfc(seriNo: string, url: string) {
+    type NdefWriter = { write: (m: { records: { recordType: string; data: string }[] }) => Promise<void> };
+    const Ctor = (window as unknown as { NDEFReader?: new () => NdefWriter }).NDEFReader;
+    if (!Ctor) {
+      setNfcYaz({ seri: seriNo, durum: "hata", mesaj: "Bu cihaz/tarayıcı NFC yazmayı desteklemiyor. Android + Chrome gerekir." });
+      return;
+    }
+    try {
+      setNfcYaz({ seri: seriNo, durum: "yaziliyor" });
+      await new Ctor().write({ records: [{ recordType: "url", data: url }] });
+      setNfcYaz({ seri: seriNo, durum: "ok" });
+    } catch (e) {
+      setNfcYaz({ seri: seriNo, durum: "hata", mesaj: e instanceof Error ? e.message : "Yazılamadı." });
+    }
+  }
 
   function toDateInput(v?: string | null) {
     if (!v) return "";
@@ -293,7 +316,16 @@ export default function AdminKartlarPage() {
                   {filteredCards.slice(0, 200).map(c => (
                     <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
                       <span className={`hidden sm:block w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
-                      <span className="text-xs font-mono text-on-surface flex-shrink-0 sm:w-24">{c.seriNo}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0 sm:w-24">
+                        <span className="text-xs font-mono text-on-surface">{c.seriNo}</span>
+                        {nfcDestek && (
+                          <button type="button" onClick={() => yazNfc(c.seriNo, nfcUrl(c.token))}
+                            title="Boş NFC kartı telefona yaklaştırıp URL'yi yaz"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/25 text-primary text-[11px] font-medium whitespace-nowrap">
+                            <span className="material-symbols-outlined text-sm">nfc</span>NFC Yaz
+                          </button>
+                        )}
+                      </div>
                       <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
                         title="Kopyalamak için tıkla — NFC çipine yazılır"
                         className="text-left text-xs font-mono text-primary/80 hover:text-primary flex-1 truncate transition-colors">
@@ -330,7 +362,10 @@ export default function AdminKartlarPage() {
               )}
             </div>
             <div className="px-6 py-4 border-t border-white/8 flex-shrink-0 flex items-center justify-between gap-2">
-              <span className="text-xs text-on-surface-variant">{(filteredCards.length || filteredSeri.length).toLocaleString("tr-TR")} sonuç</span>
+              <span className="text-xs text-on-surface-variant">
+                {(filteredCards.length || filteredSeri.length).toLocaleString("tr-TR")} sonuç
+                {nfcDestek && <span className="hidden sm:inline"> · Boş kartı telefona yaklaştırıp &quot;NFC Yaz&quot;a basın</span>}
+              </span>
               <div className="flex gap-2">
                 {filteredCards.length > 0 && (
                   <button onClick={() => {
@@ -346,6 +381,38 @@ export default function AdminKartlarPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* NFC Yazma Durumu */}
+      {nfcYaz && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => nfcYaz.durum !== "yaziliyor" && setNfcYaz(null)}>
+          <div className="w-full max-w-xs rounded-2xl p-6 text-center" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            {nfcYaz.durum === "yaziliyor" && (
+              <>
+                <span className="material-symbols-outlined text-primary text-5xl block animate-pulse">nfc</span>
+                <p className="text-on-surface font-semibold mt-3">Kartı yaklaştırın</p>
+                <p className="text-xs text-on-surface-variant mt-1">Boş NFC kartı telefonun arkasına dokundurun — <span className="font-mono">{nfcYaz.seri}</span> yazılıyor.</p>
+              </>
+            )}
+            {nfcYaz.durum === "ok" && (
+              <>
+                <span className="material-symbols-outlined text-tertiary text-5xl block">check_circle</span>
+                <p className="text-on-surface font-semibold mt-3">Yazıldı</p>
+                <p className="text-xs text-on-surface-variant mt-1"><span className="font-mono">{nfcYaz.seri}</span> kartına URL yazıldı.</p>
+                <p className="text-[11px] text-amber-300/70 mt-2">Not: Donanım kilidi (PWD/PACK) bu yolla yazılamaz — kilit için üretim/encoder aracı gerekir.</p>
+                <button onClick={() => setNfcYaz(null)} className="mt-4 px-5 py-2 rounded-xl text-sm bg-primary-container text-on-primary-container font-semibold">Tamam</button>
+              </>
+            )}
+            {nfcYaz.durum === "hata" && (
+              <>
+                <span className="material-symbols-outlined text-red-400 text-5xl block">error</span>
+                <p className="text-on-surface font-semibold mt-3">Yazılamadı</p>
+                <p className="text-xs text-on-surface-variant mt-1">{nfcYaz.mesaj}</p>
+                <button onClick={() => setNfcYaz(null)} className="mt-4 px-5 py-2 rounded-xl text-sm border border-white/10 text-on-surface-variant">Kapat</button>
+              </>
+            )}
           </div>
         </div>
       )}
