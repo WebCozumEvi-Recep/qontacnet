@@ -7,7 +7,7 @@ interface Batch {
   durum: string; tahsisFirma: string | null; tahsisFirmaId: string | null; seriPrefix: string; createdAt: string;
 }
 
-interface PhysicalCardRow { id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; memberId: string | null; nfcPwd?: string | null; nfcPack?: string | null; }
+interface PhysicalCardRow { id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; memberId: string | null; }
 interface BatchDetail extends Batch { seriNumaralari: string[]; physicalCards?: PhysicalCardRow[]; }
 
 interface EditForm {
@@ -25,10 +25,6 @@ export default function AdminKartlarPage() {
 
   const [seriModal, setSeriModal] = useState<BatchDetail | null>(null);
   const [seriSearch, setSeriSearch] = useState("");
-  const [nfcKilitAktif, setNfcKilitAktif] = useState(false);
-  const [nfcDestek, setNfcDestek] = useState(false);
-  // Yazma durumu: hangi seri no yazılıyor + sonuç
-  const [nfcYaz, setNfcYaz] = useState<{ seri: string; durum: "yaziliyor" | "ok" | "hata"; mesaj?: string; url?: string } | null>(null);
 
   const [editBatch, setEditBatch] = useState<Batch | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: "", durum: "", tahsisFirma: "" });
@@ -47,35 +43,7 @@ export default function AdminKartlarPage() {
   useEffect(() => {
     fetch("/api/admin/batches").then(r => r.json()).then(j => { if (j.ok) setBatches(j.batches); }).finally(() => setLoading(false));
     fetch("/api/admin/firmalar").then(r => r.json()).then(j => { if (j.ok) setFirmalar(j.firmalar.map((f: { id: string; ad: string }) => ({ id: f.id, ad: f.ad }))); });
-    // Web NFC yazma desteği (yalnız Android Chrome + HTTPS)
-    setNfcDestek(typeof window !== "undefined" && "NDEFReader" in window);
   }, []);
-
-  // Boş NFC karta URL'yi telefonla doğrudan yaz (Web NFC — Android Chrome).
-  // Not: NDEF URL yazar; donanım kilidini (PWD/PACK) set edemez — o native araç ister.
-  async function yazNfc(seriNo: string, url: string) {
-    type NdefWriter = { write: (m: { records: { recordType: string; data: string }[] }) => Promise<void> };
-    const Ctor = (window as unknown as { NDEFReader?: new () => NdefWriter }).NDEFReader;
-    if (!Ctor) {
-      const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      setNfcYaz({
-        seri: seriNo,
-        durum: "hata",
-        url,
-        mesaj: iOS
-          ? "iPhone/iPad tarayıcısı NFC'ye YAZMAYı desteklemiyor (Apple sınırı — verilebilecek bir izin yok). Aşağıdaki URL'yi kopyalayıp kendi iOS NFC uygulamanıza yapıştırarak yazabilirsiniz. Android + Chrome'da ise doğrudan buradan yazılır."
-          : "Bu cihaz/tarayıcı NFC yazmayı desteklemiyor. Android telefonda Chrome ile açın — ya da URL'yi kopyalayıp bir NFC uygulaması/encoder ile yazın.",
-      });
-      return;
-    }
-    try {
-      setNfcYaz({ seri: seriNo, durum: "yaziliyor" });
-      await new Ctor().write({ records: [{ recordType: "url", data: url }] });
-      setNfcYaz({ seri: seriNo, durum: "ok" });
-    } catch (e) {
-      setNfcYaz({ seri: seriNo, durum: "hata", mesaj: e instanceof Error ? e.message : "Yazılamadı." });
-    }
-  }
 
   function toDateInput(v?: string | null) {
     if (!v) return "";
@@ -142,7 +110,6 @@ export default function AdminKartlarPage() {
     const res = await fetch(`/api/admin/batches/${batch.id}`);
     const j = await res.json();
     if (j.ok) {
-      setNfcKilitAktif(Boolean(j.nfcKilitAktif));
       setSeriModal({ ...j.batch, seriNumaralari: (j.physicalCards ?? []).map((c: PhysicalCardRow) => c.seriNo), physicalCards: j.physicalCards ?? [] });
     }
   }
@@ -307,18 +274,11 @@ export default function AdminKartlarPage() {
               {/* PhysicalCard kayıtları varsa NFC/QR URL'leriyle göster, yoksa eski seri listesi */}
               {filteredCards.length > 0 ? (
                 <>
-                  {!nfcKilitAktif && (
-                    <div className="flex items-start gap-2 px-3 py-2 mb-1.5 rounded-lg bg-amber-400/8 border border-amber-400/20 text-[11px] text-amber-300/90">
-                      <span className="material-symbols-outlined text-sm flex-shrink-0">lock_open</span>
-                      <span>NFC kilit anahtarı tanımsız — parola (PWD/PACK) hesaplanamıyor. Ayarlar → NFC Kart Kilit Anahtarı&apos;ndan tanımlayın.</span>
-                    </div>
-                  )}
                   <div className="hidden sm:flex items-center gap-3 px-3 pb-1 text-[10px] uppercase tracking-wider text-on-surface-variant/60">
                     <span className="w-2 flex-shrink-0" />
                     <span className="w-24 flex-shrink-0">Seri No</span>
                     <span className="flex-1">NFC URL</span>
                     <span className="flex-1">QR URL</span>
-                    <span className="w-28 flex-shrink-0">Kilit (PWD/PACK)</span>
                     <span className="w-14 flex-shrink-0 text-right">Durum</span>
                     <span className="w-24 flex-shrink-0 text-right">İşlem</span>
                   </div>
@@ -327,31 +287,22 @@ export default function AdminKartlarPage() {
                       <span className={`hidden sm:block w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
                       <span className="text-xs font-mono text-on-surface flex-shrink-0 sm:w-24">{c.seriNo}</span>
                       <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
-                        title="Kopyalamak için tıkla — NFC çipine yazılır"
+                        title="Kopyalamak için tıkla — NFC çipine yazılacak adres"
                         className="text-left text-xs font-mono text-primary/80 hover:text-primary flex-1 truncate transition-colors">
                         {nfcUrl(c.token)}
                       </button>
                       <button type="button" onClick={() => navigator.clipboard?.writeText(qrUrl(c.token))}
-                        title="Kopyalamak için tıkla — basılı QR koduna gömülür"
+                        title="Kopyalamak için tıkla — basılı QR koduna gömülecek adres"
                         className="text-left text-xs font-mono text-tertiary/80 hover:text-tertiary flex-1 truncate transition-colors">
                         {qrUrl(c.token)}
                       </button>
-                      {c.nfcPwd ? (
-                        <button type="button" onClick={() => navigator.clipboard?.writeText(`${c.nfcPwd} ${c.nfcPack}`)}
-                          title="Kopyalamak için tıkla — çipin PWD ve PACK değeri"
-                          className="text-left text-xs font-mono text-amber-300/80 hover:text-amber-300 flex-shrink-0 sm:w-28 truncate transition-colors">
-                          {c.nfcPwd}/{c.nfcPack}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-on-surface-variant/30 flex-shrink-0 sm:w-28">—</span>
-                      )}
                       {c.aktif
                         ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-14 sm:text-right">Aktif</span>
                         : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-14 sm:text-right">Bekliyor</span>}
-                      <button type="button" onClick={() => yazNfc(c.seriNo, nfcUrl(c.token))}
-                        title="Boş NFC kartı telefona yaklaştırıp URL'yi yaz"
+                      <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
+                        title="NFC adresini panoya kopyala"
                         className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/25 text-primary text-[11px] font-medium whitespace-nowrap flex-shrink-0 sm:w-24">
-                        <span className="material-symbols-outlined text-sm">nfc</span>NFC Yaz
+                        <span className="material-symbols-outlined text-sm">content_copy</span>Kopyala
                       </button>
                     </div>
                   ))}
@@ -369,13 +320,12 @@ export default function AdminKartlarPage() {
             <div className="px-6 py-4 border-t border-white/8 flex-shrink-0 flex items-center justify-between gap-2">
               <span className="text-xs text-on-surface-variant">
                 {(filteredCards.length || filteredSeri.length).toLocaleString("tr-TR")} sonuç
-                {nfcDestek && <span className="hidden sm:inline"> · Boş kartı telefona yaklaştırıp &quot;NFC Yaz&quot;a basın</span>}
               </span>
               <div className="flex gap-2">
                 {filteredCards.length > 0 && (
                   <button onClick={() => {
-                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\t${nfcUrl(c.token)}\t${qrUrl(c.token)}\t${c.nfcPwd ?? ""}\t${c.nfcPack ?? ""}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
-                    const txt = "Seri No\tNFC URL\tQR URL\tPWD\tPACK\tDurum\n" + rows.join("\n");
+                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\t${nfcUrl(c.token)}\t${qrUrl(c.token)}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
+                    const txt = "Seri No\tNFC URL\tQR URL\tDurum\n" + rows.join("\n");
                     const a = document.createElement("a");
                     a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
                     a.download = `${seriModal?.kod}-kartlar.tsv`;
@@ -386,50 +336,6 @@ export default function AdminKartlarPage() {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* NFC Yazma Durumu */}
-      {nfcYaz && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => nfcYaz.durum !== "yaziliyor" && setNfcYaz(null)}>
-          <div className="w-full max-w-xs rounded-2xl p-6 text-center" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
-            {nfcYaz.durum === "yaziliyor" && (
-              <>
-                <span className="material-symbols-outlined text-primary text-5xl block animate-pulse">nfc</span>
-                <p className="text-on-surface font-semibold mt-3">Kartı yaklaştırın</p>
-                <p className="text-xs text-on-surface-variant mt-1">Boş NFC kartı telefonun arkasına dokundurun — <span className="font-mono">{nfcYaz.seri}</span> yazılıyor.</p>
-              </>
-            )}
-            {nfcYaz.durum === "ok" && (
-              <>
-                <span className="material-symbols-outlined text-tertiary text-5xl block">check_circle</span>
-                <p className="text-on-surface font-semibold mt-3">Yazıldı</p>
-                <p className="text-xs text-on-surface-variant mt-1"><span className="font-mono">{nfcYaz.seri}</span> kartına URL yazıldı.</p>
-                <p className="text-[11px] text-amber-300/70 mt-2">Not: Donanım kilidi (PWD/PACK) bu yolla yazılamaz — kilit için üretim/encoder aracı gerekir.</p>
-                <button onClick={() => setNfcYaz(null)} className="mt-4 px-5 py-2 rounded-xl text-sm bg-primary-container text-on-primary-container font-semibold">Tamam</button>
-              </>
-            )}
-            {nfcYaz.durum === "hata" && (
-              <>
-                <span className="material-symbols-outlined text-amber-400 text-5xl block">nfc</span>
-                <p className="text-on-surface font-semibold mt-3">Bu cihazda yazılamıyor</p>
-                <p className="text-xs text-on-surface-variant mt-1 text-left">{nfcYaz.mesaj}</p>
-                {nfcYaz.url && (
-                  <div className="mt-3 text-left">
-                    <p className="text-[10px] uppercase tracking-wider text-on-surface-variant/60 mb-1">Kart URL&apos;si ({nfcYaz.seri})</p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-[11px] font-mono text-primary bg-surface-dim/70 border border-white/10 rounded-lg px-2 py-1.5 truncate">{nfcYaz.url}</code>
-                      <button onClick={() => navigator.clipboard?.writeText(nfcYaz.url!)}
-                        className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs bg-primary/15 border border-primary/25 text-primary inline-flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">content_copy</span>Kopyala
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <button onClick={() => setNfcYaz(null)} className="mt-4 px-5 py-2 rounded-xl text-sm border border-white/10 text-on-surface-variant">Kapat</button>
-              </>
-            )}
           </div>
         </div>
       )}

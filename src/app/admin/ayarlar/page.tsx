@@ -143,9 +143,6 @@ export default function AdminAyarlarPage() {
       {/* Sanal POS Ayarları */}
       <SanalPos />
 
-      {/* NFC Kart Kilit Anahtarı */}
-      <NfcKilit />
-
       {/* DB Migration */}
       <DbMigration />
 
@@ -572,84 +569,6 @@ function DbMigration() {
         <pre className="text-[11px] font-mono text-on-surface-variant bg-surface-dim/60 border border-white/10 rounded-xl p-3 overflow-x-auto whitespace-pre-wrap max-h-72 overflow-y-auto">{durum}</pre>
       )}
     </div>
-  );
-}
-
-function NfcKilit() {
-  const [set, setSet] = useState(false);
-  const [anahtar, setAnahtar] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all font-mono";
-
-  useEffect(() => {
-    fetch("/api/admin/nfc-kilit").then(r => r.json()).then(j => {
-      if (j.ok && j.settings) setSet(Boolean(j.settings.nfcKilitAnahtariSet));
-    });
-  }, []);
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true); setMsg(null);
-    const res = await fetch("/api/admin/nfc-kilit", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nfcKilitAnahtari: anahtar }),
-    });
-    const j = await res.json();
-    setSaving(false);
-    if (j.ok) {
-      setSet(Boolean(j.settings.nfcKilitAnahtariSet));
-      setAnahtar("");
-      setMsg({ ok: true, text: "NFC kilit anahtarı kaydedildi." });
-    } else {
-      setMsg({ ok: false, text: j.error || "Kaydedilemedi." });
-    }
-  }
-
-  return (
-    <form onSubmit={handleSave} className="glass-card rounded-2xl p-6">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="material-symbols-outlined text-primary text-lg">lock</span>
-        <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>NFC Kart Kilit Anahtarı</h3>
-        <span className={`text-[10px] px-2 py-0.5 rounded-full ${set ? "bg-tertiary/15 text-tertiary" : "bg-amber-400/15 text-amber-400"}`}>
-          {set ? "Tanımlı" : "Tanımsız"}
-        </span>
-      </div>
-      <p className="text-xs text-on-surface-variant mb-5">
-        NFC çiplerinin yazma korumasında (NTAG PWD/PACK) kullanılan gizli anahtar. Her kartın parolası
-        bu anahtar + kartın token&apos;ından türetilir; anahtarı bilmeyen çipin içeriğini değiştiremez.
-        Üretim (Kartlar) ekranındaki seri listesinde her karta özel PWD/PACK bu anahtardan hesaplanır.
-      </p>
-
-      <div className="max-w-md">
-        <label className="block text-xs text-on-surface-variant mb-1.5">Gizli Anahtar</label>
-        <input type="password" value={anahtar} onChange={e => setAnahtar(e.target.value)} autoComplete="new-password"
-          className={inputCls} placeholder={set ? "•••••••• (kayıtlı — değiştirmek için yazın)" : "Uzun, tahmin edilemez bir dize girin"} />
-        <p className="text-[11px] text-on-surface-variant mt-1">
-          Güvenlik için kayıtlı anahtar geri gösterilmez. Boş bırakırsanız mevcut anahtar korunur.
-        </p>
-      </div>
-
-      <div className="text-[11px] text-amber-300/80 bg-amber-400/5 border border-amber-400/20 rounded-xl px-3 py-2 my-4 max-w-2xl flex items-start gap-2">
-        <span className="material-symbols-outlined text-sm flex-shrink-0">warning</span>
-        <span>
-          Bu anahtarı değiştirirseniz <b>daha önce kilitlenmiş kartların</b> parolaları artık yeniden hesaplanamaz —
-          o kartlar bir daha güncellenemez. Anahtarı bir kez belirleyip güvenle saklayın.
-        </span>
-      </div>
-
-      {msg && (
-        <p className={`text-xs flex items-center gap-1 mb-3 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
-          <span className="material-symbols-outlined text-sm">{msg.ok ? "check_circle" : "error"}</span>{msg.text}
-        </p>
-      )}
-      <button type="submit" disabled={saving}
-        className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
-        {saving ? "Kaydediliyor..." : "Kaydet"}
-      </button>
-    </form>
   );
 }
 

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { randomBytes } from "crypto";
-import { nfcParola } from "@/lib/nfc-kilit";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireRole("admin");
@@ -20,15 +19,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!batch) return NextResponse.json({ ok: false, error: "Batch bulunamadı." }, { status: 404 });
 
-  // NFC kilit anahtarı tanımlıysa her kart için PWD/PACK parolasını türet.
-  const ayar = await prisma.siteSettings.findUnique({ where: { id: "site" }, select: { nfcKilitAnahtari: true } });
-  const anahtar = ayar?.nfcKilitAnahtari ?? "";
-  const physicalCards = batch.physicalCards.map(c => {
-    const p = nfcParola(anahtar, c.token);
-    return { ...c, nfcPwd: p?.pwd ?? null, nfcPack: p?.pack ?? null };
-  });
-
-  return NextResponse.json({ ok: true, batch, physicalCards, nfcKilitAktif: Boolean(anahtar) });
+  return NextResponse.json({ ok: true, batch, physicalCards: batch.physicalCards });
 }
 
 // Mevcut batch'e eksik PhysicalCard kayıtlarını oluştur (backfill)
