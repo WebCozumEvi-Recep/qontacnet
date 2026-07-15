@@ -28,7 +28,7 @@ export default function AdminKartlarPage() {
   const [nfcKilitAktif, setNfcKilitAktif] = useState(false);
   const [nfcDestek, setNfcDestek] = useState(false);
   // Yazma durumu: hangi seri no yazılıyor + sonuç
-  const [nfcYaz, setNfcYaz] = useState<{ seri: string; durum: "yaziliyor" | "ok" | "hata"; mesaj?: string } | null>(null);
+  const [nfcYaz, setNfcYaz] = useState<{ seri: string; durum: "yaziliyor" | "ok" | "hata"; mesaj?: string; url?: string } | null>(null);
 
   const [editBatch, setEditBatch] = useState<Batch | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: "", durum: "", tahsisFirma: "" });
@@ -61,9 +61,10 @@ export default function AdminKartlarPage() {
       setNfcYaz({
         seri: seriNo,
         durum: "hata",
+        url,
         mesaj: iOS
-          ? "iPhone/iPad tarayıcısı NFC'ye YAZMAYı desteklemiyor (Apple sınırı). Kart yazmak için Android + Chrome ya da QONTAC mobil uygulaması gerekir. QR/NFC URL'sini kopyalayıp bir encoder ile de yazabilirsiniz."
-          : "Bu cihaz/tarayıcı NFC yazmayı desteklemiyor. Android telefonda Chrome ile açın.",
+          ? "iPhone/iPad tarayıcısı NFC'ye YAZMAYı desteklemiyor (Apple sınırı — verilebilecek bir izin yok). Aşağıdaki URL'yi kopyalayıp kendi iOS NFC uygulamanıza yapıştırarak yazabilirsiniz. Android + Chrome'da ise doğrudan buradan yazılır."
+          : "Bu cihaz/tarayıcı NFC yazmayı desteklemiyor. Android telefonda Chrome ile açın — ya da URL'yi kopyalayıp bir NFC uygulaması/encoder ile yazın.",
       });
       return;
     }
@@ -412,9 +413,21 @@ export default function AdminKartlarPage() {
             )}
             {nfcYaz.durum === "hata" && (
               <>
-                <span className="material-symbols-outlined text-red-400 text-5xl block">error</span>
-                <p className="text-on-surface font-semibold mt-3">Yazılamadı</p>
-                <p className="text-xs text-on-surface-variant mt-1">{nfcYaz.mesaj}</p>
+                <span className="material-symbols-outlined text-amber-400 text-5xl block">nfc</span>
+                <p className="text-on-surface font-semibold mt-3">Bu cihazda yazılamıyor</p>
+                <p className="text-xs text-on-surface-variant mt-1 text-left">{nfcYaz.mesaj}</p>
+                {nfcYaz.url && (
+                  <div className="mt-3 text-left">
+                    <p className="text-[10px] uppercase tracking-wider text-on-surface-variant/60 mb-1">Kart URL&apos;si ({nfcYaz.seri})</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-[11px] font-mono text-primary bg-surface-dim/70 border border-white/10 rounded-lg px-2 py-1.5 truncate">{nfcYaz.url}</code>
+                      <button onClick={() => navigator.clipboard?.writeText(nfcYaz.url!)}
+                        className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs bg-primary/15 border border-primary/25 text-primary inline-flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm">content_copy</span>Kopyala
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <button onClick={() => setNfcYaz(null)} className="mt-4 px-5 py-2 rounded-xl text-sm border border-white/10 text-on-surface-variant">Kapat</button>
               </>
             )}
