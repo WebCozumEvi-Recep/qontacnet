@@ -13,6 +13,7 @@ interface NavItem {
 const uyeNav: NavItem[] = [
   { href: "/uye", icon: "dashboard", label: "Panel" },
   { href: "/uye/kartim", icon: "credit_card", label: "Kartım" },
+  { href: "/uye/template", icon: "style", label: "Kart Şablonu" },
   { href: "/uye/modullerim", icon: "widgets", label: "Modüllerim" },
   { href: "/uye/profil", icon: "manage_accounts", label: "Profilim" },
   { href: "/uye/qr", icon: "qr_code_2", label: "QR Kodum" },

@@ -1,0 +1,21 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  tags:
+    - qontact-net-recep-deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  environment:
+    name: production
+    url: https://qontac.net
+  script:
+    - mkdir -p /var/www/qontaceski
+    - rsync -a --delete --exclude='.git' --exclude='node_modules' ./ /var/www/qontaceski/
+    - cd /var/www/qontaceski
+    - docker compose -f docker-compose.prod.yml build
+    # bayat migrate container'ı isim çakışması verir; önce temizle
+    - docker compose -f docker-compose.prod.yml rm -fs migrate || true
+    - docker compose -f docker-compose.prod.yml up -d
+    - docker image prune -f
