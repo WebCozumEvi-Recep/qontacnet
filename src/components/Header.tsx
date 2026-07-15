@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/i18n/config";
 type NavDict = {
   home: string; forFirms: string; forMembers: string; features: string;
   products: string; faq: string; contact: string; login: string; apply: string;
+  account: string;
 };
 
 export default function Header({
@@ -14,12 +15,19 @@ export default function Header({
   logoText = "QONTAC",
   nav,
   locale,
+  loggedIn = false,
+  accountHref = "/auth/login",
 }: {
   logoUrl?: string;
   logoText?: string;
   nav: NavDict;
   locale: Locale;
+  loggedIn?: boolean;
+  accountHref?: string;
 }) {
+  // Oturum açıksa "Giriş Yap" yerine "Hesap" gösterilir ve panele yönlendirilir
+  const ctaHref = loggedIn ? accountHref : "/auth/login";
+  const ctaLabel = loggedIn ? nav.account : nav.login;
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
@@ -78,10 +86,10 @@ export default function Header({
         <div className="flex items-center gap-2 md:gap-sm">
           <LanguageSwitcher current={locale} />
           <Link
-            href="/auth/login"
+            href={ctaHref}
             className="bg-primary-container text-on-primary-container font-bold px-3.5 py-2 md:px-6 md:py-3 rounded-xl hover:scale-105 active:scale-95 transition-all text-label-sm md:text-label-md whitespace-nowrap"
           >
-            {nav.login}
+            {ctaLabel}
           </Link>
           {/* Mobile hamburger */}
           <button className="md:hidden text-on-surface p-2" onClick={() => setOpen(!open)}>
@@ -104,11 +112,11 @@ export default function Header({
             );
           })}
           <Link
-            href="/auth/login"
+            href={ctaHref}
             onClick={() => setOpen(false)}
             className="mt-4 block text-center bg-primary-container text-on-primary-container font-bold px-6 py-3 rounded-xl text-label-md"
           >
-            {nav.login}
+            {ctaLabel}
           </Link>
         </div>
       )}

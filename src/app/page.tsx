@@ -14,6 +14,7 @@ import FAQ from "@/components/FAQ";
 import Products from "@/components/Products";
 import Footer from "@/components/Footer";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session";
 import { getI18n } from "@/lib/i18n/server";
 import { tx } from "@/lib/i18n/auto";
 import { DEMO_FORM_TEXT, FAQ_DATA, PRODUCTS_TEXT } from "@/lib/i18n/ui-text";
@@ -37,8 +38,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {};
 }
 
+const PANEL_HREF: Record<string, string> = { admin: "/admin", firma: "/firma", uye: "/uye" };
+
 export default async function Home() {
-  const [s, { locale, t }] = await Promise.all([getSiteSettings(), getI18n()]);
+  const [s, { locale, t }, session] = await Promise.all([getSiteSettings(), getI18n(), getSession()]);
+  const accountHref = session ? PANEL_HREF[session.role] ?? "/auth/login" : "/auth/login";
 
   // Client bileşenlerinin metinleri server tarafında çevrilir
   const [demoText, productsText, faqTitle, faqList] = await Promise.all([
@@ -53,7 +57,7 @@ export default async function Home() {
   return (
     <>
       {s?.headKod ? <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: s.headKod }} /> : null}
-      <Header logoUrl={s?.logoUrl || ""} logoText={s?.logoText || "QONTAC"} nav={t.nav} locale={locale} />
+      <Header logoUrl={s?.logoUrl || ""} logoText={s?.logoText || "QONTAC"} nav={t.nav} locale={locale} loggedIn={!!session} accountHref={accountHref} />
       <main className="pt-20">
         <Hero t={t.hero} />
         <ProblemSolution />
