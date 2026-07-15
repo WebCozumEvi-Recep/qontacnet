@@ -67,10 +67,10 @@ export default function Products({ t = PRODUCTS_TEXT }: { t?: ProductsText }) {
                   <button
                     type="button"
                     onClick={() => setGaleri({ gorseller: gs, index: 0, ad: u.ad })}
-                    className="group relative w-full h-48 mb-md rounded-2xl overflow-hidden border border-white/10 cursor-zoom-in"
+                    className="group relative w-full aspect-[3/4] mb-md rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] cursor-zoom-in"
                     aria-label={`${u.ad} görsellerini büyüt`}
                   >
-                    <img src={gs[0]} alt={u.ad} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <img src={gs[0]} alt={u.ad} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105" />
                     <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                       <span className="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity text-3xl drop-shadow-lg">zoom_in</span>
                     </span>
@@ -82,7 +82,7 @@ export default function Products({ t = PRODUCTS_TEXT }: { t?: ProductsText }) {
                     )}
                   </button>
                 ) : (
-                  <div className="w-full h-48 rounded-2xl mb-md bg-primary/5 border border-primary/10 flex items-center justify-center">
+                  <div className="w-full aspect-[3/4] rounded-2xl mb-md bg-primary/5 border border-primary/10 flex items-center justify-center">
                     <span className="material-symbols-outlined text-primary text-5xl">nfc</span>
                   </div>
                 );

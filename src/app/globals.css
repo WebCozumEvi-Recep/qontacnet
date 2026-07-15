@@ -216,6 +216,14 @@ body {
   line-height: 1.75;
   font-size: 1rem;
 }
+/* Depolanan HTML'deki satır-içi (inline) siyah renkleri ez:
+   koyu zeminde metin daima açık renk (okunur) olsun. */
+.prose-custom,
+.prose-custom *:not(a):not(h1):not(h2):not(h3):not(h4) {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+.prose-custom h1, .prose-custom h2, .prose-custom h3, .prose-custom h4 { color: #fff !important; }
+.prose-custom a { color: #d4af37 !important; }
 .prose-custom h1, .prose-custom h2, .prose-custom h3, .prose-custom h4 {
   color: #fff;
   font-family: "Sora", sans-serif;
