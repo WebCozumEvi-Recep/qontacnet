@@ -101,13 +101,21 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* Mobilde yatay kaymayı kesin engelle: body'de overflow-x:hidden tek başına
+     mobil tarayıcılarda yetmez, asıl kaydırma html üzerinde olur. clip kullanıyoruz —
+     hidden'ın aksine yeni bir kaydırma bağlamı oluşturmaz, position:sticky'yi bozmaz. */
+  overflow-x: clip;
+  max-width: 100%;
+}
 
 body {
   background-color: #050816;
   color: #dfe1f6;
   font-family: "Inter", sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 ::selection {
