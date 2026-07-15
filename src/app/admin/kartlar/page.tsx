@@ -7,7 +7,7 @@ interface Batch {
   durum: string; tahsisFirma: string | null; tahsisFirmaId: string | null; seriPrefix: string; createdAt: string;
 }
 
-interface PhysicalCardRow { id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; memberId: string | null; }
+interface PhysicalCardRow { id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; memberId: string | null; nfcPwd?: string | null; nfcPack?: string | null; }
 interface BatchDetail extends Batch { seriNumaralari: string[]; physicalCards?: PhysicalCardRow[]; }
 
 interface EditForm {
@@ -25,6 +25,7 @@ export default function AdminKartlarPage() {
 
   const [seriModal, setSeriModal] = useState<BatchDetail | null>(null);
   const [seriSearch, setSeriSearch] = useState("");
+  const [nfcKilitAktif, setNfcKilitAktif] = useState(false);
 
   const [editBatch, setEditBatch] = useState<Batch | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: "", durum: "", tahsisFirma: "" });
@@ -109,7 +110,10 @@ export default function AdminKartlarPage() {
     setSeriModal(null);
     const res = await fetch(`/api/admin/batches/${batch.id}`);
     const j = await res.json();
-    if (j.ok) setSeriModal({ ...j.batch, seriNumaralari: (j.physicalCards ?? []).map((c: PhysicalCardRow) => c.seriNo), physicalCards: j.physicalCards ?? [] });
+    if (j.ok) {
+      setNfcKilitAktif(Boolean(j.nfcKilitAktif));
+      setSeriModal({ ...j.batch, seriNumaralari: (j.physicalCards ?? []).map((c: PhysicalCardRow) => c.seriNo), physicalCards: j.physicalCards ?? [] });
+    }
   }
 
   async function handleDelete() {
@@ -272,17 +276,24 @@ export default function AdminKartlarPage() {
               {/* PhysicalCard kayıtları varsa NFC/QR URL'leriyle göster, yoksa eski seri listesi */}
               {filteredCards.length > 0 ? (
                 <>
+                  {!nfcKilitAktif && (
+                    <div className="flex items-start gap-2 px-3 py-2 mb-1.5 rounded-lg bg-amber-400/8 border border-amber-400/20 text-[11px] text-amber-300/90">
+                      <span className="material-symbols-outlined text-sm flex-shrink-0">lock_open</span>
+                      <span>NFC kilit anahtarı tanımsız — parola (PWD/PACK) hesaplanamıyor. Ayarlar → NFC Kart Kilit Anahtarı&apos;ndan tanımlayın.</span>
+                    </div>
+                  )}
                   <div className="hidden sm:flex items-center gap-3 px-3 pb-1 text-[10px] uppercase tracking-wider text-on-surface-variant/60">
                     <span className="w-2 flex-shrink-0" />
-                    <span className="w-28 flex-shrink-0">Seri No</span>
+                    <span className="w-24 flex-shrink-0">Seri No</span>
                     <span className="flex-1">NFC URL</span>
                     <span className="flex-1">QR URL</span>
-                    <span className="w-14 flex-shrink-0 text-right">Durum</span>
+                    <span className="w-28 flex-shrink-0">Kilit (PWD/PACK)</span>
+                    <span className="w-12 flex-shrink-0 text-right">Durum</span>
                   </div>
                   {filteredCards.slice(0, 200).map(c => (
                     <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
                       <span className={`hidden sm:block w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
-                      <span className="text-xs font-mono text-on-surface flex-shrink-0 sm:w-28">{c.seriNo}</span>
+                      <span className="text-xs font-mono text-on-surface flex-shrink-0 sm:w-24">{c.seriNo}</span>
                       <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
                         title="Kopyalamak için tıkla — NFC çipine yazılır"
                         className="text-left text-xs font-mono text-primary/80 hover:text-primary flex-1 truncate transition-colors">
@@ -293,9 +304,18 @@ export default function AdminKartlarPage() {
                         className="text-left text-xs font-mono text-tertiary/80 hover:text-tertiary flex-1 truncate transition-colors">
                         {qrUrl(c.token)}
                       </button>
+                      {c.nfcPwd ? (
+                        <button type="button" onClick={() => navigator.clipboard?.writeText(`${c.nfcPwd} ${c.nfcPack}`)}
+                          title="Kopyalamak için tıkla — çipin PWD ve PACK değeri"
+                          className="text-left text-xs font-mono text-amber-300/80 hover:text-amber-300 flex-shrink-0 sm:w-28 truncate transition-colors">
+                          {c.nfcPwd}/{c.nfcPack}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-on-surface-variant/30 flex-shrink-0 sm:w-28">—</span>
+                      )}
                       {c.aktif
-                        ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-14 sm:text-right">Aktif</span>
-                        : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-14 sm:text-right">Bekliyor</span>}
+                        ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-12 sm:text-right">Aktif</span>
+                        : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-12 sm:text-right">Bekliyor</span>}
                     </div>
                   ))}
                 </>
@@ -314,8 +334,8 @@ export default function AdminKartlarPage() {
               <div className="flex gap-2">
                 {filteredCards.length > 0 && (
                   <button onClick={() => {
-                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\t${nfcUrl(c.token)}\t${qrUrl(c.token)}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
-                    const txt = "Seri No\tNFC URL\tQR URL\tDurum\n" + rows.join("\n");
+                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\t${nfcUrl(c.token)}\t${qrUrl(c.token)}\t${c.nfcPwd ?? ""}\t${c.nfcPack ?? ""}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
+                    const txt = "Seri No\tNFC URL\tQR URL\tPWD\tPACK\tDurum\n" + rows.join("\n");
                     const a = document.createElement("a");
                     a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
                     a.download = `${seriModal?.kod}-kartlar.tsv`;

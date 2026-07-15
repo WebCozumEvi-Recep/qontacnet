@@ -391,6 +391,9 @@ model SiteSettings {
   qnbApiPassword         String   @default("")    // API kullanıcı şifresi (UserPass) — gizli
   qnbCurrency            String   @default("949") // Para birimi kodu (949=TL, 840=USD, 978=EUR, 826=GBP)
   qnbLang                String   @default("tr")  // Ödeme sayfası dili (tr/en)
+  // NFC kart kilit anahtarı — gizli. Her kartın PWD/PACK parolası bu anahtar +
+  // kart token'ından türetilir (HMAC). Bunu bilmeyen çipin içeriğini değiştiremez.
+  nfcKilitAnahtari       String   @default("")
   updatedAt              DateTime @updatedAt
 }
 
