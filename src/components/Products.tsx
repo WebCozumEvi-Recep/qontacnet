@@ -58,7 +58,7 @@ export default function Products({ t = PRODUCTS_TEXT }: { t?: ProductsText }) {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-lg">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-lg">
           {urunler.map((u) => (
             <div key={u.id} className="glass-card rounded-[2rem] p-lg flex flex-col border-white/5">
               {(() => {
