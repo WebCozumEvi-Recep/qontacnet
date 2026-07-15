@@ -176,7 +176,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
       <div className="fixed top-0 left-0 w-full h-64 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}20 0%, transparent 70%)` }} />
 
       {/* Dil seçici */}
-      <div className="fixed top-3 right-3 z-50 flex gap-1 rounded-full px-1.5 py-1 backdrop-blur-md" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+      <div className="fixed top-3 left-3 z-50 flex gap-1 rounded-full px-1.5 py-1 backdrop-blur-md" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
         {CARD_LOCALES.map((l) => (
           <button
             key={l}
