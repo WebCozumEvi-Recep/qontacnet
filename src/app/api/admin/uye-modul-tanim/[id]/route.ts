@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
-const TIPLER = ["GALERI", "TEXT", "VIDEO", "LINK", "GORSEL", "FORM"] as const;
+const TIPLER = ["GALERI", "TEXT", "VIDEO", "LINK", "GORSEL", "FORM", "TEK_GORSEL", "HTML", "SSS", "HERO", "BASVURU"] as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireRole("admin");

@@ -4,10 +4,15 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { ModulIkon } from "@/components/ModulIkon";
 
-type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM";
+type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM" | "TEK_GORSEL" | "HTML" | "SSS" | "HERO" | "BASVURU";
 type IkonAlan = { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string };
 interface Tanim extends IkonAlan { id: string; ad: string; tip: Tip }
-interface Icerik { metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gonderButon?: string; gorseller?: { url: string }[] }
+interface Icerik {
+  metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gonderButon?: string;
+  gorseller?: { url: string }[];
+  baslik?: string; link?: string; kod?: string; sorular?: { soru: string; cevap: string }[];
+  arkaplan?: string; html?: string; hizalama?: string;
+}
 interface Modul {
   id: string;
   tip: Tip;
@@ -18,7 +23,7 @@ interface Modul {
   tanim?: ({ ad: string } & IkonAlan) | null;
 }
 
-const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link", GORSEL: "Görsel", FORM: "İletişim Formu" };
+const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link", GORSEL: "Görsel", FORM: "İletişim Formu", TEK_GORSEL: "Tek Görsel", HTML: "Özel HTML", SSS: "Sık Sorulan Sorular", HERO: "Tanıtım Hero Banner", BASVURU: "Başvuru Formu" };
 
 async function uploadFile(file: File): Promise<string> {
   const fd = new FormData();
@@ -143,6 +148,107 @@ function ModulEditor({ modul, onChange }: { modul: Modul; onChange: (icerik: Ice
             className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
         </div>
         <p className="text-[11px] text-on-surface-variant/60">Ziyaretçiler ad, e-posta, telefon ve mesaj bırakır. Gelen bilgiler firmanın <b>Başvurular</b> ekranına düşer.</p>
+      </div>
+    );
+  }
+  if (modul.tip === "BASVURU") {
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Açıklama (formun üstünde görünür)</label>
+          <textarea value={i.aciklama ?? ""} onChange={e => onChange({ ...i, aciklama: e.target.value })}
+            placeholder="ör. Ekibime katılmak için bilgilerini bırak" rows={2}
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary resize-y" />
+        </div>
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Gönder butonu yazısı</label>
+          <input value={i.gonderButon ?? ""} onChange={e => onChange({ ...i, gonderButon: e.target.value })}
+            placeholder="ör. Başvur"
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        </div>
+        <p className="text-[11px] text-on-surface-variant/60">Ziyaretçi <b>Ad Soyad, Telefon, E-posta, Şehir</b> bırakır. Gelen bilgiler firmanın <b>Başvurular</b> ekranına düşer.</p>
+      </div>
+    );
+  }
+  if (modul.tip === "TEK_GORSEL") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {i.gorsel && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={i.gorsel} alt="" className="w-24 h-24 rounded-xl object-cover border border-white/10" />
+          )}
+          <GorselButon label={i.gorsel ? "Görseli Değiştir" : "Görsel Yükle"} onChange={u => onChange({ ...i, gorsel: u })} />
+          {i.gorsel && <button type="button" onClick={() => onChange({ ...i, gorsel: "" })} className="text-xs text-red-400 hover:text-red-300">Kaldır</button>}
+        </div>
+        <input value={i.baslik ?? ""} onChange={e => onChange({ ...i, baslik: e.target.value })}
+          placeholder="Görsel altı yazı (opsiyonel)"
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+        <input value={i.link ?? ""} onChange={e => onChange({ ...i, link: e.target.value })}
+          placeholder="Tıklanınca gidilecek bağlantı (opsiyonel) — https://..."
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary" />
+      </div>
+    );
+  }
+  if (modul.tip === "HTML") {
+    return (
+      <div className="space-y-2">
+        <label className="text-xs text-on-surface-variant block">Özel HTML kodu</label>
+        <textarea value={i.kod ?? ""} onChange={e => onChange({ ...i, kod: e.target.value })}
+          placeholder="<div>...</div>" rows={6}
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-on-surface outline-none focus:border-primary resize-y" />
+        <p className="text-[11px] text-on-surface-variant/60">Kartta ikona tıklanınca bu HTML popup içinde gösterilir.</p>
+      </div>
+    );
+  }
+  if (modul.tip === "SSS") {
+    const sorular = i.sorular ?? [];
+    const setSoru = (idx: number, patch: Partial<{ soru: string; cevap: string }>) =>
+      onChange({ ...i, sorular: sorular.map((s, x) => (x === idx ? { ...s, ...patch } : s)) });
+    return (
+      <div className="space-y-3">
+        {sorular.map((s, idx) => (
+          <div key={idx} className="bg-surface-dim border border-white/10 rounded-xl p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <input value={s.soru} onChange={e => setSoru(idx, { soru: e.target.value })} placeholder="Soru"
+                className="flex-1 bg-transparent border-b border-white/10 px-1 py-1.5 text-sm text-on-surface outline-none focus:border-primary" />
+              <button type="button" onClick={() => onChange({ ...i, sorular: sorular.filter((_, x) => x !== idx) })}
+                className="text-red-400 hover:text-red-300"><span className="material-symbols-outlined text-base">delete</span></button>
+            </div>
+            <textarea value={s.cevap} onChange={e => setSoru(idx, { cevap: e.target.value })} placeholder="Cevap" rows={2}
+              className="w-full bg-transparent border border-white/10 rounded-lg px-2 py-1.5 text-sm text-on-surface outline-none focus:border-primary resize-y" />
+          </div>
+        ))}
+        <button type="button" onClick={() => onChange({ ...i, sorular: [...sorular, { soru: "", cevap: "" }] })}
+          className="px-3 py-2 rounded-xl glass-card text-xs text-on-surface flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-sm">add</span>Soru Ekle
+        </button>
+      </div>
+    );
+  }
+  if (modul.tip === "HERO") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {i.arkaplan && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={i.arkaplan} alt="" className="w-24 h-16 rounded-xl object-cover border border-white/10" />
+          )}
+          <GorselButon label={i.arkaplan ? "Arka Planı Değiştir" : "Arka Plan Görseli"} onChange={u => onChange({ ...i, arkaplan: u })} />
+          {i.arkaplan && <button type="button" onClick={() => onChange({ ...i, arkaplan: "" })} className="text-xs text-red-400 hover:text-red-300">Kaldır</button>}
+        </div>
+        <textarea value={i.html ?? ""} onChange={e => onChange({ ...i, html: e.target.value })}
+          placeholder="Tanıtım metni / HTML — ör. <h3>Kampanya</h3><p>%20 indirim</p>" rows={4}
+          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-xs font-mono text-on-surface outline-none focus:border-primary resize-y" />
+        <div>
+          <label className="text-xs text-on-surface-variant mb-1 block">Metin hizalama</label>
+          <select value={i.hizalama ?? "center"} onChange={e => onChange({ ...i, hizalama: e.target.value })}
+            className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface outline-none focus:border-primary">
+            <option value="left">Sola</option>
+            <option value="center">Ortala</option>
+            <option value="right">Sağa</option>
+          </select>
+        </div>
       </div>
     );
   }

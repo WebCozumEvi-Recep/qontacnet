@@ -1,0 +1,6 @@
+-- Üye modül kataloğuna yeni tipler: Tek Görsel, Özel HTML, SSS, Hero, Başvuru Formu
+ALTER TYPE "UyeModulTip" ADD VALUE IF NOT EXISTS 'TEK_GORSEL';
+ALTER TYPE "UyeModulTip" ADD VALUE IF NOT EXISTS 'HTML';
+ALTER TYPE "UyeModulTip" ADD VALUE IF NOT EXISTS 'SSS';
+ALTER TYPE "UyeModulTip" ADD VALUE IF NOT EXISTS 'HERO';
+ALTER TYPE "UyeModulTip" ADD VALUE IF NOT EXISTS 'BASVURU';
