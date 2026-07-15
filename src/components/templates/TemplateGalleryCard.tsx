@@ -1,5 +1,4 @@
 import type { CardTemplateItem } from "@/lib/template-design";
-import { TemplateModuleChips } from "@/components/templates/TemplateModuleChips";
 
 export function TemplateGalleryCard({
   item,
@@ -47,8 +46,6 @@ export function TemplateGalleryCard({
           )}
         </div>
       </div>
-
-      <TemplateModuleChips modules={item.modules} />
 
       <div className="flex items-center justify-between pt-1 border-t border-white/5">
         {showMemberCount ? (

@@ -1,16 +1,13 @@
 import type { TemplateModuleChip } from "@/lib/template-design";
-import { TemplateModuleChips } from "@/components/templates/TemplateModuleChips";
 
 export function MiniCardPreview({
-  name,
   color,
-  modules,
   memberName = "Ad Soyad",
   role = "Unvan",
 }: {
-  name: string;
+  name?: string;
   color: string;
-  modules: TemplateModuleChip[];
+  modules?: TemplateModuleChip[];
   memberName?: string;
   role?: string;
 }) {
@@ -43,10 +40,6 @@ export function MiniCardPreview({
               <span className="material-symbols-outlined text-sm" style={{ color }}>{icon}</span>
             </div>
           ))}
-        </div>
-        <div className="rounded-xl p-2.5 bg-white/5 border border-white/8">
-          <p className="text-[10px] text-on-surface-variant mb-1.5 truncate">{name}</p>
-          <TemplateModuleChips modules={modules} max={3} size="xs" />
         </div>
       </div>
     </div>
