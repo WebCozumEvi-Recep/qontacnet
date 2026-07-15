@@ -25,6 +25,7 @@ export default function AdminKartlarPage() {
 
   const [seriModal, setSeriModal] = useState<BatchDetail | null>(null);
   const [seriSearch, setSeriSearch] = useState("");
+  const [kopyalanan, setKopyalanan] = useState<string | null>(null); // son kopyalanan kartın token'ı
 
   const [editBatch, setEditBatch] = useState<Batch | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: "", durum: "", tahsisFirma: "" });
@@ -299,10 +300,20 @@ export default function AdminKartlarPage() {
                       {c.aktif
                         ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-14 sm:text-right">Aktif</span>
                         : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-14 sm:text-right">Bekliyor</span>}
-                      <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
+                      <button type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(nfcUrl(c.token));
+                          setKopyalanan(c.token);
+                          setTimeout(() => setKopyalanan(k => (k === c.token ? null : k)), 1500);
+                        }}
                         title="NFC adresini panoya kopyala"
-                        className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/25 text-primary text-[11px] font-medium whitespace-nowrap flex-shrink-0 sm:w-24">
-                        <span className="material-symbols-outlined text-sm">content_copy</span>Kopyala
+                        className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-medium whitespace-nowrap flex-shrink-0 sm:w-24 transition-colors ${
+                          kopyalanan === c.token
+                            ? "bg-tertiary/20 border-tertiary/40 text-tertiary"
+                            : "bg-primary/15 border-primary/25 text-primary"
+                        }`}>
+                        <span className="material-symbols-outlined text-sm">{kopyalanan === c.token ? "check" : "content_copy"}</span>
+                        {kopyalanan === c.token ? "Kopyalandı" : "Kopyala"}
                       </button>
                     </div>
                   ))}
