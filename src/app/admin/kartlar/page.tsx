@@ -319,19 +319,13 @@ export default function AdminKartlarPage() {
                     <span className="flex-1">NFC URL</span>
                     <span className="flex-1">QR URL</span>
                     <span className="w-28 flex-shrink-0">Kilit (PWD/PACK)</span>
-                    <span className="w-12 flex-shrink-0 text-right">Durum</span>
+                    <span className="w-14 flex-shrink-0 text-right">Durum</span>
+                    <span className="w-24 flex-shrink-0 text-right">İşlem</span>
                   </div>
                   {filteredCards.slice(0, 200).map(c => (
                     <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
                       <span className={`hidden sm:block w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
-                      <div className="flex items-center gap-2 flex-shrink-0 sm:w-24">
-                        <span className="text-xs font-mono text-on-surface">{c.seriNo}</span>
-                        <button type="button" onClick={() => yazNfc(c.seriNo, nfcUrl(c.token))}
-                          title="Boş NFC kartı telefona yaklaştırıp URL'yi yaz"
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/25 text-primary text-[11px] font-medium whitespace-nowrap">
-                          <span className="material-symbols-outlined text-sm">nfc</span>NFC Yaz
-                        </button>
-                      </div>
+                      <span className="text-xs font-mono text-on-surface flex-shrink-0 sm:w-24">{c.seriNo}</span>
                       <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
                         title="Kopyalamak için tıkla — NFC çipine yazılır"
                         className="text-left text-xs font-mono text-primary/80 hover:text-primary flex-1 truncate transition-colors">
@@ -352,8 +346,13 @@ export default function AdminKartlarPage() {
                         <span className="text-xs text-on-surface-variant/30 flex-shrink-0 sm:w-28">—</span>
                       )}
                       {c.aktif
-                        ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-12 sm:text-right">Aktif</span>
-                        : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-12 sm:text-right">Bekliyor</span>}
+                        ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-14 sm:text-right">Aktif</span>
+                        : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-14 sm:text-right">Bekliyor</span>}
+                      <button type="button" onClick={() => yazNfc(c.seriNo, nfcUrl(c.token))}
+                        title="Boş NFC kartı telefona yaklaştırıp URL'yi yaz"
+                        className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/25 text-primary text-[11px] font-medium whitespace-nowrap flex-shrink-0 sm:w-24">
+                        <span className="material-symbols-outlined text-sm">nfc</span>NFC Yaz
+                      </button>
                     </div>
                   ))}
                 </>
