@@ -21,8 +21,11 @@ export default function KartAktivasyon() {
       if (!res.ok || !data.ok) { setState("invalid"); return; }
 
       if (data.aktif && data.memberId) {
-        // Kart zaten aktif → doğrudan üyenin public kartına yönlendir
-        router.replace(`/kart/${data.memberId}`);
+        // Kart zaten aktif → doğrudan üyenin public kartına yönlendir.
+        // Ziyaret kaynağını (nfc/qr) URL'den taşı ki panelde ayrışsın.
+        const src = new URLSearchParams(window.location.search).get("src");
+        const q = src === "nfc" || src === "qr" ? `?src=${src}` : "";
+        router.replace(`/kart/${data.memberId}${q}`);
         setState("redirect");
         return;
       }

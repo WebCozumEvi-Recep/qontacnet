@@ -121,6 +121,11 @@ export default function AdminKartlarPage() {
     if (j.ok) { setBatches(prev => prev.filter(b => b.id !== deleteBatch.id)); setDeleteBatch(null); }
   }
 
+  // Fiziksel kart URL'leri — kaynak ayrımı için ?src parametresi taşır.
+  // NFC çipine nfcUrl, basılı QR'a qrUrl yazılır; ziyaret kaynağı böyle ayrışır.
+  const nfcUrl = (token: string) => `https://qontac.net/k/${token}?src=nfc`;
+  const qrUrl = (token: string) => `https://qontac.net/k/${token}?src=qr`;
+
   const filteredCards = (seriModal?.physicalCards ?? []).filter(c =>
     !seriSearch || c.seriNo.toUpperCase().includes(seriSearch.toUpperCase()) || c.token.includes(seriSearch)
   );
@@ -246,7 +251,7 @@ export default function AdminKartlarPage() {
       {/* Seri No Listesi Modal */}
       {seriModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl flex flex-col" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", maxHeight: "80vh" }}>
+          <div className="w-full max-w-3xl rounded-2xl flex flex-col" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", maxHeight: "80vh" }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8 flex-shrink-0">
               <div>
                 <h3 className="font-semibold text-on-surface">Seri No Listesi</h3>
@@ -264,17 +269,37 @@ export default function AdminKartlarPage() {
               </div>
             </div>
             <div className="overflow-y-auto flex-1 p-4 space-y-1.5">
-              {/* PhysicalCard kayıtları varsa onları göster, yoksa eski seri listesi */}
-              {filteredCards.length > 0 ? filteredCards.slice(0, 200).map(c => (
-                <div key={c.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
-                  <span className="text-xs font-mono text-on-surface flex-shrink-0 w-32">{c.seriNo}</span>
-                  <span className="text-xs font-mono text-on-surface-variant flex-1 truncate">{c.token}</span>
-                  {c.aktif
-                    ? <span className="text-xs text-tertiary flex-shrink-0">Aktif</span>
-                    : <span className="text-xs text-on-surface-variant/40 flex-shrink-0">Bekliyor</span>}
-                </div>
-              )) : filteredSeri.slice(0, 200).map(s => (
+              {/* PhysicalCard kayıtları varsa NFC/QR URL'leriyle göster, yoksa eski seri listesi */}
+              {filteredCards.length > 0 ? (
+                <>
+                  <div className="hidden sm:flex items-center gap-3 px-3 pb-1 text-[10px] uppercase tracking-wider text-on-surface-variant/60">
+                    <span className="w-2 flex-shrink-0" />
+                    <span className="w-28 flex-shrink-0">Seri No</span>
+                    <span className="flex-1">NFC URL</span>
+                    <span className="flex-1">QR URL</span>
+                    <span className="w-14 flex-shrink-0 text-right">Durum</span>
+                  </div>
+                  {filteredCards.slice(0, 200).map(c => (
+                    <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
+                      <span className={`hidden sm:block w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
+                      <span className="text-xs font-mono text-on-surface flex-shrink-0 sm:w-28">{c.seriNo}</span>
+                      <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
+                        title="Kopyalamak için tıkla — NFC çipine yazılır"
+                        className="text-left text-xs font-mono text-primary/80 hover:text-primary flex-1 truncate transition-colors">
+                        {nfcUrl(c.token)}
+                      </button>
+                      <button type="button" onClick={() => navigator.clipboard?.writeText(qrUrl(c.token))}
+                        title="Kopyalamak için tıkla — basılı QR koduna gömülür"
+                        className="text-left text-xs font-mono text-tertiary/80 hover:text-tertiary flex-1 truncate transition-colors">
+                        {qrUrl(c.token)}
+                      </button>
+                      {c.aktif
+                        ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-14 sm:text-right">Aktif</span>
+                        : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-14 sm:text-right">Bekliyor</span>}
+                    </div>
+                  ))}
+                </>
+              ) : filteredSeri.slice(0, 200).map(s => (
                 <div key={s} className="px-3 py-1.5 rounded-lg bg-white/3 border border-white/5 text-xs font-mono text-on-surface">{s}</div>
               ))}
               {(filteredCards.length > 200 || filteredSeri.length > 200) && (
@@ -289,8 +314,8 @@ export default function AdminKartlarPage() {
               <div className="flex gap-2">
                 {filteredCards.length > 0 && (
                   <button onClick={() => {
-                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\thttps://qontac.net/k/${c.token}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
-                    const txt = "Seri No\tQR URL\tDurum\n" + rows.join("\n");
+                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\t${nfcUrl(c.token)}\t${qrUrl(c.token)}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
+                    const txt = "Seri No\tNFC URL\tQR URL\tDurum\n" + rows.join("\n");
                     const a = document.createElement("a");
                     a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
                     a.download = `${seriModal?.kod}-kartlar.tsv`;

@@ -8,6 +8,7 @@ export default function QRPage() {
   const { user } = useAuth();
   const member = user?.data as unknown as Member;
   const cardUrl = `https://qontac.net/kart/${user?.id}`;
+  const qrUrl = `${cardUrl}?src=qr`;
   const qrRef = useRef<HTMLDivElement>(null);
 
   const fullName = `${member?.ad ?? ""} ${member?.soyad ?? ""}`.trim();
@@ -60,7 +61,7 @@ export default function QRPage() {
         <div className="flex justify-center mb-6">
           <div ref={qrRef} className="relative inline-flex items-center justify-center p-4 rounded-2xl border border-white/10 bg-[#0f1321]">
             <QRCodeSVG
-              value={cardUrl}
+              value={qrUrl}
               size={200}
               bgColor="#0f1321"
               fgColor="#d4af37"

@@ -83,13 +83,19 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
   const [leadError, setLeadError] = useState("");
   const [leadForm, setLeadForm] = useState({ ad: "", email: "", telefon: "", sirket: "" });
   const [lang, setLang] = useState<string>("tr");
+  const [kaynak, setKaynak] = useState<"NFC" | "QR" | "LINK">("LINK");
 
   // Dil kaynağı: ?lang= > NEXT_LOCALE çerezi > tr
+  // Ziyaret kaynağı: ?src=nfc|qr → lead kaydında kaynak olarak kullanılır
   useEffect(() => {
-    const urlLang = new URLSearchParams(window.location.search).get("lang");
+    const sp = new URLSearchParams(window.location.search);
+    const urlLang = sp.get("lang");
     const cookieLang = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/)?.[1];
     const picked = urlLang || cookieLang || "tr";
     if (CARD_LOCALES.includes(picked)) setLang(picked);
+    const src = sp.get("src");
+    if (src === "nfc") setKaynak("NFC");
+    else if (src === "qr") setKaynak("QR");
   }, []);
 
   useEffect(() => {
@@ -145,7 +151,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uyeId: card.id, ...leadForm }),
+        body: JSON.stringify({ uyeId: card.id, ...leadForm, kaynak }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error ?? "Gönderilemedi.");
@@ -283,7 +289,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
             <div className="flex justify-center">
               <div className="relative inline-flex items-center justify-center p-4 rounded-2xl border border-white/10" style={{ background: "#0f1321" }}>
                 <QRCodeSVG
-                  value={typeof window !== "undefined" ? window.location.href : ""}
+                  value={typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?src=qr` : ""}
                   size={220}
                   bgColor="#0f1321"
                   fgColor={color}
