@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { buildPaymentForm, qnbConfigured } from "@/lib/qnbpos";
+import { buildPaymentForm, getQnbConfig } from "@/lib/qnbpos";
 import { nextSiparisNo } from "@/lib/siparis-no";
 
 // Public: ana sayfadan ürün satın alma — sipariş ödeme beklemede oluşturulur,
@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!qnbConfigured()) {
+    const qnbCfg = await getQnbConfig();
+    if (!qnbCfg) {
       return NextResponse.json({ ok: false, error: "Ödeme sistemi henüz yapılandırılmadı. Lütfen daha sonra tekrar deneyin." }, { status: 503 });
     }
 
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const paymentForm = buildPaymentForm({
+    const paymentForm = buildPaymentForm(qnbCfg, {
       siparisNo: order.siparisNo,
       tutar,
       email: String(email),

@@ -375,6 +375,13 @@ model SiteSettings {
   sosyalFacebook         String   @default("")
   sosyalYoutube          String   @default("")
   sosyalWebsite          String   @default("")
+  // QNB Finansbank Sanal POS (PayFor / 3DHost) — admin panelinden doldurulur.
+  qnbAktif               Boolean  @default(false) // true ise DB bilgileri kullanılır (env yerine)
+  qnbTest                Boolean  @default(true)  // true: test gate, false: canlı gate
+  qnbMerchantId          String   @default("")    // Üye işyeri numarası
+  qnbUserCode            String   @default("")    // API kullanıcı adı
+  qnbMerchantPass        String   @default("")    // Mağaza 3D anahtarı (MerchantPass) — gizli
+  qnbMbrId               String   @default("5")   // Kurum kodu (QNB için "5")
   updatedAt              DateTime @updatedAt
 }
 

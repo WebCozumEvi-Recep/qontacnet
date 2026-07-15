@@ -1,10 +1,12 @@
 import { createHash, randomBytes } from "crypto";
+import { prisma } from "@/lib/prisma";
 
 // QNB Finansbank Sanal POS — PayFor altyapısı, 3DHost modeli.
 // Kart bilgisi bankanın hosted ödeme sayfasında girilir; biz SHA-1 imzalı form
 // POST'larız, banka sonucu OkUrl/FailUrl'e POST eder ve ResponseHash doğrulanır.
 //
-// Gerekli env değişkenleri (.env.production):
+// Yapılandırma: Admin panelinden "Sanal POS Ayarları" (SiteSettings) doldurulur.
+// Bilgiler oradan okunur; boşsa aşağıdaki env değişkenlerine düşer (geriye dönük uyumluluk):
 //   QNB_MERCHANT_ID   — Üye işyeri numarası (örn. 085300000021907)
 //   QNB_USER_CODE     — API kullanıcı adı (örn. wceapi)
 //   QNB_MERCHANT_PASS — Mağaza 3D anahtarı (MerchantPass / StoreKey; işyeri panelinden)
@@ -13,13 +15,48 @@ import { createHash, randomBytes } from "crypto";
 //                       Test:  https://vpostest.qnbfinansbank.com/Gateway/3DHost.aspx
 //   NEXT_PUBLIC_BASE_URL — callback adresleri için site kökü (örn. https://qontac.net)
 
-export function qnbConfigured(): boolean {
-  return Boolean(
+const GATE_TEST = "https://vpostest.qnbfinansbank.com/Gateway/3DHost.aspx";
+const GATE_LIVE = "https://vpos.qnbfinansbank.com/Gateway/3DHost.aspx";
+
+export interface QnbConfig {
+  mbrId: string;
+  merchantId: string;
+  userCode: string;
+  merchantPass: string;
+  gateUrl: string;
+}
+
+// Aktif POS yapılandırmasını döndürür. Öncelik: admin panelinde aktif edilmiş DB ayarları,
+// yoksa env değişkenleri. Eksikse null (ödeme kapalı).
+export async function getQnbConfig(): Promise<QnbConfig | null> {
+  const s = await prisma.siteSettings.findUnique({ where: { id: "site" } }).catch(() => null);
+
+  if (s?.qnbAktif && s.qnbMerchantId && s.qnbUserCode && s.qnbMerchantPass) {
+    return {
+      mbrId: s.qnbMbrId || "5",
+      merchantId: s.qnbMerchantId,
+      userCode: s.qnbUserCode,
+      merchantPass: s.qnbMerchantPass,
+      gateUrl: s.qnbTest ? GATE_TEST : GATE_LIVE,
+    };
+  }
+
+  if (
     process.env.QNB_MERCHANT_ID &&
     process.env.QNB_USER_CODE &&
     process.env.QNB_MERCHANT_PASS &&
     process.env.QNB_GATE_URL
-  );
+  ) {
+    return {
+      mbrId: process.env.QNB_MBR_ID || "5",
+      merchantId: process.env.QNB_MERCHANT_ID,
+      userCode: process.env.QNB_USER_CODE,
+      merchantPass: process.env.QNB_MERCHANT_PASS,
+      gateUrl: process.env.QNB_GATE_URL,
+    };
+  }
+
+  return null;
 }
 
 // PayFor hash: alanlar ayraçsız birleştirilir, SHA-1 base64 alınır
@@ -32,17 +69,13 @@ export interface PaymentForm {
   fields: Record<string, string>;
 }
 
-export function buildPaymentForm(opts: {
+export function buildPaymentForm(cfg: QnbConfig, opts: {
   siparisNo: string;
   tutar: number; // lira (tam sayı)
   email: string;
   musteriAd: string;
 }): PaymentForm {
-  const mbrId = process.env.QNB_MBR_ID || "5";
-  const merchantId = process.env.QNB_MERCHANT_ID!;
-  const userCode = process.env.QNB_USER_CODE!;
-  const merchantPass = process.env.QNB_MERCHANT_PASS!;
-  const gateUrl = process.env.QNB_GATE_URL!;
+  const { mbrId, merchantId, userCode, merchantPass, gateUrl } = cfg;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://qontac.net";
 
   const okUrl = `${baseUrl}/api/odeme/callback`;
@@ -78,10 +111,8 @@ export function buildPaymentForm(opts: {
 
 // Banka callback'inin ResponseHash'ini doğrular:
 // SHA1(MerchantID + MerchantPass + OrderId + AuthCode + ProcReturnCode + 3DStatus + ResponseRnd + UserCode)
-export function verifyCallback(params: Record<string, string>): boolean {
-  const merchantId = process.env.QNB_MERCHANT_ID;
-  const merchantPass = process.env.QNB_MERCHANT_PASS;
-  const userCode = process.env.QNB_USER_CODE;
+export function verifyCallback(cfg: QnbConfig, params: Record<string, string>): boolean {
+  const { merchantId, merchantPass, userCode } = cfg;
   if (!merchantId || !merchantPass || !userCode || !params.ResponseHash) return false;
 
   const expected = sha1b64(

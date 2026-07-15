@@ -140,6 +140,9 @@ export default function AdminAyarlarPage() {
       {/* Site Kimliği */}
       <SiteKimligi />
 
+      {/* Sanal POS Ayarları */}
+      <SanalPos />
+
       {/* Platform Ayarları */}
       <div className="glass-card rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Platform Ayarları</h3>
@@ -370,6 +373,135 @@ function SiteKimligi() {
         {saving ? "Kaydediliyor..." : "Kaydet"}
       </button>
     </form>
+  );
+}
+
+interface QnbSettings {
+  qnbAktif: boolean; qnbTest: boolean;
+  qnbMerchantId: string; qnbUserCode: string; qnbMbrId: string;
+  qnbMerchantPassSet: boolean;
+}
+
+function SanalPos() {
+  const [s, setS] = useState<QnbSettings>({
+    qnbAktif: false, qnbTest: true, qnbMerchantId: "", qnbUserCode: "", qnbMbrId: "5", qnbMerchantPassSet: false,
+  });
+  const [pass, setPass] = useState(""); // yeni anahtar; boşsa mevcut korunur
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all";
+
+  useEffect(() => {
+    fetch("/api/admin/sanal-pos").then(r => r.json()).then(j => {
+      if (j.ok && j.settings) setS(j.settings);
+    });
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true); setMsg(null);
+    const res = await fetch("/api/admin/sanal-pos", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...s, qnbMerchantPass: pass }),
+    });
+    const j = await res.json();
+    setSaving(false);
+    if (j.ok) {
+      setS(j.settings);
+      setPass("");
+      setMsg({ ok: true, text: "Sanal POS ayarları kaydedildi." });
+    } else {
+      setMsg({ ok: false, text: j.error || "Kaydedilemedi." });
+    }
+  }
+
+  const eksik = s.qnbAktif && (!s.qnbMerchantId || !s.qnbUserCode || !(s.qnbMerchantPassSet || pass));
+
+  return (
+    <form onSubmit={handleSave} className="glass-card rounded-2xl p-6">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="material-symbols-outlined text-primary text-lg">credit_card</span>
+        <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Sanal POS Ayarları</h3>
+      </div>
+      <p className="text-xs text-on-surface-variant mb-5">
+        QNB Finansbank Sanal POS (PayFor / 3DHost). Bu bilgiler QNB üye işyeri panelinizden alınır.
+        Aktif edildiğinde site üzerinden kredi kartıyla ödeme açılır.
+      </p>
+
+      {/* Aktif / Test toggles */}
+      <div className="space-y-1 mb-5 border border-white/10 rounded-xl p-2">
+        <ToggleControlled
+          label="Sanal POS aktif"
+          desc="Kapalıysa ödeme sistemi devre dışı kalır; site siparişleri ödeme adımına geçmez."
+          on={s.qnbAktif} onChange={v => setS(p => ({ ...p, qnbAktif: v }))} />
+        <ToggleControlled
+          label="Test ortamı"
+          desc={s.qnbTest ? "TEST gate kullanılıyor (vpostest). Gerçek tahsilat yapılmaz." : "CANLI gate kullanılıyor (vpos). Gerçek para çekilir!"}
+          on={s.qnbTest} onChange={v => setS(p => ({ ...p, qnbTest: v }))} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Üye İşyeri No (MerchantID)</label>
+          <input value={s.qnbMerchantId} onChange={e => setS(p => ({ ...p, qnbMerchantId: e.target.value }))}
+            className={inputCls} placeholder="örn. 085300000021907" />
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">API Kullanıcı Adı (UserCode)</label>
+          <input value={s.qnbUserCode} onChange={e => setS(p => ({ ...p, qnbUserCode: e.target.value }))}
+            className={inputCls} placeholder="örn. wceapi" />
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Mağaza 3D Anahtarı (MerchantPass)</label>
+          <input type="password" value={pass} onChange={e => setPass(e.target.value)} autoComplete="new-password"
+            className={inputCls} placeholder={s.qnbMerchantPassSet ? "•••••••• (kayıtlı — değiştirmek için yazın)" : "QNB panelinden alınan anahtar"} />
+          <p className="text-[11px] text-on-surface-variant mt-1">Güvenlik için kayıtlı anahtar geri gösterilmez. Boş bırakırsanız mevcut anahtar korunur.</p>
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Kurum Kodu (MbrId)</label>
+          <input value={s.qnbMbrId} onChange={e => setS(p => ({ ...p, qnbMbrId: e.target.value }))}
+            className={inputCls} placeholder="5" />
+          <p className="text-[11px] text-on-surface-variant mt-1">QNB Finansbank için varsayılan &quot;5&quot;.</p>
+        </div>
+      </div>
+
+      <div className="text-[11px] text-on-surface-variant bg-surface-dim/60 border border-white/10 rounded-xl px-3 py-2 mb-4">
+        <span className="font-semibold text-on-surface">Callback adresi:</span> ödeme sonucu <code>/api/odeme/callback</code> adresine döner —
+        QNB panelinde OkUrl/FailUrl olarak bu tanımlı olmalı. Gate adresi test/canlı seçimine göre otomatik ayarlanır.
+      </div>
+
+      {eksik && (
+        <p className="text-xs flex items-center gap-1 mb-3 text-amber-400">
+          <span className="material-symbols-outlined text-sm">warning</span>
+          POS aktif ama MerchantID, UserCode ve Mağaza 3D Anahtarı eksiksiz olmalı — aksi halde ödeme açılmaz.
+        </p>
+      )}
+      {msg && (
+        <p className={`text-xs flex items-center gap-1 mb-3 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
+          <span className="material-symbols-outlined text-sm">{msg.ok ? "check_circle" : "error"}</span>{msg.text}
+        </p>
+      )}
+      <button type="submit" disabled={saving}
+        className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
+        {saving ? "Kaydediliyor..." : "Kaydet"}
+      </button>
+    </form>
+  );
+}
+
+function ToggleControlled({ label, desc, on, onChange }: { label: string; desc: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button type="button" onClick={() => onChange(!on)} className="w-full flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-white/3 transition-all text-left">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-on-surface font-medium">{label}</p>
+        <p className="text-xs text-on-surface-variant">{desc}</p>
+      </div>
+      <div className={`w-11 h-6 rounded-full relative transition-all flex-shrink-0 ${on ? "bg-primary" : "bg-white/10"}`}>
+        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${on ? "left-5" : "left-0.5"}`} />
+      </div>
+    </button>
   );
 }
 

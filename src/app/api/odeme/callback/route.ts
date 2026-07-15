@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyCallback, isPaymentApproved } from "@/lib/qnbpos";
+import { verifyCallback, isPaymentApproved, getQnbConfig } from "@/lib/qnbpos";
 import { sendMail, htmlLayout, row } from "@/lib/mailer";
 
 type SiteOrder = {
@@ -62,8 +62,9 @@ export async function POST(req: NextRequest) {
 
   const oid = params.OrderId || "";
   const order = oid ? await prisma.order.findUnique({ where: { siparisNo: oid } }) : null;
+  const qnbCfg = await getQnbConfig();
 
-  if (!order || !verifyCallback(params)) {
+  if (!order || !qnbCfg || !verifyCallback(qnbCfg, params)) {
     return NextResponse.redirect(`${baseUrl}/?odeme=hata`, 303);
   }
 
