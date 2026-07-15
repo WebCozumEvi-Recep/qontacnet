@@ -146,6 +146,9 @@ export default function AdminAyarlarPage() {
       {/* NFC Kart Kilit Anahtarı */}
       <NfcKilit />
 
+      {/* DB Migration */}
+      <DbMigration />
+
       {/* Platform Ayarları */}
       <div className="glass-card rounded-2xl p-6">
         <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Platform Ayarları</h3>
@@ -522,6 +525,53 @@ function SanalPos() {
         {saving ? "Kaydediliyor..." : "Kaydet"}
       </button>
     </form>
+  );
+}
+
+function DbMigration() {
+  const [durum, setDurum] = useState("");
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function uygula() {
+    if (!confirm("Veritabanı şeması uygulamanın beklediği hale eşitlenecek (eksik kolon/enum eklenir). Devam edilsin mi?")) return;
+    setYukleniyor(true); setMsg(null);
+    try {
+      const j = await fetch("/api/admin/db-migrate", { method: "POST" }).then(r => r.json());
+      setDurum(j.cikti || "(çıktı yok)");
+      setMsg(j.ok ? { ok: true, text: "Migration'lar uygulandı." } : { ok: false, text: j.error || "Migration başarısız." });
+    } finally { setYukleniyor(false); }
+  }
+
+  return (
+    <div className="glass-card rounded-2xl p-6">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="material-symbols-outlined text-primary text-lg">database</span>
+        <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Veritabanı Migration</h3>
+      </div>
+      <p className="text-xs text-on-surface-variant mb-5">
+        Yeni sürüm çıktığında veritabanı şemasında değişiklik olabilir (yeni kolon, yeni modül tipi vb.).
+        Bu buton veritabanını uygulamanın beklediği şemaya eşitler — eksik kolon/enum değerlerini ekler.
+        Yalnız eksikleri tamamlar, veri silmez; tekrar basmak güvenlidir.
+      </p>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        <button type="button" onClick={uygula} disabled={yukleniyor}
+          className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60 inline-flex items-center gap-2">
+          <span className={`material-symbols-outlined text-base ${yukleniyor ? "animate-spin" : ""}`}>{yukleniyor ? "progress_activity" : "sync"}</span>
+          Veritabanını Güncelle
+        </button>
+      </div>
+
+      {msg && (
+        <p className={`text-xs flex items-center gap-1 mb-3 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
+          <span className="material-symbols-outlined text-sm">{msg.ok ? "check_circle" : "error"}</span>{msg.text}
+        </p>
+      )}
+      {durum && (
+        <pre className="text-[11px] font-mono text-on-surface-variant bg-surface-dim/60 border border-white/10 rounded-xl p-3 overflow-x-auto whitespace-pre-wrap max-h-72 overflow-y-auto">{durum}</pre>
+      )}
+    </div>
   );
 }
 

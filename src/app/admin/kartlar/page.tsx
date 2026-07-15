@@ -57,7 +57,14 @@ export default function AdminKartlarPage() {
     type NdefWriter = { write: (m: { records: { recordType: string; data: string }[] }) => Promise<void> };
     const Ctor = (window as unknown as { NDEFReader?: new () => NdefWriter }).NDEFReader;
     if (!Ctor) {
-      setNfcYaz({ seri: seriNo, durum: "hata", mesaj: "Bu cihaz/tarayıcı NFC yazmayı desteklemiyor. Android + Chrome gerekir." });
+      const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      setNfcYaz({
+        seri: seriNo,
+        durum: "hata",
+        mesaj: iOS
+          ? "iPhone/iPad tarayıcısı NFC'ye YAZMAYı desteklemiyor (Apple sınırı). Kart yazmak için Android + Chrome ya da QONTAC mobil uygulaması gerekir. QR/NFC URL'sini kopyalayıp bir encoder ile de yazabilirsiniz."
+          : "Bu cihaz/tarayıcı NFC yazmayı desteklemiyor. Android telefonda Chrome ile açın.",
+      });
       return;
     }
     try {
@@ -318,13 +325,11 @@ export default function AdminKartlarPage() {
                       <span className={`hidden sm:block w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
                       <div className="flex items-center gap-2 flex-shrink-0 sm:w-24">
                         <span className="text-xs font-mono text-on-surface">{c.seriNo}</span>
-                        {nfcDestek && (
-                          <button type="button" onClick={() => yazNfc(c.seriNo, nfcUrl(c.token))}
-                            title="Boş NFC kartı telefona yaklaştırıp URL'yi yaz"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/25 text-primary text-[11px] font-medium whitespace-nowrap">
-                            <span className="material-symbols-outlined text-sm">nfc</span>NFC Yaz
-                          </button>
-                        )}
+                        <button type="button" onClick={() => yazNfc(c.seriNo, nfcUrl(c.token))}
+                          title="Boş NFC kartı telefona yaklaştırıp URL'yi yaz"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/25 text-primary text-[11px] font-medium whitespace-nowrap">
+                          <span className="material-symbols-outlined text-sm">nfc</span>NFC Yaz
+                        </button>
                       </div>
                       <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
                         title="Kopyalamak için tıkla — NFC çipine yazılır"
