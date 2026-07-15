@@ -19,6 +19,7 @@ interface ApiTemplate {
   ad: string;
   renk: string;
   aktif: boolean;
+  memberCount?: number;
 }
 
 /** Design-only: module list per template until a single API returns enriched templates */
@@ -36,7 +37,7 @@ const DESIGN_MODULE_FALLBACK: Record<string, TemplateModuleChip[]> = {
   ],
 };
 
-function enrichTemplate(t: ApiTemplate, index: number): CardTemplateItem {
+function enrichTemplate(t: ApiTemplate): CardTemplateItem {
   return {
     id: t.id,
     name: t.ad,
@@ -46,7 +47,7 @@ function enrichTemplate(t: ApiTemplate, index: number): CardTemplateItem {
       { id: `ph-${t.id}`, type: "ABOUT", title: "Hakkımızda" },
       { id: `ph2-${t.id}`, type: "GALLERY", title: "Galeri" },
     ],
-    memberCount: [24, 11, 5][index] ?? 0,
+    memberCount: t.memberCount ?? 0,
     isDefault: t.aktif,
   };
 }

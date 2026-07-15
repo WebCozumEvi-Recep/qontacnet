@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { sablonKullananSayilari } from "@/lib/sablon-kullanim";
 
 export async function GET() {
   const session = await requireRole("uye");
@@ -18,5 +19,7 @@ export async function GET() {
     where: { firmaId: member.firmaId },
     orderBy: { createdAt: "asc" },
   });
-  return NextResponse.json({ ok: true, templates });
+
+  const withCount = await sablonKullananSayilari(member.firmaId, templates);
+  return NextResponse.json({ ok: true, templates: withCount });
 }

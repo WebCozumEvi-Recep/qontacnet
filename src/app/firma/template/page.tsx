@@ -29,11 +29,8 @@ interface ApiTemplate {
   ad: string;
   renk: string;
   aktif: boolean;
+  memberCount?: number;
 }
-
-const MOCK_MEMBER_USAGE: Record<string, number> = {
-  // design placeholder until API returns usage counts
-};
 
 async function fetchModules(templateId: string): Promise<TemplateModuleChip[]> {
   const r = await fetch(`/api/firma/moduller?templateId=${templateId}`);
@@ -70,13 +67,13 @@ export default function TemplatePage() {
     if (!j.ok) { setLoading(false); return; }
 
     const enriched = await Promise.all(
-      (j.templates as ApiTemplate[]).map(async (t, idx) => ({
+      (j.templates as ApiTemplate[]).map(async (t) => ({
         id: t.id,
         name: t.ad,
         color: t.renk,
         description: MOCK_DESCRIPTIONS[t.id] ?? MOCK_DESCRIPTIONS.default,
         modules: await fetchModules(t.id),
-        memberCount: MOCK_MEMBER_USAGE[t.id] ?? [12, 8, 3, 0][idx] ?? 0,
+        memberCount: t.memberCount ?? 0,
         isDefault: t.aktif,
       })),
     );
