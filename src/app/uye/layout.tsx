@@ -9,6 +9,7 @@ import UyeMobileNav, { UyeMobileHeader } from "@/components/dashboard/UyeMobileN
 const pageTitles: Record<string, string> = {
   "/uye": "Panel",
   "/uye/template": "Firma Şablonu",
+  "/uye/sifre": "Şifre Değiştir",
   "/uye/modullerim": "Modüllerim",
   "/uye/profil": "Profilim",
   "/uye/qr": "QR Kodum",

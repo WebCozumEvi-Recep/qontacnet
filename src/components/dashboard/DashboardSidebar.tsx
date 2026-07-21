@@ -140,6 +140,20 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
               <p className="text-xs text-on-surface-variant truncate">{displayEmail}</p>
             </div>
           </div>
+          {role === "uye" && (
+            <Link
+              href="/uye/sifre"
+              onClick={onClose}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
+                isActive("/uye/sifre")
+                  ? "bg-primary-container/20 text-primary border border-primary/20"
+                  : "text-on-surface-variant hover:text-on-surface hover:bg-white/5"
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">key</span>
+              Şifre Değiştir
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-on-surface-variant hover:text-red-400 hover:bg-red-400/5 transition-all"
