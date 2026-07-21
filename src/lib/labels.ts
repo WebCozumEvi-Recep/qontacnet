@@ -49,7 +49,7 @@ export const basvuruDurumMap: Record<string, { label: string; color: string }> =
   KAYIP: { label: "Kayıp", color: "#aab3c5" },
 };
 
-export const kaynakLabel: Record<string, string> = { NFC: "NFC", QR: "QR", LINK: "Link" };
+export const kaynakLabel: Record<string, string> = { NFC: "NFC", QR: "QR", LINK: "Link", FORM: "Form" };
 
 export const trDate = (d: string | Date) =>
   new Date(d).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });

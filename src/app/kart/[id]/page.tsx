@@ -225,7 +225,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
 
         {moduller.length > 0 && (
           <div className="space-y-4 mb-6">
-            {moduller.map(m => <FirmaModulRender key={m.id} modul={m} color={color} memberId={card.id} firmaAdi={card.firmaAdi} />)}
+            {moduller.map(m => <FirmaModulRender key={m.id} modul={m} color={color} memberId={card.id} iletisimAdi={card.ad} />)}
           </div>
         )}
 
@@ -238,7 +238,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
       </div>
 
       {aktifModul && (
-        <UyeModulLightbox modul={aktifModul} color={color} memberId={card.id} firmaAdi={card.firmaAdi} onClose={() => setAktifModul(null)} />
+        <UyeModulLightbox modul={aktifModul} color={color} memberId={card.id} iletisimAdi={card.ad} onClose={() => setAktifModul(null)} />
       )}
 
       {showQr && (

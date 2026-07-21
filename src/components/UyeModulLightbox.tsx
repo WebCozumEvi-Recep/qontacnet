@@ -33,7 +33,7 @@ export function youtubeEmbed(url: string): string | null {
   return null;
 }
 
-export function UyeModulLightbox({ modul, color, memberId, firmaAdi, onClose }: { modul: UyeModul; color: string; memberId: string; firmaAdi: string; onClose: () => void }) {
+export function UyeModulLightbox({ modul, color, memberId, iletisimAdi, onClose }: { modul: UyeModul; color: string; memberId: string; iletisimAdi: string; onClose: () => void }) {
   const [kopyalandi, setKopyalandi] = useState(false);
   const ic = modul.icerik as {
     metin?: string; gorsel?: string; videoUrl?: string; aciklama?: string; url?: string; butonAdi?: string; gonderButon?: string;
@@ -117,9 +117,9 @@ export function UyeModulLightbox({ modul, color, memberId, firmaAdi, onClose }: 
       </div>
     );
   } else if (modul.tip === "FORM") {
-    body = <UyeFormModul memberId={memberId} modulId={modul.id} aciklama={String(ic.aciklama ?? "")} gonderButon={String(ic.gonderButon ?? "")} color={color} firmaAdi={firmaAdi} />;
+    body = <UyeFormModul memberId={memberId} modulId={modul.id} aciklama={String(ic.aciklama ?? "")} gonderButon={String(ic.gonderButon ?? "")} color={color} iletisimAdi={iletisimAdi} />;
   } else if (modul.tip === "BASVURU") {
-    body = <UyeBasvuruModul memberId={memberId} modulId={modul.id} aciklama={String(ic.aciklama ?? "")} gonderButon={String(ic.gonderButon ?? "")} color={color} firmaAdi={firmaAdi} />;
+    body = <UyeBasvuruModul memberId={memberId} modulId={modul.id} aciklama={String(ic.aciklama ?? "")} gonderButon={String(ic.gonderButon ?? "")} color={color} iletisimAdi={iletisimAdi} />;
   } else if (modul.tip === "TEK_GORSEL") {
     const link = String(ic.link ?? "");
     const inner = ic.gorsel ? (
@@ -170,7 +170,7 @@ export function UyeModulLightbox({ modul, color, memberId, firmaAdi, onClose }: 
 }
 
 // Üye kartındaki iletişim / lead formu — misafirden veri toplar
-function UyeFormModul({ memberId, modulId, aciklama, gonderButon, color, firmaAdi }: { memberId: string; modulId: string; aciklama: string; gonderButon: string; color: string; firmaAdi: string }) {
+function UyeFormModul({ memberId, modulId, aciklama, gonderButon, color, iletisimAdi }: { memberId: string; modulId: string; aciklama: string; gonderButon: string; color: string; iletisimAdi: string }) {
   const [form, setForm] = useState({ ad: "", email: "", telefon: "", mesaj: "" });
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [gonderildi, setGonderildi] = useState(false);
@@ -198,7 +198,7 @@ function UyeFormModul({ memberId, modulId, aciklama, gonderButon, color, firmaAd
       <div className="text-center py-4">
         <span className="material-symbols-outlined text-tertiary text-5xl block mb-3">check_circle</span>
         <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>İletildi!</p>
-        <p className="text-sm text-on-surface-variant mt-1">{firmaAdi} en kısa sürede sizinle iletişime geçecek.</p>
+        <p className="text-sm text-on-surface-variant mt-1">{iletisimAdi} en kısa sürede sizinle iletişime geçecek.</p>
       </div>
     );
   }
@@ -227,7 +227,7 @@ function UyeFormModul({ memberId, modulId, aciklama, gonderButon, color, firmaAd
 }
 
 // Başvuru formu — Ad Soyad, Telefon, E-posta, Şehir toplar; şehir mesaja katılır
-function UyeBasvuruModul({ memberId, modulId, aciklama, gonderButon, color, firmaAdi }: { memberId: string; modulId: string; aciklama: string; gonderButon: string; color: string; firmaAdi: string }) {
+function UyeBasvuruModul({ memberId, modulId, aciklama, gonderButon, color, iletisimAdi }: { memberId: string; modulId: string; aciklama: string; gonderButon: string; color: string; iletisimAdi: string }) {
   const [form, setForm] = useState({ ad: "", email: "", telefon: "", sehir: "" });
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [gonderildi, setGonderildi] = useState(false);
@@ -259,7 +259,7 @@ function UyeBasvuruModul({ memberId, modulId, aciklama, gonderButon, color, firm
       <div className="text-center py-4">
         <span className="material-symbols-outlined text-tertiary text-5xl block mb-3">check_circle</span>
         <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Başvurun alındı!</p>
-        <p className="text-sm text-on-surface-variant mt-1">{firmaAdi} en kısa sürede sizinle iletişime geçecek.</p>
+        <p className="text-sm text-on-surface-variant mt-1">{iletisimAdi} en kısa sürede sizinle iletişime geçecek.</p>
       </div>
     );
   }

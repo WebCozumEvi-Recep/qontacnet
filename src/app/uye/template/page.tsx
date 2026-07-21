@@ -204,7 +204,7 @@ export default function MemberTemplatePage() {
                     <div className="rounded-2xl p-3 max-h-[520px] overflow-y-auto space-y-3" style={{ background: "#050816" }}>
                       {(modByTpl[pending.id] ?? []).map(m => (
                         <FirmaModulRender key={m.id} modul={m} color={pending.color}
-                          memberId={user?.id ?? ""} firmaAdi={member?.firmaAdi ?? ""} />
+                          memberId={user?.id ?? ""} iletisimAdi={member?.ad ?? ""} />
                       ))}
                     </div>
                   </div>

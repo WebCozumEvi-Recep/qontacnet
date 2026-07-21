@@ -27,6 +27,7 @@ export default function BaglantilarPage() {
   const kaynakStyle = (k: string) =>
     k === "NFC" ? "bg-primary/10 text-primary border-primary/20" :
     k === "QR"  ? "bg-tertiary/10 text-tertiary border-tertiary/20" :
+    k === "FORM" ? "bg-amber-400/10 text-amber-400 border-amber-400/20" :
                   "bg-secondary/20 text-secondary border-secondary/20";
 
   const exportXLSX = () => {
@@ -70,8 +71,8 @@ export default function BaglantilarPage() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Ad, şirket veya e-posta ara..." className="w-full bg-surface-dim border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:border-primary outline-none transition-all" />
         </div>
         <div className="flex gap-2">
-          {["Tümü", "NFC", "QR", "LINK"].map(k => (
-            <button key={k} onClick={() => setFilterKaynak(k)} className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filterKaynak === k ? "bg-primary-container text-on-primary-container" : "glass-card text-on-surface-variant hover:text-on-surface"}`}>{k === "LINK" ? "Link" : k}</button>
+          {["Tümü", "NFC", "QR", "LINK", "FORM"].map(k => (
+            <button key={k} onClick={() => setFilterKaynak(k)} className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filterKaynak === k ? "bg-primary-container text-on-primary-container" : "glass-card text-on-surface-variant hover:text-on-surface"}`}>{k === "LINK" ? "Link" : k === "FORM" ? "Form" : k}</button>
           ))}
         </div>
       </div>

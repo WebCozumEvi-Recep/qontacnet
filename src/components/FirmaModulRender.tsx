@@ -7,7 +7,7 @@ import { GaleriSlider, SssAkordiyon, youtubeEmbed } from "@/components/UyeModulL
 export type FirmaModulTip = "HAKKIMIZDA" | "GALERI" | "VIDEO" | "FORM" | "HTML" | "TEK_GORSEL" | "SSS" | "HERO";
 export interface FirmaModulVeri { id: string; tip: FirmaModulTip; baslik: string; icerik: Record<string, unknown> }
 
-export function FirmaModulRender({ modul, color, memberId, firmaAdi }: { modul: FirmaModulVeri; color: string; memberId: string; firmaAdi: string }) {
+export function FirmaModulRender({ modul, color, memberId, iletisimAdi }: { modul: FirmaModulVeri; color: string; memberId: string; iletisimAdi: string }) {
   if (modul.tip === "HAKKIMIZDA") {
     const metin = String(modul.icerik.metin ?? "");
     const gorsel = String(modul.icerik.gorsel ?? "");
@@ -44,7 +44,7 @@ export function FirmaModulRender({ modul, color, memberId, firmaAdi }: { modul: 
     );
   }
   if (modul.tip === "FORM") {
-    return <FormModul modul={modul} color={color} memberId={memberId} firmaAdi={firmaAdi} />;
+    return <FormModul modul={modul} color={color} memberId={memberId} iletisimAdi={iletisimAdi} />;
   }
   if (modul.tip === "HTML") {
     const kod = String(modul.icerik.kod ?? "");
@@ -94,7 +94,7 @@ export function FirmaModulRender({ modul, color, memberId, firmaAdi }: { modul: 
 }
 
 // Üye modülü lightbox içinde gösterir (text→kopyala, galeri→slider, video→embed)
-function FormModul({ modul, color, memberId, firmaAdi }: { modul: FirmaModulVeri; color: string; memberId: string; firmaAdi: string }) {
+function FormModul({ modul, color, memberId, iletisimAdi }: { modul: FirmaModulVeri; color: string; memberId: string; iletisimAdi: string }) {
   const aciklama = String(modul.icerik.aciklama ?? "");
   const gonderButon = String(modul.icerik.gonderButon ?? "Gönder");
   const [form, setForm] = useState({ ad: "", email: "", telefon: "", mesaj: "" });
@@ -124,7 +124,7 @@ function FormModul({ modul, color, memberId, firmaAdi }: { modul: FirmaModulVeri
       <div className="glass-card rounded-2xl p-6 text-center">
         <span className="material-symbols-outlined text-tertiary text-5xl block mb-3">check_circle</span>
         <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Başvurunuz iletildi!</p>
-        <p className="text-sm text-on-surface-variant mt-1">{firmaAdi} en kısa sürede sizinle iletişime geçecek.</p>
+        <p className="text-sm text-on-surface-variant mt-1">{iletisimAdi} en kısa sürede sizinle iletişime geçecek.</p>
       </div>
     );
   }

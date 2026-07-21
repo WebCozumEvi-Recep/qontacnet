@@ -530,7 +530,7 @@ export default function ModullerimPage() {
     </div>
 
     {aktifModul && kart && (
-      <UyeModulLightbox modul={aktifModul} color={kart.kartRenk} memberId={kart.id} firmaAdi={kart.firmaAdi} onClose={() => setAktifModul(null)} />
+      <UyeModulLightbox modul={aktifModul} color={kart.kartRenk} memberId={kart.id} iletisimAdi={kart.ad} onClose={() => setAktifModul(null)} />
     )}
     </div>
   );
