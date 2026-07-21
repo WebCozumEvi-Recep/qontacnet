@@ -11,6 +11,7 @@ import {
   type CardTemplateItem,
   type TemplateModuleChip,
 } from "@/lib/template-design";
+import { FirmaModulRender, type FirmaModulVeri } from "@/components/FirmaModulRender";
 
 const STORAGE_KEY = "qontac_member_template_id";
 
@@ -20,6 +21,7 @@ interface ApiTemplate {
   renk: string;
   aktif: boolean;
   memberCount?: number;
+  moduller?: FirmaModulVeri[];
 }
 
 /** Design-only: module list per template until a single API returns enriched templates */
@@ -38,12 +40,18 @@ const DESIGN_MODULE_FALLBACK: Record<string, TemplateModuleChip[]> = {
 };
 
 function enrichTemplate(t: ApiTemplate): CardTemplateItem {
+  // Gerçek şablon modüllerinden chip üret; modül yoksa tasarım fallback'i kullan
+  const realChips: TemplateModuleChip[] = (t.moduller ?? []).map(m => ({
+    id: m.id,
+    type: DB_MODULE_TO_CHIP[m.tip] ?? "ABOUT",
+    title: m.baslik || m.tip,
+  }));
   return {
     id: t.id,
     name: t.ad,
     color: t.renk,
     description: MOCK_DESCRIPTIONS[t.id] ?? MOCK_DESCRIPTIONS.default,
-    modules: DESIGN_MODULE_FALLBACK[t.id] ?? [
+    modules: realChips.length > 0 ? realChips : DESIGN_MODULE_FALLBACK[t.id] ?? [
       { id: `ph-${t.id}`, type: "ABOUT", title: "Hakkımızda" },
       { id: `ph2-${t.id}`, type: "GALLERY", title: "Galeri" },
     ],
@@ -57,6 +65,7 @@ export default function MemberTemplatePage() {
   const member = user?.data as { ad?: string; soyad?: string; unvan?: string; firmaAdi?: string } | undefined;
 
   const [items, setItems] = useState<CardTemplateItem[]>([]);
+  const [modByTpl, setModByTpl] = useState<Record<string, FirmaModulVeri[]>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +87,7 @@ export default function MemberTemplatePage() {
         }
         const enriched = (j.templates as ApiTemplate[]).map(enrichTemplate);
         setItems(enriched);
+        setModByTpl(Object.fromEntries((j.templates as ApiTemplate[]).map(t => [t.id, t.moduller ?? []])));
         const defaultTpl = enriched.find(t => t.isDefault);
         if (!stored && defaultTpl) {
           setSelectedId(defaultTpl.id);
@@ -141,7 +151,7 @@ export default function MemberTemplatePage() {
         </div>
         <div className="flex-1">
           <h2 className="text-base font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
-            Kart Şablonu Seç
+            Firma Şablonu Seç
           </h2>
           <p className="text-sm text-on-surface-variant mt-1">
             {member?.firmaAdi ?? "Firmanız"} tarafından hazırlanan şablonlardan birini seç.
@@ -193,6 +203,21 @@ export default function MemberTemplatePage() {
                   <p className="font-medium text-on-surface">{pending.name}</p>
                   <p className="text-xs text-on-surface-variant">{pending.description}</p>
                 </div>
+
+                {/* Şablon modüllerinin gerçek içerik önizlemesi — kartta göründüğü gibi */}
+                {(modByTpl[pending.id] ?? []).length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-2">
+                      Kart İçeriği Önizlemesi
+                    </p>
+                    <div className="rounded-2xl p-3 max-h-[420px] overflow-y-auto space-y-3" style={{ background: "#050816" }}>
+                      {(modByTpl[pending.id] ?? []).map(m => (
+                        <FirmaModulRender key={m.id} modul={m} color={pending.color}
+                          memberId={user?.id ?? ""} firmaAdi={member?.firmaAdi ?? ""} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <p className="text-sm text-on-surface-variant text-center py-8">Bir şablon seç</p>

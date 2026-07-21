@@ -18,6 +18,13 @@ export async function GET() {
   const templates = await prisma.cardTemplate.findMany({
     where: { firmaId: member.firmaId },
     orderBy: { createdAt: "asc" },
+    include: {
+      moduller: {
+        where: { aktif: true },
+        orderBy: { sira: "asc" },
+        select: { id: true, tip: true, baslik: true, icerik: true },
+      },
+    },
   });
 
   const withCount = await sablonKullananSayilari(member.firmaId, templates);
