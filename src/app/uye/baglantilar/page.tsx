@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { kaynakLabel } from "@/lib/labels";
 import * as XLSX from "xlsx";
 
-interface Lead { id: string; ad: string; sirket: string; email: string; telefon: string; kaynak: string; createdAt: string }
+interface Lead { id: string; ad: string; sirket: string; email: string; telefon: string; kaynak: string; okundu?: boolean; createdAt: string }
 
 const trDateTime = (d: string) =>
   new Date(d).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -23,6 +23,17 @@ export default function BaglantilarPage() {
     const mk = filterKaynak === "Tümü" || l.kaynak === filterKaynak;
     return ms && mk;
   });
+
+  const toggleOkundu = (id: string, okundu: boolean) => {
+    setAllLeads(ls => ls.map(l => (l.id === id ? { ...l, okundu } : l)));
+    fetch("/api/me/leads/okundu", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, okundu }),
+    }).catch(() => {});
+  };
+
+  const okunmamisSayi = allLeads.filter(l => !l.okundu).length;
 
   const kaynakStyle = (k: string) =>
     k === "NFC" ? "bg-primary/10 text-primary border-primary/20" :
@@ -47,11 +58,13 @@ export default function BaglantilarPage() {
 
   return (
     <div className="max-w-[900px] space-y-5">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: "Toplam Talep", value: allLeads.length, icon: "group_add", color: "#d4af37" },
-          { label: "NFC ile Gelen", value: allLeads.filter(l => l.kaynak === "NFC").length, icon: "nfc", color: "#42faba" },
-          { label: "QR ile Gelen", value: allLeads.filter(l => l.kaynak === "QR").length, icon: "qr_code_2", color: "#6001d1" },
+          { label: "Okunmamış", value: okunmamisSayi, icon: "mark_email_unread", color: "#ffb74d" },
+          { label: "Okundu", value: allLeads.length - okunmamisSayi, icon: "mark_email_read", color: "#42faba" },
+          { label: "NFC ile Gelen", value: allLeads.filter(l => l.kaynak === "NFC").length, icon: "nfc", color: "#6001d1" },
+          { label: "QR ile Gelen", value: allLeads.filter(l => l.kaynak === "QR").length, icon: "qr_code_2", color: "#a29bfe" },
         ].map(s => (
           <div key={s.label} className="glass-card rounded-2xl p-3 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-4">
             <div className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center flex-shrink-0" style={{ background: `${s.color}15`, border: `1px solid ${s.color}25` }}>
@@ -86,7 +99,7 @@ export default function BaglantilarPage() {
         </div>
 
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[72px_1fr_1.5fr_1.1fr_1fr_72px] gap-x-3 px-5 py-3 border-b border-white/5 text-xs text-on-surface-variant font-medium uppercase tracking-wider">
+        <div className="hidden md:grid grid-cols-[72px_1fr_1.4fr_1fr_1fr_112px] gap-x-3 px-5 py-3 border-b border-white/5 text-xs text-on-surface-variant font-medium uppercase tracking-wider">
           <span>Kaynak</span>
           <span>Ad Soyad</span>
           <span>E-posta</span>
@@ -103,7 +116,7 @@ export default function BaglantilarPage() {
         ) : (
           <div className="divide-y divide-white/5">
             {leads.map(lead => (
-              <div key={lead.id} className="grid md:grid-cols-[72px_1fr_1.5fr_1.1fr_1fr_72px] gap-x-3 px-5 py-3.5 hover:bg-white/3 transition-all items-center">
+              <div key={lead.id} className="grid md:grid-cols-[72px_1fr_1.4fr_1fr_1fr_112px] gap-x-3 px-5 py-3.5 hover:bg-white/3 transition-all items-center">
 
                 {/* Kaynak badge — sol */}
                 <div>
@@ -114,7 +127,10 @@ export default function BaglantilarPage() {
 
                 {/* Ad + Şirket */}
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-on-surface truncate">{lead.ad}</p>
+                  <p className={`text-sm truncate flex items-center gap-1.5 ${lead.okundu ? "font-medium text-on-surface-variant" : "font-bold text-on-surface"}`}>
+                    {!lead.okundu && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block flex-shrink-0" />}
+                    {lead.ad}
+                  </p>
                   <p className="text-xs text-on-surface-variant truncate">{lead.sirket}</p>
                 </div>
 
@@ -129,8 +145,15 @@ export default function BaglantilarPage() {
                   {trDateTime(lead.createdAt)}
                 </div>
 
-                {/* İletişim: WhatsApp + Mail */}
+                {/* İletişim: Okundu + WhatsApp + Mail */}
                 <div className="flex gap-1 justify-end">
+                  <button
+                    onClick={() => toggleOkundu(lead.id, !lead.okundu)}
+                    title={lead.okundu ? "Okunmadı olarak işaretle" : "Okundu olarak işaretle"}
+                    className={`w-8 h-8 rounded-lg glass-card flex items-center justify-center transition-all ${lead.okundu ? "text-tertiary" : "text-amber-400 hover:text-tertiary"}`}
+                  >
+                    <span className="material-symbols-outlined text-sm">{lead.okundu ? "mark_email_read" : "mark_email_unread"}</span>
+                  </button>
                   {lead.telefon && (
                     <a
                       href={`https://wa.me/${lead.telefon.replace(/\D/g, "")}`}

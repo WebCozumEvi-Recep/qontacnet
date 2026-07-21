@@ -64,7 +64,8 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/kart/${id}?lang=${lang}`)
+    const srcParam = new URLSearchParams(window.location.search).get("src") ?? "";
+    fetch(`/api/kart/${id}?lang=${lang}${srcParam ? `&src=${srcParam}` : ""}`)
       .then(r => r.json())
       .then(j => {
         if (j.ok) { setCard(j.card); setModuller(j.moduller ?? []); setUyeModuller(j.uyeModuller ?? []); }

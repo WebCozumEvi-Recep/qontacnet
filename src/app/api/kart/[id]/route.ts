@@ -97,8 +97,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     select: { id: true, tip: true, baslik: true, icerik: true, tanim: { select: { ikon: true, ikonAd: true, butonRenk: true, ikonRenk: true } } },
   });
 
-  // Görüntülenme sayacı (await etmeden)
+  // Görüntülenme sayacı + kaynak bazlı trafik olayı (await etmeden)
   prisma.member.update({ where: { id }, data: { goruntulemeSayisi: { increment: 1 } } }).catch(() => {});
+  const srcParam = new URL(req.url).searchParams.get("src");
+  const viewKaynak = srcParam === "nfc" ? "NFC" : srcParam === "qr" ? "QR" : "LINK";
+  prisma.kartGoruntuleme.create({ data: { memberId: id, kaynak: viewKaynak } }).catch(() => {});
 
   // Firma aktif teması varsa onu kullan; firma yoksa üyenin varsayılan rengi
   const firmaRenk = member.firma?.templates[0]?.renk ?? null;

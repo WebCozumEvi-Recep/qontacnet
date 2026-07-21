@@ -63,6 +63,17 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
     fetch("/api/site-info").then(r => r.json()).then(j => { if (j.ok) { setSiteText(j.logoText || "QONTAC"); setSiteLogo(j.logoUrl || ""); } }).catch(() => {});
   }, []);
 
+  // Okunmamış iletişim talebi rozeti (yalnızca üye)
+  const [okunmamis, setOkunmamis] = useState(0);
+  useEffect(() => {
+    if (role !== "uye") return;
+    const yukle = () => fetch("/api/me/leads/ozet").then(r => r.json()).then(j => { if (j.ok) setOkunmamis(j.okunmamis); }).catch(() => {});
+    yukle();
+    // Sayfa değişince tazele (okundu işaretleme sonrası güncel kalsın)
+    window.addEventListener("focus", yukle);
+    return () => window.removeEventListener("focus", yukle);
+  }, [role, pathname]);
+
   const ad = String(user?.data?.["ad"] ?? "");
   const soyad = String(user?.data?.["soyad"] ?? "");
   const displayName = (ad + (soyad ? " " + soyad : "")).trim() || (user?.email?.split("@")[0] ?? "");
@@ -120,7 +131,12 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
               }`}
             >
               <span className="material-symbols-outlined text-xl">{item.icon}</span>
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.href === "/uye/baglantilar" && okunmamis > 0 && (
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+                  {okunmamis > 99 ? "99+" : okunmamis}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

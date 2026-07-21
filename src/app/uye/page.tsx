@@ -1,14 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { kaynakLabel } from "@/lib/labels";
 import Link from "next/link";
 
 interface Member { ad?: string; soyad?: string; unvan?: string; departman?: string; firmaAdi?: string; goruntulemeSayisi?: number; leadSayisi?: number; kartAktif?: boolean }
-interface Lead { id: string; ad: string; sirket: string; kaynak: string }
 interface Stats {
-  stats: { goruntulenme: number; baglanti: number; nfc: number; qr: number; link: number; buAy: number; kartAktif: boolean };
+  stats: {
+    goruntulenme: number; baglanti: number; nfc: number; qr: number; link: number; form: number;
+    okunmamis: number; buAy: number; kartAktif: boolean;
+    views?: { nfc: number; qr: number; link: number };
+  };
   haftalik: { gun: string; sayi: number }[];
+  aylikTrafik?: { gun: number; nfc: number; qr: number; link: number }[];
 }
 
 function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub: string; color: string }) {
@@ -29,16 +32,16 @@ function StatCard({ icon, label, value, sub, color }: { icon: string; label: str
 export default function UyeDashboard() {
   const { user } = useAuth();
   const member = user?.data as unknown as Member;
-  const [myLeads, setMyLeads] = useState<Lead[]>([]);
   const [d, setD] = useState<Stats | null>(null);
 
   useEffect(() => {
-    fetch("/api/me/leads").then(r => r.json()).then(j => { if (j.ok) setMyLeads(j.leads); }).catch(() => {});
     fetch("/api/me/stats").then(r => r.json()).then(j => { if (j.ok) setD(j); }).catch(() => {});
   }, []);
 
   const haftalik = d?.haftalik ?? [];
   const maxView = Math.max(...haftalik.map(h => h.sayi), 1);
+  const aylikTrafik = d?.aylikTrafik ?? [];
+  const maxTrafik = Math.max(...aylikTrafik.map(g => g.nfc + g.qr + g.link), 1);
   const kartAktif = d?.stats.kartAktif ?? member?.kartAktif ?? false;
 
   return (
@@ -89,12 +92,58 @@ export default function UyeDashboard() {
         </div>
       </div>
 
-      {/* Stats — gerçek veriler */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="visibility" label="Toplam Görüntülenme" value={d?.stats.goruntulenme ?? member?.goruntulemeSayisi ?? 0} sub="Kart sayfası açılışı" color="#d4af37" />
-        <StatCard icon="group_add" label="İletişim Talepleri" value={d?.stats.baglanti ?? member?.leadSayisi ?? 0} sub={`${d?.stats.buAy ?? 0} bu ay`} color="#42faba" />
-        <StatCard icon="nfc" label="NFC ile Gelen" value={d?.stats.nfc ?? 0} sub="Talep kaynağı" color="#6001d1" />
-        <StatCard icon="qr_code_2" label="QR ile Gelen" value={d?.stats.qr ?? 0} sub="Talep kaynağı" color="#f0d289" />
+      {/* Stats — trafik ve talepler, NFC/QR kırılımı kutu içinde */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="glass-card rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#d4af3720", border: "1px solid #d4af3730" }}>
+              <span className="material-symbols-outlined text-xl" style={{ color: "#d4af37" }}>visibility</span>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{d?.stats.goruntulenme ?? member?.goruntulemeSayisi ?? 0}</p>
+              <p className="text-sm text-on-surface-variant">Toplam Görüntülenme</p>
+            </div>
+          </div>
+          <div className="flex gap-2 text-xs">
+            {[
+              { l: "NFC", v: d?.stats.views?.nfc ?? 0, c: "#6001d1" },
+              { l: "QR", v: d?.stats.views?.qr ?? 0, c: "#42faba" },
+              { l: "Link", v: d?.stats.views?.link ?? 0, c: "#a29bfe" },
+            ].map(x => (
+              <span key={x.l} className="flex-1 text-center rounded-lg py-1.5 border" style={{ background: `${x.c}12`, borderColor: `${x.c}30`, color: x.c }}>
+                {x.l}: <b>{x.v}</b>
+              </span>
+            ))}
+          </div>
+          <p className="text-[10px] text-on-surface-variant/60 mt-1.5">Kaynak kırılımı bu aya aittir</p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#42faba20", border: "1px solid #42faba30" }}>
+              <span className="material-symbols-outlined text-xl" style={{ color: "#42faba" }}>group_add</span>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{d?.stats.baglanti ?? member?.leadSayisi ?? 0}</p>
+              <p className="text-sm text-on-surface-variant">İletişim Talepleri · {d?.stats.buAy ?? 0} bu ay</p>
+            </div>
+          </div>
+          <div className="flex gap-2 text-xs">
+            {[
+              { l: "NFC", v: d?.stats.nfc ?? 0, c: "#6001d1" },
+              { l: "QR", v: d?.stats.qr ?? 0, c: "#42faba" },
+              { l: "Link", v: d?.stats.link ?? 0, c: "#a29bfe" },
+              { l: "Form", v: d?.stats.form ?? 0, c: "#f0d289" },
+            ].map(x => (
+              <span key={x.l} className="flex-1 text-center rounded-lg py-1.5 border" style={{ background: `${x.c}12`, borderColor: `${x.c}30`, color: x.c }}>
+                {x.l}: <b>{x.v}</b>
+              </span>
+            ))}
+          </div>
+          {(d?.stats.okunmamis ?? 0) > 0 && (
+            <p className="text-[10px] text-amber-400 mt-1.5">{d?.stats.okunmamis} okunmamış talep var</p>
+          )}
+        </div>
       </div>
 
       {/* Charts Row */}
@@ -124,32 +173,37 @@ export default function UyeDashboard() {
           )}
         </div>
 
-        {/* Recent Leads */}
+        {/* Aylık trafik — NFC/QR/Link ayrımıyla günlük yığılmış çubuklar */}
         <div className="glass-card rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Son İletişim Talepleri</h3>
-            <Link href="/uye/baglantilar" className="text-xs text-primary hover:underline">Tümü →</Link>
+            <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Bu Ay Trafik</h3>
+            <div className="flex gap-3 text-[10px] text-on-surface-variant">
+              {[["NFC", "#6001d1"], ["QR", "#42faba"], ["Link", "#a29bfe"]].map(([l, c]) => (
+                <span key={l} className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: c }} />{l}</span>
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            {myLeads.length === 0 ? (
-              <div className="py-8 text-center text-xs text-on-surface-variant">Henüz iletişim talebi yok. Kartını paylaşmaya başla.</div>
-            ) : myLeads.slice(0, 3).map(lead => (
-              <div key={lead.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/3 hover:bg-white/5 transition-all">
-                <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="material-symbols-outlined text-primary text-sm">person</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-on-surface font-medium truncate">{lead.ad}</p>
-                  <p className="text-xs text-on-surface-variant truncate">{lead.sirket}</p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  lead.kaynak === "NFC" ? "bg-primary/10 text-primary" :
-                  lead.kaynak === "QR" ? "bg-tertiary/10 text-tertiary" :
-                  "bg-secondary/20 text-secondary"
-                }`}>{kaynakLabel[lead.kaynak]}</span>
-              </div>
-            ))}
-          </div>
+          {aylikTrafik.every(g => g.nfc + g.qr + g.link === 0) ? (
+            <div className="h-32 flex items-center justify-center text-xs text-on-surface-variant">
+              Bu ay henüz kaynak bazlı trafik verisi yok.
+            </div>
+          ) : (
+            <div className="flex items-end gap-[3px] h-32">
+              {aylikTrafik.map(g => {
+                const toplam = g.nfc + g.qr + g.link;
+                return (
+                  <div key={g.gun} className="flex-1 flex flex-col items-center justify-end h-full" title={`${g.gun}. gün — NFC: ${g.nfc}, QR: ${g.qr}, Link: ${g.link}`}>
+                    <div className="w-full flex flex-col-reverse rounded-t overflow-hidden" style={{ height: `${(toplam / maxTrafik) * 88}%`, minHeight: toplam ? 4 : 0 }}>
+                      {g.nfc > 0 && <div style={{ flex: g.nfc, background: "#6001d1" }} />}
+                      {g.qr > 0 && <div style={{ flex: g.qr, background: "#42faba" }} />}
+                      {g.link > 0 && <div style={{ flex: g.link, background: "#a29bfe" }} />}
+                    </div>
+                    <span className="text-on-surface-variant mt-1" style={{ fontSize: 8 }}>{g.gun % 5 === 0 || g.gun === 1 ? g.gun : ""}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

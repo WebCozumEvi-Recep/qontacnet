@@ -175,6 +175,7 @@ model FormBasvuru {
   telefon   String   @default("")
   mesaj     String   @default("")
   okundu    Boolean  @default(false)
+  uyeOkundu Boolean  @default(false)
   durum     String   @default("yeni")
   notlar    Json     @default("[]")
   createdAt DateTime @default(now())
@@ -272,7 +273,18 @@ model Lead {
   telefon   String     @default("")
   sirket    String     @default("")
   kaynak    LeadKaynak @default(LINK)
+  okundu    Boolean    @default(false)
   createdAt DateTime   @default(now())
+}
+
+// Kart görüntülenme olayı — kaynak (NFC/QR/LINK) bazlı trafik istatistiği için
+model KartGoruntuleme {
+  id        String     @id @default(cuid())
+  memberId  String
+  kaynak    LeadKaynak @default(LINK)
+  createdAt DateTime   @default(now())
+
+  @@index([memberId, createdAt])
 }
 
 // ---- Platform Admin varlıkları ----

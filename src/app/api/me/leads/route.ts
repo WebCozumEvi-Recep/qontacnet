@@ -15,7 +15,7 @@ export async function GET() {
     prisma.formBasvuru.findMany({
       where: { memberId: session.sub },
       orderBy: { createdAt: "desc" },
-      select: { id: true, ad: true, email: true, telefon: true, mesaj: true, createdAt: true },
+      select: { id: true, ad: true, email: true, telefon: true, mesaj: true, uyeOkundu: true, createdAt: true },
     }),
   ]);
 
@@ -28,6 +28,7 @@ export async function GET() {
       telefon: b.telefon,
       sirket: b.mesaj ? b.mesaj.slice(0, 80) : "",
       kaynak: "FORM",
+      okundu: b.uyeOkundu,
       createdAt: b.createdAt,
     })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
