@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { ModulIkon } from "@/components/ModulIkon";
+import { UyeModulLightbox, uyeModulDolu, type UyeModul } from "@/components/UyeModulLightbox";
 
 type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM" | "TEK_GORSEL" | "HTML" | "SSS" | "HERO" | "BASVURU";
 type IkonAlan = { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string };
@@ -280,6 +281,18 @@ export default function ModullerimPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [aktifModul, setAktifModul] = useState<UyeModul | null>(null);
+  const [firmaColor, setFirmaColor] = useState("#d4af37");
+  const [firmaAdi, setFirmaAdi] = useState("");
+
+  // Önizleme için gerçek kart rengi ve firma adı
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`/api/kart/${user.id}`)
+      .then(r => r.json())
+      .then(j => { if (j.ok) { setFirmaColor(j.card.kartRenk); setFirmaAdi(j.card.firmaAdi ?? ""); } })
+      .catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     Promise.all([
@@ -323,8 +336,13 @@ export default function ModullerimPage() {
 
   if (loading) return <div className="flex justify-center py-16"><span className="material-symbols-outlined text-primary text-3xl animate-spin">progress_activity</span></div>;
 
+  // Kartta görünecek hali: aktif ve içeriği dolu modüller
+  const toUye = (m: Modul): UyeModul => ({ id: m.id, tip: m.tip, baslik: m.baslik, icerik: m.icerik as unknown as Record<string, unknown>, tanim: m.tanim ?? null });
+  const yayindakiler = moduller.filter(m => m.aktif).map(toUye).filter(uyeModulDolu);
+
   return (
-    <div className="max-w-[800px] space-y-6">
+    <div className="max-w-[1120px] grid xl:grid-cols-[1fr_300px] gap-6 items-start">
+    <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="hidden lg:block text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Modüllerim</h2>
@@ -392,6 +410,29 @@ export default function ModullerimPage() {
           ))}
         </div>
       )}
+    </div>
+
+    {/* Sağ: Kart önizlemesi — ikonlar kartta göründüğü ve davrandığı gibi */}
+    <div className="glass-card rounded-2xl p-5 xl:sticky xl:top-6">
+      <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Kart Önizlemesi</h3>
+      <p className="text-xs text-on-surface-variant mb-4">Yayında olan modüller. İkona tıkla — karttaki gibi açılır.</p>
+      {yayindakiler.length === 0 ? (
+        <p className="text-xs text-on-surface-variant/60 text-center py-6">Yayında modül yok. Modül ekleyip içeriğini doldur ve aktif et.</p>
+      ) : (
+        <div className="grid grid-cols-4 gap-x-3 gap-y-4 justify-items-center">
+          {yayindakiler.map(m => (
+            <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
+              className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
+              <ModulIkon veri={m.tanim ?? {}} size={52} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+
+    {aktifModul && user?.id && (
+      <UyeModulLightbox modul={aktifModul} color={firmaColor} memberId={user.id} firmaAdi={firmaAdi} onClose={() => setAktifModul(null)} />
+    )}
     </div>
   );
 }
