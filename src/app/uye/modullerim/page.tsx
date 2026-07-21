@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { ModulIkon } from "@/components/ModulIkon";
 import { UyeModulLightbox, uyeModulDolu, type UyeModul } from "@/components/UyeModulLightbox";
+import { BrandGlyph, type BrandKey } from "@/components/BrandGlyph";
 
 type Tip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM" | "TEK_GORSEL" | "HTML" | "SSS" | "HERO" | "BASVURU";
 type IkonAlan = { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string };
@@ -22,6 +23,12 @@ interface Modul {
   sira: number;
   icerik: Icerik;
   tanim?: ({ ad: string } & IkonAlan) | null;
+}
+
+interface KartVeri {
+  id: string; ad: string; soyad: string; unvan: string; firmaAdi: string; kartRenk: string;
+  telefon: string; email: string; whatsapp: string; linkedin: string; instagram: string; website: string;
+  biyografi: string; avatar?: string; kartArkaplan?: string;
 }
 
 const TIP_ETIKET: Record<Tip, string> = { GALERI: "Galeri", TEXT: "Text Bilgi", VIDEO: "Video", LINK: "URL / Link", GORSEL: "Görsel", FORM: "İletişim Formu", TEK_GORSEL: "Tek Görsel", HTML: "Özel HTML", SSS: "Sık Sorulan Sorular", HERO: "Tanıtım Hero Banner", BASVURU: "Başvuru Formu" };
@@ -274,6 +281,98 @@ function ModulEditor({ modul, onChange }: { modul: Modul; onChange: (icerik: Ice
   );
 }
 
+// Public kart sayfasının küçültülmüş simülasyonu: profil kutusu + aksiyon butonları + modül ikonları.
+// Veri /api/kart'tan gelir; profildeki "Kartta göster" izinleri orada uygulanmış olur.
+function KartOnizleme({ kart, moduller, onModul }: { kart: KartVeri; moduller: UyeModul[]; onModul: (m: UyeModul) => void }) {
+  const color = kart.kartRenk;
+
+  const saveContact = () => {
+    const vCard = `BEGIN:VCARD\nVERSION:3.0\nFN:${kart.ad} ${kart.soyad}\nTITLE:${kart.unvan}\nORG:${kart.firmaAdi}\nTEL:${kart.telefon}\nEMAIL:${kart.email}\nURL:https://qontac.net/kart/${kart.id}\nEND:VCARD`;
+    const blob = new Blob([vCard], { type: "text/vcard" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${kart.ad}_${kart.soyad}.vcf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  type Action = { icon: string; label: string; onClick?: () => void; href?: string; bg: string; brand?: BrandKey };
+  const actions: Action[] = [
+    { icon: "person_add", label: "Rehbere Kaydet", onClick: saveContact, bg: "#ffd93d" },
+    { icon: "handshake", label: "Tanışalım (kartta form açar)", href: `/kart/${kart.id}`, bg: "rgba(255,255,255,0.08)" },
+    kart.telefon && { icon: "call", label: "Ara", href: `tel:${kart.telefon}`, bg: "#d4af37" },
+    kart.email && { icon: "mail", label: "E-Posta", href: `mailto:${kart.email}`, bg: "#ff9f43" },
+    kart.whatsapp && { icon: "chat", brand: "whatsapp" as BrandKey, label: "WhatsApp", href: `https://wa.me/${kart.whatsapp.replace(/\s/g, "")}`, bg: "#25d366" },
+    kart.linkedin && { icon: "link", brand: "linkedin" as BrandKey, label: "LinkedIn", href: `https://${kart.linkedin.replace(/^https?:\/\//, "")}`, bg: "#0077b5" },
+    kart.instagram && { icon: "photo_camera", brand: "instagram" as BrandKey, label: "Instagram", href: `https://instagram.com/${kart.instagram.replace("@", "")}`, bg: "#e1306c" },
+    kart.website && { icon: "public", label: "Website", href: `https://${kart.website.replace(/^https?:\/\//, "")}`, bg: "#a29bfe" },
+    { icon: "qr_code_2", label: "QR Kod (kartta açılır)", href: `/kart/${kart.id}`, bg: "#1a1a2e" },
+  ].filter(Boolean) as Action[];
+
+  return (
+    <div className="rounded-2xl p-3" style={{ background: "#050816" }}>
+      {/* Profil kutusu */}
+      <div className="glass-card rounded-3xl p-4 mb-3 text-center relative overflow-hidden">
+        {kart.kartArkaplan && (
+          <>
+            <div className="absolute inset-0 pointer-events-none bg-cover bg-center" style={{ backgroundImage: `url(${kart.kartArkaplan})` }} />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(5,8,22,0.45) 0%, rgba(5,8,22,0.78) 100%)" }} />
+          </>
+        )}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% -20%, ${color}15 0%, transparent 60%)` }} />
+        <div className="relative z-10 inline-block mb-2">
+          <div className="w-16 h-16 rounded-full border-2 overflow-hidden flex items-center justify-center mx-auto" style={{ borderColor: `${color}50`, background: `${color}15` }}>
+            {kart.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={kart.avatar} alt={`${kart.ad} ${kart.soyad}`} className="w-full h-full object-cover object-center" />
+            ) : (
+              <span className="material-symbols-outlined text-3xl" style={{ color }}>person</span>
+            )}
+          </div>
+          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full border border-background flex items-center justify-center" style={{ background: color }}>
+            <span className="material-symbols-outlined text-[12px] text-black">verified</span>
+          </div>
+        </div>
+        <div className="relative z-10">
+          <p className="text-base font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{kart.ad} {kart.soyad}</p>
+          <p className="text-xs font-medium" style={{ color }}>{kart.unvan}</p>
+          <p className="text-xs text-on-surface-variant">{kart.firmaAdi}</p>
+          {kart.biyografi && (
+            <p className="text-[11px] text-on-surface-variant mt-2 leading-relaxed border-t border-white/10 pt-2">{kart.biyografi}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Aksiyon butonları + modül ikonları — karttaki grid'in küçük hali */}
+      <div className="grid grid-cols-4 gap-x-2 gap-y-3 justify-items-center px-1">
+        {actions.map(a => {
+          const cls = "w-11 h-11 rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg";
+          const style = { background: a.bg, color: a.bg === "#ffd93d" ? "#000" : "#fff" };
+          const inner = a.brand
+            ? <BrandGlyph brand={a.brand} size={18} />
+            : <span className="material-symbols-outlined text-lg">{a.icon}</span>;
+          return a.href ? (
+            <a key={a.label} href={a.href} target={a.href.startsWith("http") || a.href.startsWith("/") ? "_blank" : undefined} rel="noreferrer" aria-label={a.label} title={a.label} className={cls} style={style}>
+              {inner}
+            </a>
+          ) : (
+            <button key={a.label} type="button" onClick={a.onClick} aria-label={a.label} title={a.label} className={cls} style={style}>
+              {inner}
+            </button>
+          );
+        })}
+        {moduller.map(m => (
+          <button key={m.id} type="button" onClick={() => onModul(m)} aria-label={m.baslik} title={m.baslik}
+            className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
+            <ModulIkon veri={m.tanim ?? {}} size={44} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ModullerimPage() {
   const { user } = useAuth();
   const [tanimlar, setTanimlar] = useState<Tanim[]>([]);
@@ -282,15 +381,14 @@ export default function ModullerimPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [aktifModul, setAktifModul] = useState<UyeModul | null>(null);
-  const [firmaColor, setFirmaColor] = useState("#d4af37");
-  const [firmaAdi, setFirmaAdi] = useState("");
+  const [kart, setKart] = useState<KartVeri | null>(null);
 
-  // Önizleme için gerçek kart rengi ve firma adı
+  // Önizleme için kartın public halini çek (show* filtreleri uygulanmış gelir)
   useEffect(() => {
     if (!user?.id) return;
     fetch(`/api/kart/${user.id}`)
       .then(r => r.json())
-      .then(j => { if (j.ok) { setFirmaColor(j.card.kartRenk); setFirmaAdi(j.card.firmaAdi ?? ""); } })
+      .then(j => { if (j.ok) setKart(j.card); })
       .catch(() => {});
   }, [user?.id]);
 
@@ -412,26 +510,27 @@ export default function ModullerimPage() {
       )}
     </div>
 
-    {/* Sağ: Kart önizlemesi — ikonlar kartta göründüğü ve davrandığı gibi */}
-    <div className="glass-card rounded-2xl p-5 xl:sticky xl:top-6">
-      <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Kart Önizlemesi</h3>
-      <p className="text-xs text-on-surface-variant mb-4">Yayında olan modüller. İkona tıkla — karttaki gibi açılır.</p>
-      {yayindakiler.length === 0 ? (
-        <p className="text-xs text-on-surface-variant/60 text-center py-6">Yayında modül yok. Modül ekleyip içeriğini doldur ve aktif et.</p>
+    {/* Sağ: Kart önizlemesi — kartın public hali birebir simüle edilir */}
+    <div className="glass-card rounded-2xl p-4 xl:sticky xl:top-6">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Kart Önizlemesi</h3>
+        {kart && (
+          <a href={`/kart/${kart.id}`} target="_blank" rel="noreferrer" title="Kartı yeni sekmede aç"
+            className="text-on-surface-variant hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-base">open_in_new</span>
+          </a>
+        )}
+      </div>
+      <p className="text-xs text-on-surface-variant mb-4">Ziyaretçinin gördüğü kart. Buton ve ikonlar karttaki gibi çalışır.</p>
+      {!kart ? (
+        <div className="flex justify-center py-8"><span className="material-symbols-outlined text-primary text-2xl animate-spin">progress_activity</span></div>
       ) : (
-        <div className="grid grid-cols-4 gap-x-3 gap-y-4 justify-items-center">
-          {yayindakiler.map(m => (
-            <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
-              className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
-              <ModulIkon veri={m.tanim ?? {}} size={52} />
-            </button>
-          ))}
-        </div>
+        <KartOnizleme kart={kart} moduller={yayindakiler} onModul={setAktifModul} />
       )}
     </div>
 
-    {aktifModul && user?.id && (
-      <UyeModulLightbox modul={aktifModul} color={firmaColor} memberId={user.id} firmaAdi={firmaAdi} onClose={() => setAktifModul(null)} />
+    {aktifModul && kart && (
+      <UyeModulLightbox modul={aktifModul} color={kart.kartRenk} memberId={kart.id} firmaAdi={kart.firmaAdi} onClose={() => setAktifModul(null)} />
     )}
     </div>
   );
