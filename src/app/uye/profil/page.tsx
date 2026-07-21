@@ -158,8 +158,8 @@ export default function ProfilPage() {
             <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
               {member?.ad} {member?.soyad}
             </p>
-            <p className="text-sm text-on-surface-variant">{member?.email}</p>
-            <p className="text-xs text-primary mt-1">{member?.firmaAdi}</p>
+            <p className="text-sm text-on-surface-variant">{form.unvan || member?.email}</p>
+            <p className="text-xs text-primary mt-1">{form.departman || member?.firmaAdi}</p>
             {photoError && <p className="text-xs text-red-400 mt-1">{photoError}</p>}
             {!photoError && <p className="text-xs text-on-surface-variant/50 mt-1">Fotoğrafa tıkla veya kameraya bas</p>}
           </div>
