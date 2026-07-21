@@ -7,7 +7,6 @@ const MUTED = "#7a808c";
 
 const tabs = [
   { href: "/uye", icon: "grid_view", label: "Panel", exact: true },
-  { href: "/uye/kartim", icon: "credit_card", label: "Kartım" },
   { href: "/uye/modullerim", icon: "widgets", label: "Modüller" },
   { href: "/uye/qr", icon: "qr_code_2", label: "QR Kod" },
   { href: "/uye/baglantilar", icon: "group_add", label: "Bağlantı" },

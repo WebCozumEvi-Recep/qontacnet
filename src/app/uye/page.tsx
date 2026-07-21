@@ -82,13 +82,9 @@ export default function UyeDashboard() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Link href="/uye/kartim" className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
-            <span className="material-symbols-outlined text-base">credit_card</span>
-            Kartımı Görüntüle
-          </Link>
-          <Link href={`/kart/${user?.id}`} target="_blank" className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm text-on-surface-variant hover:text-primary transition-all">
+          <Link href={`/kart/${user?.id}`} target="_blank" className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
             <span className="material-symbols-outlined text-base">open_in_new</span>
-            Paylaş
+            Kartımı Görüntüle
           </Link>
         </div>
       </div>

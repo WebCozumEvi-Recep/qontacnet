@@ -126,8 +126,8 @@ export default function MemberTemplatePage() {
           Firmasız kayıt olduysan veya firman henüz şablon oluşturmadıysa burada seçim yapamazsın.
           Kart aktivasyonundan sonra firmanın hazır şablonları listelenecek.
         </p>
-        <Link href="/uye/kartim" className="inline-block text-sm text-primary hover:underline">
-          ← Kartıma dön
+        <Link href="/uye" className="inline-block text-sm text-primary hover:underline">
+          ← Panele dön
         </Link>
       </div>
     );
@@ -218,10 +218,10 @@ export default function MemberTemplatePage() {
             </button>
 
             <Link
-              href="/uye/kartim"
+              href="/uye/profil"
               className="block text-center text-xs text-on-surface-variant hover:text-primary transition-colors"
             >
-              Kart ayarlarına git →
+              Profil ayarlarına git →
             </Link>
           </div>
         </div>
