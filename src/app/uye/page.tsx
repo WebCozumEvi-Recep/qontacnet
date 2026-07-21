@@ -92,9 +92,9 @@ export default function UyeDashboard() {
       {/* Stats — gerçek veriler */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon="visibility" label="Toplam Görüntülenme" value={d?.stats.goruntulenme ?? member?.goruntulemeSayisi ?? 0} sub="Kart sayfası açılışı" color="#d4af37" />
-        <StatCard icon="group_add" label="Bağlantılar" value={d?.stats.baglanti ?? member?.leadSayisi ?? 0} sub={`${d?.stats.buAy ?? 0} bu ay`} color="#42faba" />
-        <StatCard icon="nfc" label="NFC ile Gelen" value={d?.stats.nfc ?? 0} sub="Bağlantı kaynağı" color="#6001d1" />
-        <StatCard icon="qr_code_2" label="QR ile Gelen" value={d?.stats.qr ?? 0} sub="Bağlantı kaynağı" color="#f0d289" />
+        <StatCard icon="group_add" label="İletişim Talepleri" value={d?.stats.baglanti ?? member?.leadSayisi ?? 0} sub={`${d?.stats.buAy ?? 0} bu ay`} color="#42faba" />
+        <StatCard icon="nfc" label="NFC ile Gelen" value={d?.stats.nfc ?? 0} sub="Talep kaynağı" color="#6001d1" />
+        <StatCard icon="qr_code_2" label="QR ile Gelen" value={d?.stats.qr ?? 0} sub="Talep kaynağı" color="#f0d289" />
       </div>
 
       {/* Charts Row */}
@@ -102,11 +102,11 @@ export default function UyeDashboard() {
         {/* Haftalık bağlantı grafiği — son 7 gün, gerçek */}
         <div className="glass-card rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>
-            Son 7 Gün Bağlantı
+            Son 7 Gün Talep
           </h3>
           {haftalik.every(h => h.sayi === 0) ? (
             <div className="h-32 flex items-center justify-center text-xs text-on-surface-variant">
-              Son 7 günde yeni bağlantı yok.
+              Son 7 günde yeni talep yok.
             </div>
           ) : (
             <div className="flex items-end gap-2 h-32">
@@ -127,12 +127,12 @@ export default function UyeDashboard() {
         {/* Recent Leads */}
         <div className="glass-card rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Son Bağlantılar</h3>
+            <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Son İletişim Talepleri</h3>
             <Link href="/uye/baglantilar" className="text-xs text-primary hover:underline">Tümü →</Link>
           </div>
           <div className="space-y-3">
             {myLeads.length === 0 ? (
-              <div className="py-8 text-center text-xs text-on-surface-variant">Henüz bağlantı yok. Kartını paylaşmaya başla.</div>
+              <div className="py-8 text-center text-xs text-on-surface-variant">Henüz iletişim talebi yok. Kartını paylaşmaya başla.</div>
             ) : myLeads.slice(0, 3).map(lead => (
               <div key={lead.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/3 hover:bg-white/5 transition-all">
                 <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
