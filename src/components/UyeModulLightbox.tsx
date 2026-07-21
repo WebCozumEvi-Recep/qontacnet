@@ -423,7 +423,8 @@ export function GaleriSlider({ color, gorseller }: { baslik?: string; color: str
               className="flex-shrink-0 w-full snap-center text-left cursor-zoom-in"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={g.url} alt={g.baslik ?? ""} className="w-full aspect-square object-cover rounded-xl" />
+              {/* Görsel kendi oranında gösterilir; kare kesip üst/alttan kırpmayız */}
+              <img src={g.url} alt={g.baslik ?? ""} className="w-full h-auto object-contain rounded-xl" />
               {g.baslik && <p className="text-sm text-on-surface mt-2 font-medium">{g.baslik}</p>}
               {g.aciklama && <p className="text-xs text-on-surface-variant mt-0.5">{g.aciklama}</p>}
             </button>
