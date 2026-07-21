@@ -9,20 +9,8 @@ interface MemberData {
   soyad: string;
   unvan: string;
   firmaAdi?: string;
-  kartRenk: string;
-  kartArkaplan?: string;
   aktif: boolean;
   kartAktif?: boolean;
-  whatsapp: string;
-  linkedin: string;
-  instagram: string;
-  website: string;
-  biyografi: string;
-  showWhatsapp: boolean;
-  showLinkedin: boolean;
-  showInstagram: boolean;
-  showWebsite: boolean;
-  showBio: boolean;
 }
 
 function CardPreview({ member, color }: { member: Pick<MemberData, "ad" | "soyad" | "unvan" | "firmaAdi">; color: string }) {
@@ -53,50 +41,12 @@ function CardPreview({ member, color }: { member: Pick<MemberData, "ad" | "soyad
   );
 }
 
-async function uploadMemberFile(file: File): Promise<string> {
-  const fd = new FormData();
-  fd.append("file", file);
-  const r = await fetch("/api/me/upload", { method: "POST", body: fd });
-  const j = await r.json();
-  if (!j.ok) throw new Error(j.error ?? "Yükleme hatası");
-  return j.url as string;
-}
-
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick}
-      className={`w-10 h-5 rounded-full transition-all relative cursor-pointer flex-shrink-0 ${on ? "bg-primary" : "bg-white/10"}`}>
-      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${on ? "left-5" : "left-0.5"}`} />
-    </button>
-  );
-}
-
 export default function KartimPage() {
-  const { user, updateUserData } = useAuth();
+  const { user } = useAuth();
   const member = user?.data as unknown as MemberData;
 
   // Firma temasını API'den çek (gerçek public card rengi)
   const [firmaColor, setFirmaColor] = useState("#d4af37");
-  const [toggles, setToggles] = useState({
-    showWhatsapp: true, showLinkedin: true, showInstagram: true, showWebsite: true, showBio: true,
-  });
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-  const [kartArkaplan, setKartArkaplan] = useState("");
-  const [bgUploading, setBgUploading] = useState(false);
-
-  useEffect(() => {
-    if (!member) return;
-    setKartArkaplan(member.kartArkaplan ?? "");
-    setToggles({
-      showWhatsapp: member.showWhatsapp ?? true,
-      showLinkedin: member.showLinkedin ?? true,
-      showInstagram: member.showInstagram ?? true,
-      showWebsite: member.showWebsite ?? true,
-      showBio: member.showBio ?? true,
-    });
-  }, [member]);
 
   // Firma temasını public kart API'sinden al
   useEffect(() => {
@@ -107,38 +57,7 @@ export default function KartimPage() {
       .catch(() => {});
   }, [user?.id]);
 
-  const toggle = (k: keyof typeof toggles) => setToggles(t => ({ ...t, [k]: !t[k] }));
-
-  const handleSave = async () => {
-    setError("");
-    setSaving(true);
-    try {
-      const res = await fetch("/api/me/card", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...toggles, kartArkaplan }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error ?? "Kaydedilemedi.");
-      updateUserData(json.member);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kaydedilemedi.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (!member) return null;
-
-  const fields: { key: keyof typeof toggles; label: string; icon: string }[] = [
-    { key: "showWhatsapp", label: "WhatsApp Butonu", icon: "phone" },
-    { key: "showLinkedin", label: "LinkedIn", icon: "link" },
-    { key: "showInstagram", label: "Instagram", icon: "photo_camera" },
-    { key: "showWebsite", label: "Website", icon: "public" },
-    { key: "showBio", label: "Biyografi", icon: "article" },
-  ];
 
   return (
     <div className="max-w-[900px] space-y-6">
@@ -169,7 +88,10 @@ export default function KartimPage() {
               </Link>
             </div>
           </div>
+        </div>
 
+        {/* Sağ: Kart bilgileri */}
+        <div className="space-y-4">
           <div className="glass-card rounded-2xl p-5">
             <div className="flex items-center gap-3 mb-3">
               <span className="material-symbols-outlined text-tertiary text-lg">info</span>
@@ -202,68 +124,21 @@ export default function KartimPage() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Sağ: Görünür alanlar */}
-        <div className="space-y-4">
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Profilde Görünen Alanlar</h3>
-            <p className="text-xs text-on-surface-variant mb-4">Hangi bilgilerin kartında görüneceğini seç</p>
-            <div className="space-y-3">
-              {fields.map(item => (
-                <div key={item.key} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-                    <span className="material-symbols-outlined text-base">{item.icon}</span>
-                    {item.label}
-                  </div>
-                  <Toggle on={toggles[item.key]} onClick={() => toggle(item.key)} />
-                </div>
-              ))}
+          <div className="glass-card rounded-2xl p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="material-symbols-outlined text-primary text-lg">tune</span>
+              <h4 className="text-sm font-medium text-on-surface">Kartta Görünen Alanlar</h4>
             </div>
+            <p className="text-xs text-on-surface-variant mb-3">
+              Sosyal hesapların görünürlüğü, biyografi ve profil kutusu arkaplanı artık Profilim sayfasından yönetiliyor.
+            </p>
+            <Link href="/uye/profil"
+              className="inline-flex items-center gap-2 px-4 py-2 glass-card rounded-xl text-sm text-on-surface-variant hover:text-primary transition-all">
+              <span className="material-symbols-outlined text-base">person</span>
+              Profilime Git
+            </Link>
           </div>
-
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Profil Kutusu Arkaplanı</h3>
-            <p className="text-xs text-on-surface-variant mb-4">İstersen profil kartının arkasına bir görsel ekle (opsiyonel). Metnin okunması için görsel hafif karartılır.</p>
-            <div className="flex items-center gap-3 flex-wrap">
-              {kartArkaplan && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={kartArkaplan} alt="" className="w-20 h-20 rounded-xl object-cover border border-white/10" />
-              )}
-              <label className="px-3 py-2 rounded-xl glass-card text-xs text-on-surface flex items-center gap-2 cursor-pointer hover:bg-white/5 transition-all">
-                <span className={`material-symbols-outlined text-sm ${bgUploading ? "animate-spin" : ""}`}>{bgUploading ? "progress_activity" : "upload"}</span>
-                {bgUploading ? "Yükleniyor..." : kartArkaplan ? "Değiştir" : "Görsel Yükle"}
-                <input type="file" accept="image/*" className="hidden" disabled={bgUploading}
-                  onChange={async e => {
-                    const f = e.target.files?.[0]; if (!f) return;
-                    setBgUploading(true);
-                    try { setKartArkaplan(await uploadMemberFile(f)); }
-                    catch (err) { setError(err instanceof Error ? err.message : "Yükleme hatası"); }
-                    setBgUploading(false);
-                    e.target.value = "";
-                  }} />
-              </label>
-              {kartArkaplan && (
-                <button type="button" onClick={() => setKartArkaplan("")}
-                  className="px-3 py-2 rounded-xl text-xs text-red-400 hover:text-red-300">
-                  Kaldır
-                </button>
-              )}
-            </div>
-            <p className="text-[11px] text-on-surface-variant/60 mt-2">Değişikliğin kaydolması için aşağıdaki “Kaydet” butonuna bas.</p>
-          </div>
-
-          {error && (
-            <div className="flex items-center gap-2 text-red-400 text-sm">
-              <span className="material-symbols-outlined text-base">error</span>{error}
-            </div>
-          )}
-
-          <button onClick={handleSave} disabled={saving}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-primary-container text-on-primary-container font-semibold rounded-xl hover:scale-[1.02] transition-all disabled:opacity-60">
-            <span className={`material-symbols-outlined text-base ${saving ? "animate-spin" : ""}`}>{saving ? "progress_activity" : "save"}</span>
-            {saving ? "Kaydediliyor..." : saved ? "Kaydedildi! ✓" : "Değişiklikleri Kaydet"}
-          </button>
         </div>
       </div>
     </div>

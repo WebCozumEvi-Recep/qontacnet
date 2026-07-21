@@ -3,9 +3,36 @@ import { useState, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Member } from "@/lib/mock-data";
 
+type MemberExt = Member & {
+  showWhatsapp?: boolean;
+  showLinkedin?: boolean;
+  showInstagram?: boolean;
+  showWebsite?: boolean;
+  showBio?: boolean;
+  kartArkaplan?: string;
+};
+
+async function uploadMemberFile(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const r = await fetch("/api/me/upload", { method: "POST", body: fd });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error ?? "Yükleme hatası");
+  return j.url as string;
+}
+
+function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`w-10 h-5 rounded-full transition-all relative cursor-pointer flex-shrink-0 ${on ? "bg-primary" : "bg-white/10"}`}>
+      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${on ? "left-5" : "left-0.5"}`} />
+    </button>
+  );
+}
+
 export default function ProfilPage() {
   const { user, updateUserData, refresh } = useAuth();
-  const member = user?.data as unknown as Member;
+  const member = user?.data as unknown as MemberExt;
 
   const [form, setForm] = useState({
     ad: member?.ad ?? "",
@@ -20,6 +47,15 @@ export default function ProfilPage() {
     website: member?.website ?? "",
     biyografi: member?.biyografi ?? "",
   });
+  const [toggles, setToggles] = useState({
+    showWhatsapp: member?.showWhatsapp ?? true,
+    showLinkedin: member?.showLinkedin ?? true,
+    showInstagram: member?.showInstagram ?? true,
+    showWebsite: member?.showWebsite ?? true,
+    showBio: member?.showBio ?? true,
+  });
+  const [kartArkaplan, setKartArkaplan] = useState(member?.kartArkaplan ?? "");
+  const [bgUploading, setBgUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatar, setAvatar] = useState<string>(member?.avatar ?? "");
@@ -28,6 +64,7 @@ export default function ProfilPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const toggle = (k: keyof typeof toggles) => setToggles(t => ({ ...t, [k]: !t[k] }));
 
   const [error, setError] = useState("");
 
@@ -60,7 +97,7 @@ export default function ProfilPage() {
       const res = await fetch("/api/me/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, ...toggles, kartArkaplan }),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Kaydedilemedi.");
@@ -80,9 +117,10 @@ export default function ProfilPage() {
   const labelClass = "text-xs text-on-surface-variant mb-1.5 block";
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Avatar */}
+        {/* Üst: Profil görseli + Profil kutusu arkaplanı */}
+        <div className="grid md:grid-cols-2 gap-6">
         <div className="glass-card rounded-2xl p-6 flex items-center gap-5">
           <div className="relative flex-shrink-0">
             <div
@@ -127,6 +165,39 @@ export default function ProfilPage() {
           </div>
         </div>
 
+        {/* Profil Kutusu Arkaplanı */}
+        <div className="glass-card rounded-2xl p-6">
+          <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Profil Kutusu Arkaplanı</h3>
+          <p className="text-xs text-on-surface-variant mb-4">Kartının arkasına bir görsel ekle (opsiyonel). Metnin okunması için görsel hafif karartılır.</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            {kartArkaplan && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={kartArkaplan} alt="" className="w-16 h-16 rounded-xl object-cover border border-white/10" />
+            )}
+            <label className="px-3 py-2 rounded-xl glass-card text-xs text-on-surface flex items-center gap-2 cursor-pointer hover:bg-white/5 transition-all">
+              <span className={`material-symbols-outlined text-sm ${bgUploading ? "animate-spin" : ""}`}>{bgUploading ? "progress_activity" : "upload"}</span>
+              {bgUploading ? "Yükleniyor..." : kartArkaplan ? "Değiştir" : "Görsel Yükle"}
+              <input type="file" accept="image/*" className="hidden" disabled={bgUploading}
+                onChange={async e => {
+                  const f = e.target.files?.[0]; if (!f) return;
+                  setBgUploading(true);
+                  try { setKartArkaplan(await uploadMemberFile(f)); }
+                  catch (err) { setError(err instanceof Error ? err.message : "Yükleme hatası"); }
+                  setBgUploading(false);
+                  e.target.value = "";
+                }} />
+            </label>
+            {kartArkaplan && (
+              <button type="button" onClick={() => setKartArkaplan("")}
+                className="px-3 py-2 rounded-xl text-xs text-red-400 hover:text-red-300">
+                Kaldır
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-on-surface-variant/60 mt-2">Değişikliğin kaydolması için “Kaydet” butonuna bas.</p>
+        </div>
+        </div>
+
         {/* Kişisel Bilgiler */}
         <div className="glass-card rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Kişisel Bilgiler</h3>
@@ -156,7 +227,13 @@ export default function ProfilPage() {
               <input value={form.telefon} onChange={e => set("telefon", e.target.value)} className={inputClass} placeholder="+90 5xx xxx xx xx" />
             </div>
             <div className="col-span-2">
-              <label className={labelClass}>Biyografi</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs text-on-surface-variant">Biyografi</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-on-surface-variant/60">Kartta göster</span>
+                  <Toggle on={toggles.showBio} onClick={() => toggle("showBio")} />
+                </div>
+              </div>
               <textarea value={form.biyografi} onChange={e => set("biyografi", e.target.value)} rows={3}
                 className={`${inputClass} resize-none`} placeholder="Kendinizden kısaca bahsedin..." />
             </div>
@@ -167,18 +244,24 @@ export default function ProfilPage() {
         <div className="glass-card rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Sosyal & İletişim</h3>
           <div className="space-y-4">
-            {[
-              { key: "whatsapp", icon: "phone", label: "WhatsApp", placeholder: "+90 5xx xxx xx xx" },
-              { key: "linkedin", icon: "link", label: "LinkedIn", placeholder: "linkedin.com/in/kullaniciad" },
-              { key: "instagram", icon: "photo_camera", label: "Instagram", placeholder: "@kullaniciad" },
-              { key: "website", icon: "public", label: "Website", placeholder: "www.example.com" },
-            ].map(item => (
+            {([
+              { key: "whatsapp", toggleKey: "showWhatsapp", icon: "phone", label: "WhatsApp", placeholder: "+90 5xx xxx xx xx" },
+              { key: "linkedin", toggleKey: "showLinkedin", icon: "link", label: "LinkedIn", placeholder: "linkedin.com/in/kullaniciad" },
+              { key: "instagram", toggleKey: "showInstagram", icon: "photo_camera", label: "Instagram", placeholder: "@kullaniciad" },
+              { key: "website", toggleKey: "showWebsite", icon: "public", label: "Website", placeholder: "www.example.com" },
+            ] as const).map(item => (
               <div key={item.key} className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
                   <span className="material-symbols-outlined text-on-surface-variant text-base">{item.icon}</span>
                 </div>
                 <div className="flex-1">
-                  <label className={labelClass}>{item.label}</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-on-surface-variant">{item.label}</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-on-surface-variant/60">Kartta göster</span>
+                      <Toggle on={toggles[item.toggleKey]} onClick={() => toggle(item.toggleKey)} />
+                    </div>
+                  </div>
                   <input
                     value={form[item.key as keyof typeof form] as string}
                     onChange={e => set(item.key, e.target.value)}

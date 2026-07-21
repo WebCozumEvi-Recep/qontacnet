@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { createSession } from "@/lib/session";
 
 const FIELDS = ["ad", "soyad", "unvan", "departman", "telefon", "whatsapp", "linkedin", "instagram", "website", "biyografi"] as const;
+const BOOL_FIELDS = ["showWhatsapp", "showLinkedin", "showInstagram", "showWebsite", "showBio"] as const;
 
 export async function PUT(req: NextRequest) {
   const session = await requireRole("uye");
@@ -11,10 +12,15 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const data: Record<string, string> = {};
+    const data: Record<string, unknown> = {};
     for (const f of FIELDS) {
       if (typeof body[f] === "string") data[f] = (body[f] as string).trim();
     }
+    for (const f of BOOL_FIELDS) {
+      if (typeof body[f] === "boolean") data[f] = body[f];
+    }
+    // Üyenin yüklediği profil kutusu arkaplan görseli (boş string = kaldır)
+    if (typeof body.kartArkaplan === "string") data.kartArkaplan = body.kartArkaplan;
 
     if (typeof body.email === "string") {
       const yeniEmail = body.email.trim().toLowerCase();
@@ -36,7 +42,7 @@ export async function PUT(req: NextRequest) {
     });
     // Email değiştiyse session cookie'yi yeni email ile yeniden bas
     if (data.email && data.email !== session.email) {
-      await createSession({ sub: session.sub, role: session.role, email: data.email });
+      await createSession({ sub: session.sub, role: session.role, email: data.email as string });
     }
     const { passwordHash, ...safe } = updated;
     void passwordHash;
