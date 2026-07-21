@@ -40,7 +40,7 @@ export default function BaglantilarPage() {
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Bağlantılar");
+    XLSX.utils.book_append_sheet(wb, ws, "İletişim Talepleri");
     XLSX.writeFile(wb, "baglantilar.xlsx");
   };
 
@@ -48,7 +48,7 @@ export default function BaglantilarPage() {
     <div className="max-w-[900px] space-y-5">
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Toplam Bağlantı", value: allLeads.length, icon: "group_add", color: "#d4af37" },
+          { label: "Toplam Talep", value: allLeads.length, icon: "group_add", color: "#d4af37" },
           { label: "NFC ile Gelen", value: allLeads.filter(l => l.kaynak === "NFC").length, icon: "nfc", color: "#42faba" },
           { label: "QR ile Gelen", value: allLeads.filter(l => l.kaynak === "QR").length, icon: "qr_code_2", color: "#6001d1" },
         ].map(s => (
@@ -78,7 +78,7 @@ export default function BaglantilarPage() {
 
       <div className="glass-card rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Bağlantı Listesi ({leads.length})</h3>
+          <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>İletişim Talepleri ({leads.length})</h3>
           <button onClick={exportXLSX} className="flex items-center gap-2 text-xs text-on-surface-variant hover:text-primary transition-all">
             <span className="material-symbols-outlined text-sm">download</span>Excel İndir
           </button>
@@ -97,7 +97,7 @@ export default function BaglantilarPage() {
         {loading ? <div className="py-16 text-center text-on-surface-variant text-sm">Yükleniyor...</div> : leads.length === 0 ? (
           <div className="py-16 text-center text-on-surface-variant text-sm">
             <span className="material-symbols-outlined text-4xl block mb-3 opacity-30">person_search</span>
-            Henüz bağlantı yok
+            Henüz iletişim talebi yok
           </div>
         ) : (
           <div className="divide-y divide-white/5">

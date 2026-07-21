@@ -13,7 +13,7 @@ const pageTitles: Record<string, string> = {
   "/uye/modullerim": "Modüllerim",
   "/uye/profil": "Profilim",
   "/uye/qr": "QR Kodum",
-  "/uye/baglantilar": "Bağlantılarım",
+  "/uye/baglantilar": "İletişim Talepleri",
 };
 
 export default function UyeLayout({ children }: { children: React.ReactNode }) {
