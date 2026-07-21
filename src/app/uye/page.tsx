@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { kaynakLabel } from "@/lib/labels";
 import Link from "next/link";
 
-interface Member { ad?: string; soyad?: string; unvan?: string; firmaAdi?: string; goruntulemeSayisi?: number; leadSayisi?: number; kartAktif?: boolean }
+interface Member { ad?: string; soyad?: string; unvan?: string; departman?: string; firmaAdi?: string; goruntulemeSayisi?: number; leadSayisi?: number; kartAktif?: boolean }
 interface Lead { id: string; ad: string; sirket: string; kaynak: string }
 interface Stats {
   stats: { goruntulenme: number; baglanti: number; nfc: number; qr: number; link: number; buAy: number; kartAktif: boolean };
@@ -78,7 +78,7 @@ export default function UyeDashboard() {
             Hoş geldin, {member?.ad ?? "Üye"} 👋
           </h2>
           <p className="text-on-surface-variant text-sm mt-1">
-            {member?.unvan} · {member?.firmaAdi}
+            {member?.unvan} · {member?.departman || member?.firmaAdi}
           </p>
         </div>
         <div className="flex gap-3">

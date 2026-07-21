@@ -66,7 +66,8 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
   const ad = String(user?.data?.["ad"] ?? "");
   const soyad = String(user?.data?.["soyad"] ?? "");
   const displayName = (ad + (soyad ? " " + soyad : "")).trim() || (user?.email?.split("@")[0] ?? "");
-  const displayEmail = String(user?.data?.["email"] ?? user?.email ?? "");
+  const telefon = String(user?.data?.["telefon"] ?? "");
+  const displaySub = telefon || String(user?.data?.["email"] ?? user?.email ?? "");
   const avatar = String(user?.data?.["avatar"] ?? "");
   const logo = String(user?.data?.["logo"] ?? "");
 
@@ -137,7 +138,7 @@ export default function DashboardSidebar({ role, open, onClose }: Props) {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-on-surface truncate">{displayName}</p>
-              <p className="text-xs text-on-surface-variant truncate">{displayEmail}</p>
+              <p className="text-xs text-on-surface-variant truncate">{displaySub}</p>
             </div>
           </div>
           {role === "uye" && (
