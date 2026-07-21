@@ -30,6 +30,12 @@ function ddlListesi(): { ad: string; sql: string }[] {
     { ad: "SiteSettings.qnbLang", sql: `ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "qnbLang" TEXT NOT NULL DEFAULT 'tr'` },
     // NFC kart kilit anahtarı
     { ad: "SiteSettings.nfcKilitAnahtari", sql: `ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "nfcKilitAnahtari" TEXT NOT NULL DEFAULT ''` },
+    // Üye tarafı okundu takibi (firma'nın FormBasvuru.okundu alanından bağımsız)
+    { ad: "Lead.okundu", sql: `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "okundu" BOOLEAN NOT NULL DEFAULT false` },
+    { ad: "FormBasvuru.uyeOkundu", sql: `ALTER TABLE "FormBasvuru" ADD COLUMN IF NOT EXISTS "uyeOkundu" BOOLEAN NOT NULL DEFAULT false` },
+    // Kaynak bazlı kart görüntülenme olayları (NFC/QR/Link trafiği)
+    { ad: "KartGoruntuleme (tablo)", sql: `CREATE TABLE IF NOT EXISTS "KartGoruntuleme" ("id" TEXT NOT NULL, "memberId" TEXT NOT NULL, "kaynak" "LeadKaynak" NOT NULL DEFAULT 'LINK', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "KartGoruntuleme_pkey" PRIMARY KEY ("id"))` },
+    { ad: "KartGoruntuleme (index)", sql: `CREATE INDEX IF NOT EXISTS "KartGoruntuleme_memberId_createdAt_idx" ON "KartGoruntuleme"("memberId", "createdAt")` },
   ];
   // Enum değerleri (üye + firma modül tipleri)
   for (const v of ENUM_UYE_MODUL) list.push({ ad: `UyeModulTip.${v}`, sql: `ALTER TYPE "UyeModulTip" ADD VALUE IF NOT EXISTS '${v}'` });
