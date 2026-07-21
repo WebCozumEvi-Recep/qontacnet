@@ -26,7 +26,7 @@ interface Modul {
 }
 
 interface KartVeri {
-  id: string; ad: string; soyad: string; unvan: string; firmaAdi: string; kartRenk: string;
+  id: string; ad: string; soyad: string; unvan: string; firmaAdi: string; takim?: string; kartRenk: string;
   telefon: string; email: string; whatsapp: string; linkedin: string; instagram: string; website: string;
   biyografi: string; avatar?: string; kartArkaplan?: string;
 }
@@ -337,7 +337,7 @@ function KartOnizleme({ kart, moduller, onModul }: { kart: KartVeri; moduller: U
         <div className="relative z-10">
           <p className="text-base font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{kart.ad} {kart.soyad}</p>
           <p className="text-xs font-medium" style={{ color }}>{kart.unvan}</p>
-          <p className="text-xs text-on-surface-variant">{kart.firmaAdi}</p>
+          <p className="text-xs text-on-surface-variant">{kart.takim || kart.firmaAdi}</p>
           {kart.biyografi && (
             <p className="text-[11px] text-on-surface-variant mt-2 leading-relaxed border-t border-white/10 pt-2">{kart.biyografi}</p>
           )}

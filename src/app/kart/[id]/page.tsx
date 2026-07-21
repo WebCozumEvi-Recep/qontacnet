@@ -16,6 +16,7 @@ interface Card {
   soyad: string;
   unvan: string;
   firmaAdi: string;
+  takim?: string;
   kartRenk: string;
   telefon: string;
   email: string;
@@ -190,7 +191,7 @@ export default function KartPage({ params }: { params: Promise<{ id: string }> }
           <div className="relative z-10">
             <h1 className="text-2xl font-bold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>{card.ad} {card.soyad}</h1>
             <p className="text-sm font-medium mb-1" style={{ color }}>{card.unvan}</p>
-            <p className="text-sm text-on-surface-variant">{card.firmaAdi}</p>
+            <p className="text-sm text-on-surface-variant">{card.takim || card.firmaAdi}</p>
             {card.biyografi && (
               <p className="text-xs text-on-surface-variant mt-3 leading-relaxed border-t border-white/10 pt-3">{card.biyografi}</p>
             )}

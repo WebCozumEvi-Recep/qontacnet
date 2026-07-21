@@ -133,6 +133,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       soyad: member.soyad,
       unvan: ceviri.unvan,
       firmaAdi: member.firma?.ad ?? "",
+      // Kart üzerinde firma tam unvanı yerine üyenin profilde girdiği takım adı gösterilir
+      takim: member.departman ?? "",
       avatar: member.avatar,
       kartArkaplan: member.kartArkaplan,
       kartRenk: firmaRenk ?? member.kartRenk,
