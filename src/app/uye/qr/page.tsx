@@ -103,7 +103,7 @@ export default function QRPage() {
           <p className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
             {member?.ad} {member?.soyad}
           </p>
-          <p className="text-xs text-on-surface-variant">{member?.unvan} · {member?.firmaAdi}</p>
+          <p className="text-xs text-on-surface-variant">{member?.unvan} · {member?.departman || member?.firmaAdi}</p>
         </div>
       </div>
 
