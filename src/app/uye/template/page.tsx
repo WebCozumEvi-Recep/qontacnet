@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { TemplateGalleryCard } from "@/components/templates/TemplateGalleryCard";
-import { MiniCardPreview } from "@/components/templates/MiniCardPreview";
 import {
   DB_MODULE_TO_CHIP,
   MOCK_DESCRIPTIONS,
@@ -115,7 +114,6 @@ export default function MemberTemplatePage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const memberName = [member?.ad, member?.soyad].filter(Boolean).join(" ") || "Ad Soyad";
 
   if (loading) {
     return (
@@ -189,34 +187,29 @@ export default function MemberTemplatePage() {
           <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider px-1">
             Önizleme
           </p>
-          <div className="glass-card rounded-2xl p-5 sticky top-24 space-y-4">
+          <div className="glass-card rounded-2xl p-5 sticky top-6 space-y-4">
             {pending ? (
               <>
-                <MiniCardPreview
-                  name={pending.name}
-                  color={pending.color}
-                  modules={pending.modules}
-                  memberName={memberName}
-                  role={member?.unvan || "Unvan"}
-                />
-                <div className="space-y-2 text-sm">
+                <div className="space-y-1 text-sm">
                   <p className="font-medium text-on-surface">{pending.name}</p>
                   <p className="text-xs text-on-surface-variant">{pending.description}</p>
                 </div>
 
                 {/* Şablon modüllerinin gerçek içerik önizlemesi — kartta göründüğü gibi */}
-                {(modByTpl[pending.id] ?? []).length > 0 && (
+                {(modByTpl[pending.id] ?? []).length > 0 ? (
                   <div>
                     <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-2">
                       Kart İçeriği Önizlemesi
                     </p>
-                    <div className="rounded-2xl p-3 max-h-[420px] overflow-y-auto space-y-3" style={{ background: "#050816" }}>
+                    <div className="rounded-2xl p-3 max-h-[520px] overflow-y-auto space-y-3" style={{ background: "#050816" }}>
                       {(modByTpl[pending.id] ?? []).map(m => (
                         <FirmaModulRender key={m.id} modul={m} color={pending.color}
                           memberId={user?.id ?? ""} firmaAdi={member?.firmaAdi ?? ""} />
                       ))}
                     </div>
                   </div>
+                ) : (
+                  <p className="text-xs text-on-surface-variant/60 text-center py-4">Bu şablonda henüz içerik modülü yok.</p>
                 )}
               </>
             ) : (
