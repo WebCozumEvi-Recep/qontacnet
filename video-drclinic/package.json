@@ -1,0 +1,10 @@
+{
+  "name": "drclinic-reklam",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts --port 3334 --no-open",
+    "render": "remotion render src/index.ts DrClinicReklam out/drclinic-reklam.mp4",
+    "music": "node make-music.mjs"
+  }
+}
