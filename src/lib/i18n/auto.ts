@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { translateFields } from "./translate";
 import { DEFAULT_LOCALE, type Locale } from "./config";
@@ -7,6 +8,62 @@ import { SEED } from "./homepage-seed";
 
 function hash(s: string): string {
   return createHash("sha256").update(s).digest("hex");
+}
+
+/**
+ * İşi yanıt gönderildikten sonraya erteler.
+ * `after()` yalnız istek kapsamında çalışır; dışarıda (script, build) çağrılırsa
+ * işi arka planda başlatıp yanıtı bekletmeyiz.
+ */
+function arkaPlanda(job: () => Promise<void>): void {
+  try {
+    after(job);
+  } catch {
+    void job().catch(() => {});
+  }
+}
+
+/** Aynı metnin aynı anda birden çok kez çevrilmesini engeller. */
+const ucusta = new Set<string>();
+
+/** Eksik çevirileri arka planda üretip önbelleğe yazar (yanıtı bloklamaz). */
+async function ceviriyiOnbellegeAl(
+  missing: Record<string, string>,
+  locale: Locale,
+  isHtml: boolean | undefined,
+): Promise<void> {
+  const anahtarlar = Object.values(missing).map((v) => `${locale}:${hash(v)}`);
+  if (anahtarlar.every((a) => ucusta.has(a))) return;
+  anahtarlar.forEach((a) => ucusta.add(a));
+
+  try {
+    const translated = await translateFields(missing, locale, {
+      isHtml,
+      sourceLocale: DEFAULT_LOCALE,
+    });
+    const rows = Object.entries(missing)
+      .map(([fieldKey, srcVal]) => ({ srcVal, val: translated[fieldKey] }))
+      .filter((r): r is { srcVal: string; val: string } => typeof r.val === "string" && !!r.val.trim())
+      .map((r) => ({ locale, hash: hash(r.srcVal), source: r.srcVal, value: r.val }));
+
+    if (rows.length) {
+      await prisma.$transaction(
+        rows.map((r) =>
+          prisma.translation.upsert({
+            where: { locale_hash: { locale: r.locale, hash: r.hash } },
+            create: r,
+            update: { value: r.value, source: r.source },
+          }),
+        ),
+      );
+    }
+  } catch (err) {
+    // Çeviri/DB hatası sayfayı etkilemez; bir sonraki istekte yeniden denenir.
+    // Sessizce yutmak yerine geliştirmede görünür olsun.
+    if (process.env.NODE_ENV === "development") console.error("[i18n] arka plan çevirisi başarısız:", err);
+  } finally {
+    anahtarlar.forEach((a) => ucusta.delete(a));
+  }
 }
 
 // Koda gömülü hazır çeviri (API/DB gerektirmez). Bulunamazsa undefined.
@@ -62,16 +119,10 @@ export async function tx<T extends Record<string, string>>(
   const cacheMap = new Map(cached.map((c) => [c.hash, c.value]));
 
   const missing: Record<string, string> = {};
-  const missingKeyByField: Record<string, keyof T> = {};
   nonEmpty.forEach((k, i) => {
-    const h = hashes[i];
-    const hit = cacheMap.get(h);
-    if (hit !== undefined) {
-      result[k] = hit as T[keyof T];
-    } else {
-      missing[String(k)] = fields[k] as string;
-      missingKeyByField[String(k)] = k;
-    }
+    const hit = cacheMap.get(hashes[i]);
+    if (hit !== undefined) result[k] = hit as T[keyof T];
+    else missing[String(k)] = fields[k] as string;
   });
 
   if (Object.keys(missing).length === 0) return result;
@@ -79,38 +130,10 @@ export async function tx<T extends Record<string, string>>(
   // 2) Eksikleri çevir (API anahtarı yoksa kaynak kalır)
   if (!process.env.ANTHROPIC_API_KEY) return result;
 
-  try {
-    const translated = await translateFields(missing, locale, {
-      isHtml: opts.isHtml,
-      sourceLocale: DEFAULT_LOCALE,
-    });
-    const rows: { locale: string; hash: string; source: string; value: string }[] = [];
-    for (const [fieldKey, srcVal] of Object.entries(missing)) {
-      const val = translated[fieldKey];
-      if (typeof val !== "string" || !val.trim()) continue;
-      const k = missingKeyByField[fieldKey];
-      result[k] = val as T[keyof T];
-      rows.push({ locale, hash: hash(srcVal), source: srcVal, value: val });
-    }
-    // 3) Önbelleğe yaz (best-effort)
-    if (rows.length) {
-      try {
-        await prisma.$transaction(
-          rows.map((r) =>
-            prisma.translation.upsert({
-              where: { locale_hash: { locale: r.locale, hash: r.hash } },
-              create: r,
-              update: { value: r.value, source: r.source },
-            }),
-          ),
-        );
-      } catch {
-        // DB yazılamazsa sorun değil, çeviri yine de döner
-      }
-    }
-  } catch {
-    // Çeviri başarısızsa kaynak metin kalır
-  }
+  // Çeviri Claude API'ye gider ve saniyeler sürebilir. Sayfa yükleme süresini
+  // buna bağlamamak için kaynak metin (tr) hemen döndürülür; çeviri yanıttan
+  // sonra arka planda üretilip önbelleğe yazılır ve bir sonraki istekte görünür.
+  arkaPlanda(() => ceviriyiOnbellegeAl(missing, locale, opts.isHtml));
 
   return result;
 }

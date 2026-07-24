@@ -1,155 +1,44 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { tx, txContent } from "@/lib/i18n/auto";
+import {
+  getFirmaModulleri,
+  getKartCekirdek,
+  getSablonOnizleme,
+  ONIZLE_ONEK,
+} from "@/lib/kart-data";
 import { isLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
+/**
+ * Kart verisi (üye panelindeki "Modüllerim" ve firma şablonu önizlemeleri için).
+ *
+ * Public /kart/[id] sayfası veriyi artık doğrudan sunucuda okuyor; bu uç yalnız
+ * panel önizlemelerine hizmet ettiğinden görüntülenme sayacı burada işlenmez —
+ * üyenin kendi önizlemesi istatistikleri şişirmez.
+ */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const langParam = new URL(req.url).searchParams.get("lang");
   const locale: Locale = isLocale(langParam) ? langParam : DEFAULT_LOCALE;
 
-  // Şablon önizleme modu: /kart/onizle-<templateId> — firma panelinden bir
-  // şablonun tam kart görünümünü (alt modülleriyle) örnek profil üzerinde gösterir.
-  const ONIZLE = "onizle-";
-  if (id.startsWith(ONIZLE)) {
-    const templateId = id.slice(ONIZLE.length);
-    const template = await prisma.cardTemplate.findUnique({
-      where: { id: templateId },
-      select: { id: true, ad: true, renk: true, firma: { select: { ad: true } } },
-    });
-    if (!template) {
-      return NextResponse.json({ ok: false, error: "Şablon bulunamadı." }, { status: 404 });
-    }
-    const previewModuller = await prisma.firmaModul.findMany({
-      where: { templateId, aktif: true },
-      orderBy: { sira: "asc" },
-      select: { id: true, tip: true, baslik: true, icerik: true },
-    });
-    const cevPreview = await Promise.all(
-      previewModuller.map(async (m) => ({
-        ...m,
-        baslik: (await tx({ b: m.baslik ?? "" }, locale)).b,
-        icerik: await txContent(m.icerik, locale),
-      })),
+  const onizleme = id.startsWith(ONIZLE_ONEK);
+  const veri = onizleme
+    ? await getSablonOnizleme(id.slice(ONIZLE_ONEK.length))
+    : await getKartCekirdek(id, locale);
+
+  if (!veri) {
+    return NextResponse.json(
+      { ok: false, error: onizleme ? "Şablon bulunamadı." : "Kart bulunamadı." },
+      { status: 404 },
     );
-    return NextResponse.json({
-      ok: true,
-      locale,
-      preview: true,
-      card: {
-        id,
-        ad: "Ad",
-        soyad: "Soyad",
-        unvan: "Unvan",
-        firmaAdi: template.firma?.ad ?? "",
-        avatar: null,
-        kartArkaplan: null,
-        kartRenk: template.renk,
-        telefon: "",
-        email: "",
-        whatsapp: "",
-        linkedin: "",
-        instagram: "",
-        website: "",
-        biyografi: "",
-      },
-      moduller: cevPreview,
-      uyeModuller: [],
-    });
   }
 
-  const member = await prisma.member.findUnique({
-    where: { id },
-    include: {
-      firma: {
-        select: {
-          id: true, ad: true, website: true, logo: true,
-          templates: { where: { aktif: true }, take: 1, select: { renk: true } },
-        },
-      },
-    },
-  });
-
-  if (!member || !member.aktif) {
-    return NextResponse.json({ ok: false, error: "Kart bulunamadı." }, { status: 404 });
-  }
-
-  // Aktif şablonun modülleri (şablon yoksa boş)
-  const aktifTemplate = member.firma
-    ? await prisma.cardTemplate.findFirst({
-        where: { firmaId: member.firma.id, aktif: true },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      })
-    : null;
-  const moduller = aktifTemplate
-    ? await prisma.firmaModul.findMany({
-        where: { templateId: aktifTemplate.id, aktif: true },
-        orderBy: { sira: "asc" },
-        select: { id: true, tip: true, baslik: true, icerik: true },
-      })
-    : [];
-
-  // Üyenin kendi eklediği modüller (aktif)
-  const uyeModuller = await prisma.memberModul.findMany({
-    where: { memberId: id, aktif: true },
-    orderBy: [{ sira: "asc" }, { createdAt: "asc" }],
-    select: { id: true, tip: true, baslik: true, icerik: true, tanim: { select: { ikon: true, ikonAd: true, butonRenk: true, ikonRenk: true } } },
-  });
-
-  // Görüntülenme sayacı + kaynak bazlı trafik olayı (await etmeden)
-  prisma.member.update({ where: { id }, data: { goruntulemeSayisi: { increment: 1 } } }).catch(() => {});
-  const srcParam = new URL(req.url).searchParams.get("src");
-  const viewKaynak = srcParam === "nfc" ? "NFC" : srcParam === "qr" ? "QR" : "LINK";
-  prisma.kartGoruntuleme.create({ data: { memberId: id, kaynak: viewKaynak } }).catch(() => {});
-
-  // Firma aktif teması varsa onu kullan; firma yoksa üyenin varsayılan rengi
-  const firmaRenk = member.firma?.templates[0]?.renk ?? null;
-
-  const biyografi = member.showBio ? member.biyografi : "";
-
-  // İstenen dile çevir (tr ise olduğu gibi; çeviriler DB'de önbelleğe alınır)
-  const [ceviri, cevModuller, cevUyeModuller] = await Promise.all([
-    tx({ unvan: member.unvan ?? "", biyografi: biyografi ?? "" }, locale),
-    Promise.all(
-      moduller.map(async (m) => ({
-        ...m,
-        baslik: (await tx({ b: m.baslik ?? "" }, locale)).b,
-        icerik: await txContent(m.icerik, locale),
-      })),
-    ),
-    Promise.all(
-      uyeModuller.map(async (m) => ({
-        ...m,
-        baslik: (await tx({ b: m.baslik ?? "" }, locale)).b,
-        icerik: await txContent(m.icerik, locale),
-      })),
-    ),
-  ]);
+  const moduller = veri.templateId ? await getFirmaModulleri(veri.templateId, locale) : [];
 
   return NextResponse.json({
     ok: true,
     locale,
-    card: {
-      id: member.id,
-      ad: member.ad,
-      soyad: member.soyad,
-      unvan: ceviri.unvan,
-      firmaAdi: member.firma?.ad ?? "",
-      // Kart üzerinde firma tam unvanı yerine üyenin profilde girdiği takım adı gösterilir
-      takim: member.departman ?? "",
-      avatar: member.avatar,
-      kartArkaplan: member.kartArkaplan,
-      kartRenk: firmaRenk ?? member.kartRenk,
-      telefon: member.telefon,
-      email: member.email,
-      whatsapp: member.showWhatsapp ? member.whatsapp : "",
-      linkedin: member.showLinkedin ? member.linkedin : "",
-      instagram: member.showInstagram ? member.instagram : "",
-      website: member.showWebsite ? member.website : "",
-      biyografi: ceviri.biyografi,
-    },
-    moduller: cevModuller,
-    uyeModuller: cevUyeModuller,
+    ...(onizleme ? { preview: true } : {}),
+    card: veri.card,
+    moduller,
+    uyeModuller: veri.uyeModuller,
   });
 }

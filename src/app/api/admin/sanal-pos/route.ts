@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { revalidateSiteSettings } from "@/lib/site-settings";
 
 // QNB Finansbank Sanal POS ayarları — yalnız admin.
 // Güvenlik: gizli alanlar (MerchantPass, API şifresi) tarayıcıya GERİ GÖNDERİLMEZ;
@@ -37,6 +38,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
 
   const s = await prisma.siteSettings.findUnique({ where: { id: "site" } });
+
   return NextResponse.json({ ok: true, settings: view(s) });
 }
 
@@ -72,6 +74,8 @@ export async function PUT(req: NextRequest) {
     create: { id: "site", ...data },
     update: data,
   });
+
+  revalidateSiteSettings();
 
   return NextResponse.json({ ok: true, settings: view(s) });
 }

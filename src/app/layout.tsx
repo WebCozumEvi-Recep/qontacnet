@@ -2,22 +2,17 @@ import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
-import { prisma } from "@/lib/prisma";
+import { getSiteSettings } from "@/lib/site-settings";
+import { getCurrentUser } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n/server";
 import { dir } from "@/lib/i18n/config";
 
 const inter = Inter({ subsets: ["latin"], variable: "--inter" });
 const sora = Sora({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--sora" });
 
-// Favicon ayardan okunduğu için metadata her istekte üretilir
+// Favicon ayardan okunur; ayarlar önbellekli olduğu için DB'ye gidilmez.
 export async function generateMetadata(): Promise<Metadata> {
-  let faviconUrl = "";
-  try {
-    const s = await prisma.siteSettings.findUnique({ where: { id: "site" }, select: { faviconUrl: true } });
-    faviconUrl = s?.faviconUrl ?? "";
-  } catch {
-    // DB erişilemezse varsayılan favicon kullanılır
-  }
+  const faviconUrl = (await getSiteSettings())?.faviconUrl ?? "";
 
   return {
     title: "QONTAC Network Card | Akıllı Dijital Kartvizit Sistemi",
@@ -37,21 +32,23 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getLocale();
+  // Oturum sunucuda çözülür; istemci ayrıca /api/auth/me çağırmaz.
+  // Çerezi olmayan ziyaretçide DB'ye hiç gidilmez.
+  const [locale, user] = await Promise.all([getLocale(), getCurrentUser()]);
   return (
     <html lang={locale} dir={dir(locale)} className="dark scroll-smooth">
       <head>
+        {/* İkon fontu self-host; preload ile ilk boyamadan önce hazır olur */}
         <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap"
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href="/fonts/material-symbols-subset.woff2"
+          crossOrigin="anonymous"
         />
       </head>
       <body className={`${inter.variable} ${sora.variable}`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider initialUser={user}>{children}</AuthProvider>
       </body>
     </html>
   );

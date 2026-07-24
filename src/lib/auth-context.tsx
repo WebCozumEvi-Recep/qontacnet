@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 
 export type Role = "uye" | "firma" | "admin";
 
@@ -31,23 +31,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+/**
+ * @param initialUser Oturum sunucuda çözülüp buraya verilir; böylece her sayfa
+ *   yüklemesinde `/api/auth/me` isteği atılmaz. Anonim ziyaretçide `null` gelir
+ *   ve hiç istek yapılmaz — public kartvizit sayfaları için önemli.
+ */
+export function AuthProvider({ children, initialUser = null }: { children: ReactNode; initialUser?: AuthUser | null }) {
+  const [user, setUser] = useState<AuthUser | null>(initialUser);
+  const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch("/api/auth/me", { cache: "no-store" });
       const json = await res.json();
       setUser(json.user ?? null);
     } catch {
       setUser(null);
+    } finally {
+      setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    refresh().finally(() => setLoading(false));
-  }, [refresh]);
 
   const login = async (email: string, password: string, role: Role): Promise<boolean> => {
     const res = await fetch("/api/auth/login", {

@@ -13,22 +13,15 @@ import DemoForm from "@/components/DemoForm";
 import FAQ from "@/components/FAQ";
 import Products from "@/components/Products";
 import Footer from "@/components/Footer";
-import { prisma } from "@/lib/prisma";
+import { getSiteSettings } from "@/lib/site-settings";
 import { getSession } from "@/lib/session";
 import { getI18n } from "@/lib/i18n/server";
 import { tx } from "@/lib/i18n/auto";
 import { DEMO_FORM_TEXT, FAQ_DATA, PRODUCTS_TEXT } from "@/lib/i18n/ui-text";
 
-// Site ayarları (logo, doğrulama, kod enjeksiyonu) her istekte DB'den okunur
-export const dynamic = "force-dynamic";
-
-async function getSiteSettings() {
-  try {
-    return await prisma.siteSettings.findUnique({ where: { id: "site" } });
-  } catch {
-    return null;
-  }
-}
+// Site ayarları (logo, doğrulama, kod enjeksiyonu) önbellekten okunur ve admin
+// panelinden kaydedildiğinde anında tazelenir; sayfa TTFB'si DB'ye bağlı değildir.
+// Sayfa yine de dinamik kalır: oturum çerezi okunarak Hesap bağlantısı belirlenir.
 
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSiteSettings();

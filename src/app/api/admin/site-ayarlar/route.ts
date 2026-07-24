@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { revalidateSiteSettings } from "@/lib/site-settings";
 
 export async function GET() {
   const session = await requireRole("admin");
@@ -47,6 +48,9 @@ export async function PUT(req: NextRequest) {
     create: { id: "site", ...data },
     update: data,
   });
+
+  // Ayarlar önbelleğe alınıyor; kayıttan sonra anında tazelenmeli.
+  revalidateSiteSettings();
 
   return NextResponse.json({ ok: true, settings });
 }
