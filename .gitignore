@@ -48,9 +48,3 @@ next-env.d.ts
 
 # Kullanıcı yüklemeleri
 public/uploads/
-
-# Remotion tanıtım videosu projeleri: kaynak takip edilir,
-# bağımlılıklar ve render çıktıları (yüzlerce MB) takip edilmez.
-video-*/node_modules/
-video-*/out/
-video-*/node_modules
