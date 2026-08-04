@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { buildPaymentForm, getQnbConfig } from "@/lib/qnbpos";
 import { nextSiparisNo } from "@/lib/siparis-no";
+import { odemeBaslat, odemeAcikMi, kartBilgisiGerekliMi, kartCoz, istemciIp, OdemeYapilandirmaHatasi } from "@/lib/odeme";
+import { DijigateError } from "@/lib/dijigate";
 
 // Public: ana sayfadan ürün satın alma — sipariş ödeme beklemede oluşturulur,
-// QNB sanal POS 3D ödeme formu döner. Ödeme onayı /api/odeme/callback'te işlenir.
+// seçili ödeme sağlayıcısının 3D akışı başlatılır (bkz. src/lib/odeme.ts).
+// Ödeme sonucu QNB'de /api/odeme/callback, DijiGate'te /api/odeme/dijigate/donus'ta işlenir.
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
@@ -33,9 +35,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const qnbCfg = await getQnbConfig();
-    if (!qnbCfg) {
+    if (!(await odemeAcikMi())) {
       return NextResponse.json({ ok: false, error: "Ödeme sistemi henüz yapılandırılmadı. Lütfen daha sonra tekrar deneyin." }, { status: 503 });
+    }
+
+    // Seçili sağlayıcı kart bilgisi istiyorsa (DijiGate) formdan gelen kartı doğrula.
+    let kart;
+    if (await kartBilgisiGerekliMi()) {
+      const cozum = kartCoz(body);
+      if ("hata" in cozum) return NextResponse.json({ ok: false, error: cozum.hata }, { status: 400 });
+      kart = cozum;
     }
 
     const urun = await prisma.product.findUnique({ where: { id: String(urunId) } });
@@ -76,15 +85,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const paymentForm = buildPaymentForm(qnbCfg, {
+    const odeme = await odemeBaslat({
       siparisNo: order.siparisNo,
       tutar,
       email: String(email),
       musteriAd: String(musteriAd),
+      kalemler: [{ id: urun.id, name: urun.ad, price: tutar }],
+      kart,
+      clientIp: istemciIp(req.headers),
+      donusYolu: "/",
     });
 
-    return NextResponse.json({ ok: true, siparisNo: order.siparisNo, paymentForm });
-  } catch {
+    return NextResponse.json({ ok: true, siparisNo: order.siparisNo, odeme });
+  } catch (e) {
+    if (e instanceof OdemeYapilandirmaHatasi) return NextResponse.json({ ok: false, error: e.message }, { status: 503 });
+    if (e instanceof DijigateError) return NextResponse.json({ ok: false, error: e.message }, { status: 402 });
     return NextResponse.json({ ok: false, error: "Sipariş oluşturulamadı." }, { status: 500 });
   }
 }

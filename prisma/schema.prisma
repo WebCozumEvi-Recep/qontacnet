@@ -27,6 +27,7 @@ enum LeadKaynak {
   NFC
   QR
   LINK
+  DOMAIN // üyenin kendi alan adından gelen ziyaret
 }
 
 enum AdminRol {
@@ -227,6 +228,7 @@ model Member {
   leads     Lead[]
   uyeModuller MemberModul[]
   pushTokens PushToken[]
+  alanAdlari AlanAdi[]
 }
 
 // Mobil uygulama push bildirim cihaz token'ları (Expo)
@@ -355,9 +357,13 @@ model Order {
   vergiNo      String     @default("")
   vergiDairesi String     @default("")
   firmaUnvan   String     @default("")
-  // Ödeme (QNB sanal POS): MANUEL (admin siparişi) | BEKLIYOR | ODENDI | BASARISIZ
+  // Ödeme: MANUEL (admin siparişi) | BEKLIYOR | ODENDI | BASARISIZ
   odemeDurum   String     @default("MANUEL")
   odemeRef     String     @default("") // banka AuthCode / TransId
+  // Ödemenin alındığı sağlayıcı ("DIJIGATE" | "QNB") ve sağlayıcıdaki işlem kimliği.
+  // DijiGate'te 3ds-init'ten dönen paymentId buraya yazılır; 3ds-complete bu değerle çağrılır.
+  odemeSaglayici String   @default("")
+  odemeId        String   @default("")
   createdAt  DateTime     @default(now())
 }
 
@@ -392,6 +398,13 @@ model SiteSettings {
   sosyalFacebook         String   @default("")
   sosyalYoutube          String   @default("")
   sosyalWebsite          String   @default("")
+  // Aktif ödeme sağlayıcısı: "DIJIGATE" | "QNB". Tüm ödeme akışları buna bakar.
+  odemeSaglayici         String   @default("DIJIGATE")
+  // DijiGate Gateway — kart formu bizim sitemizde, 3ds-init/3ds-complete API akışı.
+  dijigateAktif          Boolean  @default(false)
+  dijigateTest           Boolean  @default(true) // true: appapi-dev, false: appapi
+  dijigateApiKey         String   @default("")   // x-api-key
+  dijigateSecretKey      String   @default("")   // imza gizli anahtarı — gizli
   // QNB Finansbank Sanal POS (PayFor / 3DHost) — admin panelinden doldurulur.
   qnbAktif               Boolean  @default(false) // true ise DB bilgileri kullanılır (env yerine)
   qnbTest                Boolean  @default(true)  // true: test gate, false: canlı gate
@@ -406,6 +419,13 @@ model SiteSettings {
   // NFC kart kilit anahtarı — gizli. Her kartın PWD/PACK parolası bu anahtar +
   // kart token'ından türetilir (HMAC). Bunu bilmeyen çipin içeriğini değiştiremez.
   nfcKilitAnahtari       String   @default("")
+  // Alan adı (domain) satışı — Domain Name API bayi entegrasyonu.
+  domainAktif            Boolean  @default(false) // üye panelinde "Web Adresin" satın alma açık mı
+  domainTest             Boolean  @default(true)  // true: OTE test ortamı, false: canlı
+  domainResellerId       String   @default("")    // __reseller başlığı
+  domainApiKey           String   @default("")    // X-API-KEY — gizli
+  domainKarMarji         Int      @default(35)    // bayi maliyeti üzerine eklenen yüzde
+  domainMinKar           Int      @default(50)    // en az bu kadar TL kâr (yüzde düşük kalırsa)
   updatedAt              DateTime @updatedAt
 }
 
@@ -485,4 +505,56 @@ model Translation {
 
   @@unique([locale, hash])
   @@index([locale])
+}
+
+// Üyenin satın aldığı kişisel alan adı. Ödeme onaylandıktan sonra Domain Name API
+// üzerinden kaydedilir, Cloudflare'e zone olarak eklenir ve üyenin kart sayfasına bağlanır.
+enum AlanAdiDurum {
+  ODEME_BEKLIYOR // sipariş oluştu, banka onayı bekleniyor
+  KAYIT_EDILIYOR // ödeme alındı, registrar/Cloudflare adımları sürüyor
+  YAYILIYOR      // kayıt tamam, NS yayılımı bekleniyor
+  AKTIF          // adres yayında
+  HATA           // kurulum adımlarından biri başarısız — admin müdahalesi gerekir
+  SURESI_DOLDU
+  IPTAL
+}
+
+model AlanAdi {
+  id       String       @id @default(cuid())
+  member   Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String
+  alanAdi  String       @unique // abcd.com — küçük harf, punycode
+  tld      String
+  durum    AlanAdiDurum @default(ODEME_BEKLIYOR)
+  yil      Int          @default(1)
+
+  maliyetKurus Int     @default(0) // Domain Name API bayi fiyatı (TRY, kuruş)
+  satisTutar   Int     @default(0) // üyeye kesilen tutar (tam TL — QNB tam TL istiyor)
+  siparisNo    String? // Order.siparisNo
+
+  // Registrar / Cloudflare tarafı
+  registrarOrderCode String   @default("")
+  contactHandle      String   @default("")
+  cfZoneId           String   @default("")
+  cfNameServers      String[] @default([])
+  cfRuleId           String   @default("")
+
+  kayitTarihi DateTime?
+  bitisTarihi DateTime?
+  otoYenile   Boolean   @default(true)
+  hataMesaji  String    @default("")
+
+  // WHOIS kişi bilgileri — yalnızca registrar kaydı ve yenileme için tutulur.
+  iletisim Json?
+  // Üyenin işaretlediği tanıtım kontrol listesi maddeleri: { "imza": true, ... }
+  tanitimAdimlari Json @default("{}")
+
+  // Hatırlatma e-postalarının tekrar gönderilmemesi için gönderilen eşikler: [60, 30, 7]
+  hatirlatmalar Int[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+  @@index([durum, bitisTarihi])
 }

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { PRODUCTS_TEXT, type ProductsText } from "@/lib/i18n/ui-text";
+import { KartFormu, BOS_KART, type KartAlanlari } from "@/components/odeme/KartFormu";
+import { odemeyeGit, type OdemeYaniti } from "@/components/odeme/odeme-yonlendir";
 
 interface Urun {
   id: string;
@@ -245,22 +247,6 @@ function OdemeSonuc({ t }: { t: ProductsText }) {
   );
 }
 
-// Banka 3D ödeme sayfasına imzalı form POST'u ile yönlendirir
-function redirectToBank(paymentForm: { url: string; fields: Record<string, string> }) {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = paymentForm.url;
-  Object.entries(paymentForm.fields).forEach(([k, v]) => {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = k;
-    input.value = v;
-    form.appendChild(input);
-  });
-  document.body.appendChild(form);
-  form.submit();
-}
-
 function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t: ProductsText }) {
   const [form, setForm] = useState({
     musteriAd: "", firma: "", email: "", telefon: "", adres: "", adet: "1", notlar: "",
@@ -268,6 +254,16 @@ function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [kart, setKart] = useState<KartAlanlari>(BOS_KART);
+  // Seçili ödeme sağlayıcısı kart bilgisini bizden mi bekliyor? (DijiGate: evet, QNB: hayır)
+  const [kartGerekli, setKartGerekli] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/odeme/durum")
+      .then(r => r.json())
+      .then(j => { if (j?.ok) setKartGerekli(Boolean(j.kartGerekli)); })
+      .catch(() => {});
+  }, []);
 
   const adetNum = Math.max(1, Number(form.adet) || 1);
   const toplam = urun.fiyat * adetNum;
@@ -283,12 +279,12 @@ function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t
     const res = await fetch("/api/siparis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, urunId: urun.id, adet: adetNum }),
+      body: JSON.stringify({ ...form, urunId: urun.id, adet: adetNum, ...(kartGerekli ? { kart } : {}) }),
     });
     const j = await res.json();
-    if (j.ok && j.paymentForm) {
-      // Banka ödeme sayfasına yönlendir — buton "Yönlendiriliyor" durumunda kalır
-      redirectToBank(j.paymentForm);
+    if (j.ok && j.odeme) {
+      // Banka 3D ekranına yönlendir — buton "Yönlendiriliyor" durumunda kalır
+      odemeyeGit(j.odeme as OdemeYaniti);
       return;
     }
     setSaving(false);
@@ -392,6 +388,12 @@ function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t
               <label className="block text-xs text-on-surface-variant mb-1.5">{t.note}</label>
               <textarea value={form.notlar} onChange={(e) => set("notlar", e.target.value)} rows={2} className={inputCls} />
             </div>
+
+            {kartGerekli && (
+              <div className="mb-5">
+                <KartFormu kart={kart} onChange={setKart} />
+              </div>
+            )}
 
             {error && (
               <p className="text-xs text-red-400 flex items-center gap-1 mb-3">

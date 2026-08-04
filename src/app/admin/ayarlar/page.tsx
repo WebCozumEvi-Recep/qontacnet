@@ -140,8 +140,14 @@ export default function AdminAyarlarPage() {
       {/* Site Kimliği */}
       <SiteKimligi />
 
-      {/* Sanal POS Ayarları */}
+      {/* Ödeme Sağlayıcısı + DijiGate */}
+      <Dijigate />
+
+      {/* Sanal POS Ayarları (yedek sağlayıcı) */}
       <SanalPos />
+
+      {/* Alan Adı (Domain) Ayarları */}
+      <AlanAdiAyarlari />
 
       {/* DB Migration */}
       <DbMigration />
@@ -379,6 +385,141 @@ function SiteKimligi() {
   );
 }
 
+interface DijigateSettings {
+  odemeSaglayici: string;
+  dijigateAktif: boolean;
+  dijigateTest: boolean;
+  dijigateApiKeySet: boolean;
+  dijigateSecretKeySet: boolean;
+}
+
+function Dijigate() {
+  const [s, setS] = useState<DijigateSettings>({
+    odemeSaglayici: "DIJIGATE", dijigateAktif: false, dijigateTest: true,
+    dijigateApiKeySet: false, dijigateSecretKeySet: false,
+  });
+  const [apiKey, setApiKey] = useState("");     // yeni API anahtarı; boşsa mevcut korunur
+  const [secretKey, setSecretKey] = useState(""); // yeni gizli anahtar; boşsa mevcut korunur
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all";
+
+  useEffect(() => {
+    fetch("/api/admin/dijigate").then(r => r.json()).then(j => {
+      if (j.ok && j.settings) setS(j.settings);
+    });
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true); setMsg(null);
+    const res = await fetch("/api/admin/dijigate", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...s, dijigateApiKey: apiKey, dijigateSecretKey: secretKey }),
+    });
+    const j = await res.json();
+    setSaving(false);
+    if (j.ok) {
+      setS(j.settings);
+      setApiKey(""); setSecretKey("");
+      setMsg({ ok: true, text: "Ödeme ayarları kaydedildi." });
+    } else {
+      setMsg({ ok: false, text: j.error || "Kaydedilemedi." });
+    }
+  }
+
+  const dijigateSecili = s.odemeSaglayici === "DIJIGATE";
+  const eksik = dijigateSecili && s.dijigateAktif && !((s.dijigateApiKeySet || apiKey) && (s.dijigateSecretKeySet || secretKey));
+
+  return (
+    <form onSubmit={handleSave} className="glass-card rounded-2xl p-6">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="material-symbols-outlined text-primary text-lg">payments</span>
+        <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Ödeme Sağlayıcısı</h3>
+      </div>
+      <p className="text-xs text-on-surface-variant mb-5">
+        Tüm ödeme akışları (ürün siparişleri ve alan adı satın alma/yenileme) burada seçilen
+        sağlayıcı üzerinden çalışır.
+      </p>
+
+      <div className="grid sm:grid-cols-2 gap-3 mb-5">
+        {[
+          { deger: "DIJIGATE", ad: "DijiGate", not: "Kart formu sitemizde, 3D Secure ile onaylanır." },
+          { deger: "QNB", ad: "QNB Sanal POS", not: "Kart bilgisi bankanın sayfasında girilir." },
+        ].map(o => (
+          <button key={o.deger} type="button" onClick={() => setS(p => ({ ...p, odemeSaglayici: o.deger }))}
+            className={`text-left p-4 rounded-xl border transition-all ${
+              s.odemeSaglayici === o.deger
+                ? "border-primary/40 bg-primary/10"
+                : "border-white/10 bg-surface-dim hover:border-white/20"
+            }`}>
+            <div className="flex items-center gap-2">
+              <span className={`material-symbols-outlined text-lg ${s.odemeSaglayici === o.deger ? "text-primary" : "text-on-surface-variant"}`}>
+                {s.odemeSaglayici === o.deger ? "radio_button_checked" : "radio_button_unchecked"}
+              </span>
+              <span className="text-sm font-medium text-on-surface">{o.ad}</span>
+            </div>
+            <p className="text-[11px] text-on-surface-variant mt-1 ml-7">{o.not}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="border-t border-white/10 pt-5">
+        <p className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>DijiGate Ayarları</p>
+        <p className="text-xs text-on-surface-variant mb-4">
+          Anahtarları DijiGate panelinden (Üye İşyeri Ayarları → API Anahtarları) alırsınız.
+          Webhook adresi olarak <code>/api/odeme/dijigate/webhook</code> tanımlanmalıdır.
+        </p>
+
+        <div className="space-y-1 mb-5 border border-white/10 rounded-xl p-2">
+          <ToggleControlled
+            label="DijiGate aktif"
+            desc="Kapalıysa DijiGate ile ödeme alınamaz."
+            on={s.dijigateAktif} onChange={v => setS(p => ({ ...p, dijigateAktif: v }))} />
+          <ToggleControlled
+            label="Test ortamı"
+            desc={s.dijigateTest
+              ? "TEST ortamı kullanılıyor (appapi-dev). Gerçek tahsilat yapılmaz."
+              : "CANLI ortam kullanılıyor (appapi). Gerçek para çekilir!"}
+            on={s.dijigateTest} onChange={v => setS(p => ({ ...p, dijigateTest: v }))} />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">API Anahtarı (x-api-key)</label>
+            <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} autoComplete="new-password"
+              className={inputCls} placeholder={s.dijigateApiKeySet ? "•••••••• (kayıtlı — değiştirmek için yazın)" : "dijigate-xxxxxxxx"} />
+          </div>
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">Gizli Anahtar (Secret Key)</label>
+            <input type="password" value={secretKey} onChange={e => setSecretKey(e.target.value)} autoComplete="new-password"
+              className={inputCls} placeholder={s.dijigateSecretKeySet ? "•••••••• (kayıtlı — değiştirmek için yazın)" : "İmza hesaplamasında kullanılır"} />
+            <p className="text-[11px] text-on-surface-variant mt-1">Kayıtlı anahtarlar geri gösterilmez. Boş bırakırsanız korunur.</p>
+          </div>
+        </div>
+      </div>
+
+      {eksik && (
+        <p className="text-xs flex items-center gap-1 mt-4 text-amber-400">
+          <span className="material-symbols-outlined text-sm">warning</span>
+          DijiGate aktif ama API ve gizli anahtar eksiksiz olmalı — aksi halde ödeme açılmaz.
+        </p>
+      )}
+      {msg && (
+        <p className={`text-xs flex items-center gap-1 mt-4 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
+          <span className="material-symbols-outlined text-sm">{msg.ok ? "check_circle" : "error"}</span>{msg.text}
+        </p>
+      )}
+      <button type="submit" disabled={saving}
+        className="mt-4 px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
+        {saving ? "Kaydediliyor..." : "Kaydet"}
+      </button>
+    </form>
+  );
+}
+
 interface QnbSettings {
   qnbAktif: boolean; qnbTest: boolean;
   qnbMerchantId: string; qnbUserCode: string; qnbMbrId: string; qnbTerminalId: string;
@@ -510,6 +651,125 @@ function SanalPos() {
         <p className="text-xs flex items-center gap-1 mb-3 text-amber-400">
           <span className="material-symbols-outlined text-sm">warning</span>
           POS aktif ama MerchantID, UserCode ve Mağaza 3D Anahtarı eksiksiz olmalı — aksi halde ödeme açılmaz.
+        </p>
+      )}
+      {msg && (
+        <p className={`text-xs flex items-center gap-1 mb-3 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
+          <span className="material-symbols-outlined text-sm">{msg.ok ? "check_circle" : "error"}</span>{msg.text}
+        </p>
+      )}
+      <button type="submit" disabled={saving}
+        className="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60">
+        {saving ? "Kaydediliyor..." : "Kaydet"}
+      </button>
+    </form>
+  );
+}
+
+interface DomainSettings {
+  domainAktif: boolean; domainTest: boolean;
+  domainResellerId: string; domainKarMarji: number; domainMinKar: number;
+  domainApiKeySet: boolean;
+}
+
+function AlanAdiAyarlari() {
+  const [s, setS] = useState<DomainSettings>({
+    domainAktif: false, domainTest: true, domainResellerId: "",
+    domainKarMarji: 35, domainMinKar: 50, domainApiKeySet: false,
+  });
+  const [apiKey, setApiKey] = useState(""); // yeni anahtar; boşsa mevcut korunur
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all";
+
+  useEffect(() => {
+    fetch("/api/admin/alan-adi-ayarlar").then(r => r.json()).then(j => {
+      if (j.ok && j.settings) setS(j.settings);
+    });
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true); setMsg(null);
+    const res = await fetch("/api/admin/alan-adi-ayarlar", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...s, domainApiKey: apiKey }),
+    });
+    const j = await res.json();
+    setSaving(false);
+    if (j.ok) {
+      setS(j.settings); setApiKey("");
+      setMsg({ ok: true, text: "Alan adı ayarları kaydedildi." });
+    } else {
+      setMsg({ ok: false, text: j.error || "Kaydedilemedi." });
+    }
+  }
+
+  const eksik = s.domainAktif && (!s.domainResellerId || !(s.domainApiKeySet || apiKey));
+
+  return (
+    <form onSubmit={handleSave} className="glass-card rounded-2xl p-6">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="material-symbols-outlined text-primary text-lg">language</span>
+        <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Alan Adı (Domain) Satışı</h3>
+      </div>
+      <p className="text-xs text-on-surface-variant mb-5">
+        Domain Name API bayi entegrasyonu. Aktif edildiğinde üyeler panellerindeki
+        &quot;Web Adresin&quot; bölümünden kendi alan adlarını sorgulayıp satın alabilir.
+      </p>
+
+      <div className="space-y-1 mb-5 border border-white/10 rounded-xl p-2">
+        <ToggleControlled
+          label="Alan adı satışı aktif"
+          desc="Kapalıysa üye panelinde sorgulama ve satın alma devre dışı kalır."
+          on={s.domainAktif} onChange={v => setS(p => ({ ...p, domainAktif: v }))} />
+        <ToggleControlled
+          label="Test ortamı (OTE)"
+          desc={s.domainTest
+            ? "OTE test ortamı kullanılıyor. Kayıtlar gerçek değildir, ücret çıkmaz."
+            : "CANLI ortam kullanılıyor. Her kayıt bayi bakiyenizden gerçek para düşer!"}
+          on={s.domainTest} onChange={v => setS(p => ({ ...p, domainTest: v }))} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Bayi ID (__reseller)</label>
+          <input value={s.domainResellerId} onChange={e => setS(p => ({ ...p, domainResellerId: e.target.value }))}
+            className={inputCls} placeholder="örn. b4a42f30-c84b-4202-b77d-bb82e54c6298" />
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">API Anahtarı (X-API-KEY)</label>
+          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} autoComplete="new-password"
+            className={inputCls} placeholder={s.domainApiKeySet ? "•••••••• (kayıtlı — değiştirmek için yazın)" : "Bayi panelinden alınan anahtar"} />
+          <p className="text-[11px] text-on-surface-variant mt-1">Kayıtlı anahtar geri gösterilmez. Boş bırakırsanız mevcut anahtar korunur.</p>
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">Kâr Marjı (%)</label>
+          <input type="number" min={0} max={500} value={s.domainKarMarji}
+            onChange={e => setS(p => ({ ...p, domainKarMarji: Number(e.target.value) }))}
+            className={inputCls} placeholder="35" />
+          <p className="text-[11px] text-on-surface-variant mt-1">Bayi maliyetinin üzerine eklenir. Satış fiyatı tam TL&apos;ye yukarı yuvarlanır.</p>
+        </div>
+        <div>
+          <label className="block text-xs text-on-surface-variant mb-1.5">En Az Kâr (TL)</label>
+          <input type="number" min={0} max={10000} value={s.domainMinKar}
+            onChange={e => setS(p => ({ ...p, domainMinKar: Number(e.target.value) }))}
+            className={inputCls} placeholder="50" />
+          <p className="text-[11px] text-on-surface-variant mt-1">Yüzde bu tutarın altında kalırsa bunun kadar kâr eklenir.</p>
+        </div>
+      </div>
+
+      <div className="text-[11px] text-on-surface-variant bg-surface-dim/60 border border-white/10 rounded-xl px-3 py-2 mb-4">
+        <span className="font-semibold text-on-surface">Not:</span> alan adı satın alımı Sanal POS üzerinden tahsil edilir —
+        Sanal POS kapalıysa alan adı satışı da çalışmaz. Kayıt işlemi ödeme onaylandıktan sonra otomatik başlar.
+      </div>
+
+      {eksik && (
+        <p className="text-xs flex items-center gap-1 mb-3 text-amber-400">
+          <span className="material-symbols-outlined text-sm">warning</span>
+          Satış aktif ama Bayi ID ve API Anahtarı eksiksiz olmalı — aksi halde sorgulama çalışmaz.
         </p>
       )}
       {msg && (
