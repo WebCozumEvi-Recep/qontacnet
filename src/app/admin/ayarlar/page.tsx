@@ -456,12 +456,15 @@ function Dijigate() {
                 : "border-white/10 bg-surface-dim hover:border-white/20"
             }`}>
             <div className="flex items-center gap-2">
-              <span className={`material-symbols-outlined text-lg ${s.odemeSaglayici === o.deger ? "text-primary" : "text-on-surface-variant"}`}>
-                {s.odemeSaglayici === o.deger ? "radio_button_checked" : "radio_button_unchecked"}
+              {/* Seçim göstergesi CSS ile çizilir — ikon fontuna bağlı değil. */}
+              <span className={`w-4 h-4 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
+                s.odemeSaglayici === o.deger ? "border-primary" : "border-white/25"
+              }`}>
+                {s.odemeSaglayici === o.deger && <span className="w-2 h-2 rounded-full bg-primary" />}
               </span>
               <span className="text-sm font-medium text-on-surface">{o.ad}</span>
             </div>
-            <p className="text-[11px] text-on-surface-variant mt-1 ml-7">{o.not}</p>
+            <p className="text-[11px] text-on-surface-variant mt-1 ml-6">{o.not}</p>
           </button>
         ))}
       </div>

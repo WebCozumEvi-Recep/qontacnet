@@ -57,6 +57,9 @@ add(`
   autorenew cloud_sync event_busy pending lock print badge storefront
   travel_explore campaign chat checklist edit_note share tag refresh
   cancel language download close info warning
+  payments credit_card code public database verified bolt event mail
+  qr_code_2 search visibility check check_circle content_copy sync error
+  progress_activity work
 `);
 
 const names = [...icons].sort();
