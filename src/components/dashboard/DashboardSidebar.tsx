@@ -17,6 +17,7 @@ const uyeNav: NavItem[] = [
   { href: "/uye/qr", icon: "qr_code_2", label: "QR Kodum" },
   { href: "/uye/baglantilar", icon: "group_add", label: "İletişim Talepleri" },
   { href: "/uye/template", icon: "style", label: "Firma Şablonu" },
+  { href: "/uye/web-adresin", icon: "language", label: "Web Adresin" },
 ];
 
 const firmaNav: NavItem[] = [
@@ -41,6 +42,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/urun-tanitim", icon: "campaign", label: "Ürün Tanıtımı" },
   { href: "/admin/basvurular", icon: "mark_email_unread", label: "Başvurular" },
   { href: "/admin/sayfalar", icon: "description", label: "Özel Sayfalar" },
+  { href: "/admin/alan-adlari", icon: "language", label: "Alan Adları" },
   { href: "/admin/ayarlar", icon: "settings", label: "Ayarlar" },
 ];
 

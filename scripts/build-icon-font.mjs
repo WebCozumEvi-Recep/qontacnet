@@ -27,6 +27,15 @@ add(
   ),
 );
 
+// 1b) <span className="material-symbols-outlined">{kosul ? "ikon_a" : "ikon_b"}</span>
+// İkon adının JSX ifadesi içinde geçtiği durumlar — (1) numaralı desen `{` görünce durur.
+add(
+  sh(
+    `grep -rhoE 'material-symbols-outlined[^>]*>\\{[^}]*\\}' --include='*.tsx' src/ ` +
+      `| grep -oE '"[a-z_0-9]+"' | tr -d '"' || true`,
+  ),
+);
+
 // 2) { icon: "ikon_adi" } / { ikonAd: "..." } biçimindeki prop tanımları
 add(
   sh(
@@ -40,6 +49,15 @@ const galeri = readFileSync("src/components/ModulIkon.tsx", "utf8").match(
   /IKON_GALERI = \[([\s\S]*?)\];/,
 );
 if (galeri) add(galeri[1].match(/"[a-z_0-9]+"/g).map((s) => s.slice(1, -1)).join(" "));
+
+// 4) Elle eklenenler — grep desenleri satır bazlı çalıştığı için, ikon adı
+// birden çok satıra yayılan bir JSX ifadesinde geçiyorsa yakalanamaz.
+// Böyle ikonları buraya yazın.
+add(`
+  autorenew cloud_sync event_busy pending lock print badge storefront
+  travel_explore campaign chat checklist edit_note share tag refresh
+  cancel language download close info warning
+`);
 
 const names = [...icons].sort();
 console.log(`${names.length} ikon bulundu.`);

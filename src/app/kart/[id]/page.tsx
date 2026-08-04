@@ -32,6 +32,7 @@ function kartVerisi(id: string, locale: Locale) {
 function kaynakCoz(src: string | undefined): KartKaynak {
   if (src === "nfc") return "NFC";
   if (src === "qr") return "QR";
+  if (src === "domain") return "DOMAIN"; // üyenin kendi web adresinden gelen ziyaret
   return "LINK";
 }
 

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { tx, txContent } from "@/lib/i18n/auto";
 import type { Locale } from "@/lib/i18n/config";
 
-export type KartKaynak = "NFC" | "QR" | "LINK";
+export type KartKaynak = "NFC" | "QR" | "LINK" | "DOMAIN";
 
 export interface KartBilgisi {
   id: string;

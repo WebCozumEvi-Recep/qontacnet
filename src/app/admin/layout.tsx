@@ -16,6 +16,7 @@ const pageTitles: Record<string, string> = {
   "/admin/uye-modulleri": "Üye Modülleri",
   "/admin/urun-tanitim": "Ürün Tanıtımı",
   "/admin/sayfalar": "Özel Sayfalar",
+  "/admin/alan-adlari": "Alan Adları",
   "/admin/ayarlar": "Platform Ayarları",
 };
 
