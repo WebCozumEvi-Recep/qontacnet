@@ -203,32 +203,32 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
           </Alan>
 
           <Alan label="Ülke">
-            <div className="flex gap-2">
-              <select
-                value={ulkeSecim}
-                onChange={e => { setUlkeSecim(e.target.value as "TR" | "DIGER"); setHata(""); }}
-                className={`${inputCls} ${ulkeSecim === "DIGER" ? "w-28 shrink-0" : ""}`}
-              >
-                <option value="TR">Türkiye</option>
-                <option value="DIGER">Diğer</option>
-              </select>
+            {/* Seçim ve serbest metin alt alta — yan yana dizilince dar grid
+                hücresinde kartın dışına taşıyordu. */}
+            <select
+              value={ulkeSecim}
+              onChange={e => { setUlkeSecim(e.target.value as "TR" | "DIGER"); setHata(""); }}
+              className={inputCls}
+            >
+              <option value="TR">Türkiye</option>
+              <option value="DIGER">Diğer</option>
+            </select>
 
-              {ulkeSecim === "DIGER" && (
-                <>
-                  <input
-                    required
-                    list="ulke-listesi"
-                    value={ulkeAdi}
-                    onChange={e => { setUlkeAdi(e.target.value); setHata(""); }}
-                    placeholder="Ülke adı yazın"
-                    className={inputCls}
-                  />
-                  <datalist id="ulke-listesi">
-                    {ulkeler.map(u => <option key={u.kod} value={u.ad} />)}
-                  </datalist>
-                </>
-              )}
-            </div>
+            {ulkeSecim === "DIGER" && (
+              <>
+                <input
+                  required
+                  list="ulke-listesi"
+                  value={ulkeAdi}
+                  onChange={e => { setUlkeAdi(e.target.value); setHata(""); }}
+                  placeholder="Ülke adı yazın"
+                  className={`${inputCls} mt-2`}
+                />
+                <datalist id="ulke-listesi">
+                  {ulkeler.map(u => <option key={u.kod} value={u.ad} />)}
+                </datalist>
+              </>
+            )}
             {ulkeSecim === "DIGER" && (
               <p className={`text-[11px] mt-1 ${ulkeAdi && !ulkeKodu ? "text-amber-400" : "text-on-surface-variant"}`}>
                 {ulkeAdi && !ulkeKodu
