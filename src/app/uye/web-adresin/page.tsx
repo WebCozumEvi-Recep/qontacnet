@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { etiketHatasi, etiketNormalize } from "@/lib/domain-kurallar";
+import { etiketHatasi, etiketNormalize, harfDonustur, ONERILEN_TLDLER } from "@/lib/domain-kurallar";
 import { fiyatMetni } from "@/lib/domain-fiyat";
 import { PazarlamaAraclari } from "./PazarlamaAraclari";
 import { SatinAlmaFormu } from "./SatinAlmaFormu";
@@ -125,6 +125,7 @@ export default function WebAdresinPage() {
 
 function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatinAlindi: () => void }) {
   const [girdi, setGirdi] = useState("");
+  const [tld, setTld] = useState<string>(ONERILEN_TLDLER[0]); // ".com"
   const [sorgulaniyor, setSorgulaniyor] = useState(false);
   const [sonuclar, setSonuclar] = useState<SorguSonucu[] | null>(null);
   const [hata, setHata] = useState("");
@@ -144,7 +145,7 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
     const j = await fetch("/api/me/alan-adi/sorgula", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ad: girdi }),
+      body: JSON.stringify({ ad: girdi, tld }),
     }).then(r => r.json()).catch(() => null);
     setSorgulaniyor(false);
 
@@ -212,12 +213,24 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
             <span className="px-3 flex items-center text-sm text-on-surface-variant border-r border-white/10 select-none">www.</span>
             <input
               value={girdi}
-              onChange={e => setGirdi(e.target.value)}
+              // Yazarken anlık düzeltilir: büyük harf küçüğe, Türkçe harfler ASCII
+              // karşılığına (ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u), geçersiz karakterler atılır.
+              onChange={e => setGirdi(harfDonustur(e.target.value))}
               disabled={!satisAcik}
               placeholder="firmaadi"
-              autoCapitalize="none" autoCorrect="off" spellCheck={false}
-              className="flex-1 min-w-0 bg-transparent px-3 py-3 text-sm outline-none disabled:opacity-50"
+              autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="url"
+              className="flex-1 min-w-0 bg-transparent px-3 py-3 text-sm outline-none disabled:opacity-50 lowercase"
             />
+            {/* Uzantı seçimi — seçilen uzantı sonuçlarda en üstte öne çıkarılır. */}
+            <select
+              value={tld}
+              onChange={e => setTld(e.target.value)}
+              disabled={!satisAcik}
+              aria-label="Uzantı"
+              className="bg-surface-dim border-l border-white/10 px-3 py-3 text-sm text-on-surface outline-none focus:text-primary disabled:opacity-50 cursor-pointer"
+            >
+              {ONERILEN_TLDLER.map(t => <option key={t} value={t}>.{t}</option>)}
+            </select>
           </div>
           <button type="submit" disabled={sorgulaniyor || !satisAcik}
             className="px-6 py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2">
@@ -228,7 +241,9 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
           </button>
         </div>
         <p className="text-[11px] text-on-surface-variant mt-2">
-          En az 3 karakter; harf, rakam ve tire kullanabilirsiniz. Türkçe karakter kullanmayın.
+          En az 3 karakter; harf, rakam ve tire kullanabilirsiniz. Alan adlarında Türkçe karakter
+          bulunamaz — yazdıklarınız otomatik olarak küçük harfe ve ASCII karşılığına çevrilir
+          (ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u).
         </p>
         {hata && (
           <p className="text-xs text-red-400 flex items-center gap-1 mt-2">
@@ -243,32 +258,23 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
           <p className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>
             Sorgu sonuçları
           </p>
-          <div className="space-y-2">
-            {sonuclar.map(s => (
-              <div key={s.alanAdi}
-                className={`flex flex-wrap items-center gap-3 p-3 rounded-xl border transition-all ${
-                  s.satinAlinabilir ? "border-white/10 bg-surface-dim hover:border-primary/40" : "border-white/5 bg-surface-dim/40"
-                }`}>
-                <span className={`material-symbols-outlined text-lg ${s.musait ? "text-green-400" : "text-on-surface-variant"}`}>
-                  {s.musait ? "check_circle" : "cancel"}
-                </span>
-                <span className={`flex-1 min-w-[140px] text-sm font-mono ${s.musait ? "text-on-surface" : "text-on-surface-variant line-through"}`}>
-                  www.{s.alanAdi}
-                </span>
-                {s.satinAlinabilir ? (
-                  <>
-                    <span className="text-sm font-semibold text-on-surface">{fiyatMetni(s.fiyat)}<span className="text-xs text-on-surface-variant font-normal"> / yıl</span></span>
-                    <button type="button" onClick={() => setSecili(s)} disabled={!kartAktif}
-                      className="px-4 py-2 bg-primary/10 border border-primary/30 text-primary rounded-xl text-sm font-medium hover:bg-primary/20 transition-all disabled:opacity-40">
-                      Satın Al
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-xs text-on-surface-variant">{s.not}</span>
-                )}
+
+          {/* Seçilen uzantı sunucudan ilk sırada gelir — onu öne çıkarıp ayırıyoruz. */}
+          {sonuclar[0] && (
+            <SonucSatiri sonuc={sonuclar[0]} oneCikan kartAktif={kartAktif} onSec={setSecili} />
+          )}
+
+          {sonuclar.length > 1 && (
+            <>
+              <p className="text-xs text-on-surface-variant mt-5 mb-2">Diğer uzantılar</p>
+              <div className="space-y-2">
+                {sonuclar.slice(1).map(s => (
+                  <SonucSatiri key={s.alanAdi} sonuc={s} kartAktif={kartAktif} onSec={setSecili} />
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
+
           <p className="text-[11px] text-on-surface-variant mt-4">
             Fiyatlar 1 yıllık kayıt bedelidir ve KDV dahildir. Adresiniz her yıl yenilenir; süre bitmeden önce hatırlatırız.
           </p>
@@ -284,6 +290,84 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
         />
       )}
     </>
+  );
+}
+
+/**
+ * Tek bir sorgu sonucu. `oneCikan` seçilen uzantı içindir: daha büyük, altın
+ * çerçeveli ve belirgin butonlu; diğerleri sade satır olarak listelenir.
+ */
+function SonucSatiri({ sonuc, oneCikan, kartAktif, onSec }: {
+  sonuc: SorguSonucu;
+  oneCikan?: boolean;
+  kartAktif: boolean;
+  onSec: (s: SorguSonucu) => void;
+}) {
+  const s = sonuc;
+
+  if (oneCikan) {
+    return (
+      <div className={`rounded-2xl border p-5 ${
+        s.satinAlinabilir
+          ? "border-primary/40 bg-primary/5 shadow-[0_0_28px_-12px_rgba(212,175,55,0.55)]"
+          : "border-white/10 bg-surface-dim/60"
+      }`}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className={`material-symbols-outlined text-2xl ${s.musait ? "text-green-400" : "text-on-surface-variant"}`}>
+            {s.musait ? "check_circle" : "cancel"}
+          </span>
+          <span className={`flex-1 min-w-[180px] text-lg sm:text-xl font-mono font-semibold break-all ${
+            s.musait ? "text-primary" : "text-on-surface-variant line-through"
+          }`}>
+            www.{s.alanAdi}
+          </span>
+
+          {s.satinAlinabilir ? (
+            <>
+              <span className="text-lg font-bold text-on-surface whitespace-nowrap">
+                {fiyatMetni(s.fiyat)}
+                <span className="text-xs text-on-surface-variant font-normal"> / yıl</span>
+              </span>
+              <button type="button" onClick={() => onSec(s)} disabled={!kartAktif}
+                className="px-6 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-40">
+                Satın Al
+              </button>
+            </>
+          ) : (
+            <span className="text-sm text-on-surface-variant">{s.not}</span>
+          )}
+        </div>
+        <p className="text-[11px] text-on-surface-variant mt-2">
+          {s.satinAlinabilir ? "Seçtiğiniz uzantı — hemen alabilirsiniz." : "Seçtiğiniz uzantı müsait değil; aşağıdaki alternatiflere bakın."}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex flex-wrap items-center gap-3 p-3 rounded-xl border transition-all ${
+      s.satinAlinabilir ? "border-white/10 bg-surface-dim hover:border-primary/40" : "border-white/5 bg-surface-dim/40"
+    }`}>
+      <span className={`material-symbols-outlined text-lg ${s.musait ? "text-green-400" : "text-on-surface-variant"}`}>
+        {s.musait ? "check_circle" : "cancel"}
+      </span>
+      <span className={`flex-1 min-w-[140px] text-sm font-mono ${s.musait ? "text-on-surface" : "text-on-surface-variant line-through"}`}>
+        www.{s.alanAdi}
+      </span>
+      {s.satinAlinabilir ? (
+        <>
+          <span className="text-sm font-semibold text-on-surface whitespace-nowrap">
+            {fiyatMetni(s.fiyat)}<span className="text-xs text-on-surface-variant font-normal"> / yıl</span>
+          </span>
+          <button type="button" onClick={() => onSec(s)} disabled={!kartAktif}
+            className="px-4 py-2 bg-primary/10 border border-primary/30 text-primary rounded-xl text-sm font-medium hover:bg-primary/20 transition-all disabled:opacity-40">
+            Satın Al
+          </button>
+        </>
+      ) : (
+        <span className="text-xs text-on-surface-variant">{s.not}</span>
+      )}
+    </div>
   );
 }
 

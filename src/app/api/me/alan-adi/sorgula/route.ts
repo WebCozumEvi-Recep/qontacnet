@@ -33,10 +33,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Alan adı satışı henüz yapılandırılmadı." }, { status: 503 });
   }
 
-  // Kullanıcı bir uzantı yazdıysa onu başa al, ardından önerilenleri sırala.
+  // Sıralama: kutudan seçilen uzantı > adresin içine yazılan uzantı > öneriler.
+  // İlk sıradaki, arayüzde "öne çıkan sonuç" olarak gösterilir.
+  const secilen = String(body.tld ?? "").toLowerCase().replace(/^\./, "");
   const yazilan = girilenTld(girdi);
+
   const tldler: string[] = [];
-  if (yazilan && tldDestekleniyorMu(yazilan)) tldler.push(yazilan);
+  if (secilen && tldDestekleniyorMu(secilen)) tldler.push(secilen);
+  if (yazilan && tldDestekleniyorMu(yazilan) && !tldler.includes(yazilan)) tldler.push(yazilan);
   for (const t of ONERILEN_TLDLER) if (!tldler.includes(t)) tldler.push(t);
 
   const adaylar = tldler.map(t => `${etiket}.${t}`);

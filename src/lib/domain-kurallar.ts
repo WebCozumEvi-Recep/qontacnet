@@ -20,16 +20,50 @@ export function tldDestekleniyorMu(tld: string): boolean {
 }
 
 /**
+ * Türkçe harflerin ASCII karşılıkları. Punycode'lu (xn--) alan adları teoride
+ * mümkün ama pratikte e-postada, kartvizitte ve reklamda sorun çıkardığı için
+ * Türkçe karakterleri kaydetmek yerine sadeleştiriyoruz.
+ *
+ * Not: JS'in `toLowerCase()`'i Türkçe'ye uygun değil ("I" → "i", "İ" → birleşik
+ * noktalı i). Bu yüzden büyük harfleri de burada açıkça eşliyoruz.
+ */
+const TURKCE_HARFLER: Record<string, string> = {
+  ç: "c", Ç: "c",
+  ğ: "g", Ğ: "g",
+  ı: "i", I: "i",
+  İ: "i", i: "i",
+  ö: "o", Ö: "o",
+  ş: "s", Ş: "s",
+  ü: "u", Ü: "u",
+};
+
+/**
+ * Kullanıcının yazdığını alan adında kullanılabilir hâle getirir:
+ * küçük harfe çevirir, Türkçe harfleri ASCII karşılığına dönüştürür ve
+ * geçersiz karakterleri atar. Yazarken anlık uygulanabilir (kullanıcı
+ * "ÇİÇEKÇİ" yazsa da kutuda "cicekci" görür).
+ */
+export function harfDonustur(girdi: string): string {
+  let s = "";
+  for (const ch of girdi || "") {
+    const tr = TURKCE_HARFLER[ch];
+    s += tr ?? ch.toLowerCase();
+  }
+  // Alan adında yalnızca harf, rakam ve tire olabilir.
+  return s.replace(/[^a-z0-9-]/g, "");
+}
+
+/**
  * Kullanıcının yazdığı metinden alan adı etiketini (uzantısız kısım) çıkarır.
- * "www.ABCD.com/x" → "abcd". IDN girildiyse punycode'a çevrilir.
+ * "www.ÇİÇEKÇİ.com/x" → "cicekci".
  */
 export function etiketNormalize(girdi: string): string {
-  let s = (girdi || "").trim().toLowerCase();
-  s = s.replace(/^https?:\/\//, "").replace(/^www\./, "");
+  let s = (girdi || "").trim();
+  s = s.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
   s = s.split("/")[0].split("?")[0].split("#")[0];
   // Kullanıcı uzantı da yazdıysa yalnızca ilk etiketi al.
   s = s.split(".")[0];
-  return punycode(s);
+  return harfDonustur(s);
 }
 
 /** Girdide uzantı verilmişse döndürür (desteklenmese bile), yoksa boş string. */
@@ -37,17 +71,6 @@ export function girilenTld(girdi: string): string {
   const s = (girdi || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
   const parcalar = s.split(".");
   return parcalar.length > 1 ? parcalar.slice(1).join(".") : "";
-}
-
-/** IDN etiketini punycode'a çevirir (ör. "şirket" → "xn--irket-3ya"). ASCII ise dokunmaz. */
-export function punycode(etiket: string): string {
-  if (/^[a-z0-9-]*$/.test(etiket)) return etiket;
-  try {
-    // URL API'si IDN dönüşümünü yapar; tek etiket için güvenli.
-    return new URL(`http://${etiket}.com`).hostname.split(".")[0];
-  } catch {
-    return etiket;
-  }
 }
 
 /**

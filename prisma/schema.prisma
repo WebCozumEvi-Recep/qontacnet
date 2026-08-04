@@ -523,7 +523,7 @@ model AlanAdi {
   id       String       @id @default(cuid())
   member   Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
   memberId String
-  alanAdi  String       @unique // abcd.com — küçük harf, punycode
+  alanAdi  String       @unique // abcd.com — küçük harf, yalnız ASCII
   tld      String
   durum    AlanAdiDurum @default(ODEME_BEKLIYOR)
   yil      Int          @default(1)
