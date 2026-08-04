@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fiyatMetni } from "@/lib/domain-fiyat";
 import { KartFormu, BOS_KART, type KartAlanlari } from "@/components/odeme/KartFormu";
 import { odemeyeGit, type OdemeYaniti } from "@/components/odeme/odeme-yonlendir";
@@ -23,6 +23,55 @@ function yerelTelefon(ham: string): string {
   return rakam;
 }
 
+/**
+ * Kullanılmayan/geçersiz ülke kodları. Tarayıcının ülke veritabanı bunları da
+ * tanıdığı için ayıklamak gerekiyor — aksi hâlde ör. "Almanya" araması tarihe
+ * karışmış Doğu Almanya kodu "DD"yi bulur ve kayıt kuruluşu isteği reddeder.
+ *
+ * İlk grup ISO 3166-3 (artık kullanılmayan ülkeler), ikinci grup ise ülke
+ * olmayan özel/ayrılmış kodlardır (kıta, birlik, üs bölgesi vb.).
+ */
+const GECERSIZ_ULKE_KODLARI = new Set([
+  "AN", "BU", "CS", "CT", "DD", "DY", "FQ", "FX", "HV", "JT", "MI", "NH",
+  "NQ", "NT", "PC", "PU", "PZ", "RH", "SU", "TP", "VD", "WK", "YD", "YU", "ZR",
+  "AC", "CP", "DG", "EA", "EU", "EZ", "IC", "QO", "TA", "UN", "XA", "XB", "ZZ",
+]);
+
+/**
+ * Tüm ülkelerin Türkçe adı → ISO-2 kod eşlemesi. Tarayıcının kendi ülke
+ * veritabanından üretilir, elle liste tutmaya gerek kalmaz.
+ * Registrar ISO-2 kod beklediği için kullanıcının yazdığı ad koda çevrilir.
+ */
+function ulkeSozlugu(): { ad: string; kod: string }[] {
+  try {
+    const isim = new Intl.DisplayNames(["tr"], { type: "region" });
+    const harfler = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const liste: { ad: string; kod: string }[] = [];
+    const gorulenAdlar = new Set<string>();
+
+    for (const a of harfler) {
+      for (const b of harfler) {
+        const kod = a + b;
+        if (GECERSIZ_ULKE_KODLARI.has(kod)) continue;
+
+        const ad = isim.of(kod);
+        // Tanımsız kodlarda API kodun kendisini döndürür — onları eliyoruz.
+        if (!ad || ad === kod) continue;
+
+        // Aynı ada sahip ikinci bir kod kalmışsa yalnızca ilkini tut.
+        const anahtar = ad.toLocaleLowerCase("tr");
+        if (gorulenAdlar.has(anahtar)) continue;
+        gorulenAdlar.add(anahtar);
+
+        liste.push({ ad, kod });
+      }
+    }
+    return liste.sort((x, y) => x.ad.localeCompare(y.ad, "tr"));
+  } catch {
+    return [];
+  }
+}
+
 export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
   sonuc: Sonuc;
   profil?: { ad: string; soyad: string; email: string; telefon: string };
@@ -40,14 +89,31 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
     sehir: "",
     ilce: "",
     postaKodu: "",
-    ulke: "TR",
   });
+  // Ülke: "TR" ya da "DIGER". "DIGER" seçilirse ad elle yazılır ve koda çevrilir.
+  const [ulkeSecim, setUlkeSecim] = useState<"TR" | "DIGER">("TR");
+  const [ulkeAdi, setUlkeAdi] = useState("");
+
   const [onay, setOnay] = useState(false);
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [hata, setHata] = useState("");
   const [kart, setKart] = useState<KartAlanlari>(BOS_KART);
   // Seçili ödeme sağlayıcısı kart bilgisini bizden mi bekliyor?
   const [kartGerekli, setKartGerekli] = useState(false);
+
+  const ulkeler = useMemo(() => ulkeSozlugu(), []);
+
+  /** Yazılan ülke adının ISO-2 karşılığı; bulunamazsa boş. */
+  const ulkeKodu = useMemo(() => {
+    if (ulkeSecim === "TR") return "TR";
+    const yazilan = ulkeAdi.trim().toLocaleLowerCase("tr");
+    if (!yazilan) return "";
+    // Kullanıcı doğrudan kod da yazmış olabilir (ör. "DE").
+    if (/^[a-zA-Z]{2}$/.test(yazilan) && ulkeler.some(u => u.kod === yazilan.toUpperCase())) {
+      return yazilan.toUpperCase();
+    }
+    return ulkeler.find(u => u.ad.toLocaleLowerCase("tr") === yazilan)?.kod ?? "";
+  }, [ulkeSecim, ulkeAdi, ulkeler]);
 
   useEffect(() => {
     fetch("/api/odeme/durum")
@@ -61,6 +127,12 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
 
   async function gonder(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!ulkeKodu) {
+      setHata("Ülke adını listeden seçin veya tam yazın (ör. Almanya).");
+      return;
+    }
+
     setHata(""); setGonderiliyor(true);
 
     const j = await fetch("/api/me/alan-adi/satin-al", {
@@ -68,6 +140,7 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        ulke: ulkeKodu,
         tld: sonuc.tld,
         alanAdiEtiketi: sonuc.alanAdi.split(".")[0],
         sozlesmeOnay: onay,
@@ -85,22 +158,37 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-      <form onSubmit={gonder} className="glass-card rounded-2xl p-5 sm:p-6 w-full max-w-2xl my-4 bg-surface">
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <h3 className="text-base font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
+    <form onSubmit={gonder} className="space-y-4">
+      {/* Başlık — sayfa akışının içinde, üstte "geri" ile */}
+      <div className="glass-card rounded-2xl p-5 sm:p-6">
+        <button type="button" onClick={onKapat}
+          className="inline-flex items-center gap-1 text-xs text-on-surface-variant hover:text-primary transition-colors mb-3">
+          <span className="material-symbols-outlined text-base">arrow_back</span>
+          Sorgu sonuçlarına dön
+        </button>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg sm:text-xl font-semibold text-primary font-mono break-all" style={{ fontFamily: "Sora, sans-serif" }}>
             www.{sonuc.alanAdi}
           </h3>
-          <button type="button" onClick={onKapat} className="text-on-surface-variant hover:text-on-surface">
-            <span className="material-symbols-outlined">close</span>
-          </button>
+          <span className="text-lg font-bold text-on-surface whitespace-nowrap">
+            {fiyatMetni(sonuc.fiyat)}
+            <span className="text-xs text-on-surface-variant font-normal"> / yıl</span>
+          </span>
         </div>
-        <p className="text-xs text-on-surface-variant mb-5">
-          1 yıllık kayıt — <strong className="text-on-surface">{fiyatMetni(sonuc.fiyat)}</strong> (KDV dahil).
-          Alan adı kayıt kurallarına göre aşağıdaki bilgiler sizin adınıza kayıt için kullanılır.
+        <p className="text-xs text-on-surface-variant mt-2">
+          1 yıllık kayıt, KDV dahil. Alan adı kayıt kurallarına göre aşağıdaki bilgiler
+          sizin adınıza kayıt için kullanılır.
+        </p>
+      </div>
+
+      {/* Kayıt sahibi bilgileri */}
+      <div className="glass-card rounded-2xl p-5 sm:p-6">
+        <p className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>
+          Kayıt Sahibi Bilgileri
         </p>
 
-        <div className="grid sm:grid-cols-2 gap-4 mb-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <Alan label="Ad"><input required value={form.ad} onChange={set("ad")} className={inputCls} /></Alan>
           <Alan label="Soyad"><input required value={form.soyad} onChange={set("soyad")} className={inputCls} /></Alan>
           <Alan label="Firma (varsa)" ipucu="Boş bırakırsanız ad soyadınız kullanılır.">
@@ -113,15 +201,45 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
               <input required inputMode="numeric" value={form.telefon} onChange={set("telefon")} placeholder="5xxxxxxxxx" className={inputCls} />
             </div>
           </Alan>
+
           <Alan label="Ülke">
-            <select value={form.ulke} onChange={set("ulke")} className={inputCls}>
-              <option value="TR">Türkiye</option>
-              <option value="DE">Almanya</option>
-              <option value="NL">Hollanda</option>
-              <option value="GB">Birleşik Krallık</option>
-              <option value="US">Amerika Birleşik Devletleri</option>
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={ulkeSecim}
+                onChange={e => { setUlkeSecim(e.target.value as "TR" | "DIGER"); setHata(""); }}
+                className={`${inputCls} ${ulkeSecim === "DIGER" ? "w-28 shrink-0" : ""}`}
+              >
+                <option value="TR">Türkiye</option>
+                <option value="DIGER">Diğer</option>
+              </select>
+
+              {ulkeSecim === "DIGER" && (
+                <>
+                  <input
+                    required
+                    list="ulke-listesi"
+                    value={ulkeAdi}
+                    onChange={e => { setUlkeAdi(e.target.value); setHata(""); }}
+                    placeholder="Ülke adı yazın"
+                    className={inputCls}
+                  />
+                  <datalist id="ulke-listesi">
+                    {ulkeler.map(u => <option key={u.kod} value={u.ad} />)}
+                  </datalist>
+                </>
+              )}
+            </div>
+            {ulkeSecim === "DIGER" && (
+              <p className={`text-[11px] mt-1 ${ulkeAdi && !ulkeKodu ? "text-amber-400" : "text-on-surface-variant"}`}>
+                {ulkeAdi && !ulkeKodu
+                  ? "Bu ülke bulunamadı — yazarken çıkan listeden seçin."
+                  : ulkeKodu
+                    ? `Seçilen ülke kodu: ${ulkeKodu}`
+                    : "Yazmaya başlayınca ülke listesi açılır."}
+              </p>
+            )}
           </Alan>
+
           <div className="sm:col-span-2">
             <Alan label="Adres"><input required value={form.adres} onChange={set("adres")} className={inputCls} /></Alan>
           </div>
@@ -129,13 +247,20 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
           <Alan label="İlçe"><input value={form.ilce} onChange={set("ilce")} className={inputCls} /></Alan>
           <Alan label="Posta Kodu"><input required inputMode="numeric" value={form.postaKodu} onChange={set("postaKodu")} className={inputCls} /></Alan>
         </div>
+      </div>
 
-        {kartGerekli && (
-          <div className="mb-4">
-            <KartFormu kart={kart} onChange={setKart} />
-          </div>
-        )}
+      {/* Ödeme */}
+      {kartGerekli && (
+        <div className="glass-card rounded-2xl p-5 sm:p-6">
+          <p className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>
+            Ödeme
+          </p>
+          <KartFormu kart={kart} onChange={setKart} />
+        </div>
+      )}
 
+      {/* Onay + gönder */}
+      <div className="glass-card rounded-2xl p-5 sm:p-6">
         <label className="flex items-start gap-2 text-xs text-on-surface-variant mb-4 cursor-pointer">
           <input type="checkbox" checked={onay} onChange={e => setOnay(e.target.checked)} className="mt-0.5" />
           <span>
@@ -164,8 +289,8 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
             Vazgeç
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }
 

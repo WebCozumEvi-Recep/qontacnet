@@ -153,6 +153,23 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
     setSonuclar(j.sonuclar as SorguSonucu[]);
   }
 
+  /** Satın alma bir adım — açılır pencere değil, sayfanın kendi akışında gösterilir. */
+  function satinAlmayaGec(s: SorguSonucu) {
+    setSecili(s);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  if (secili) {
+    return (
+      <SatinAlmaFormu
+        sonuc={secili}
+        profil={ozet?.profil}
+        onKapat={() => setSecili(null)}
+        onTamamlandi={onSatinAlindi}
+      />
+    );
+  }
+
   return (
     <>
       {/* Tanıtım */}
@@ -261,7 +278,7 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
 
           {/* Seçilen uzantı sunucudan ilk sırada gelir — onu öne çıkarıp ayırıyoruz. */}
           {sonuclar[0] && (
-            <SonucSatiri sonuc={sonuclar[0]} oneCikan kartAktif={kartAktif} onSec={setSecili} />
+            <SonucSatiri sonuc={sonuclar[0]} oneCikan kartAktif={kartAktif} onSec={satinAlmayaGec} />
           )}
 
           {sonuclar.length > 1 && (
@@ -269,7 +286,7 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
               <p className="text-xs text-on-surface-variant mt-5 mb-2">Diğer uzantılar</p>
               <div className="space-y-2">
                 {sonuclar.slice(1).map(s => (
-                  <SonucSatiri key={s.alanAdi} sonuc={s} kartAktif={kartAktif} onSec={setSecili} />
+                  <SonucSatiri key={s.alanAdi} sonuc={s} kartAktif={kartAktif} onSec={satinAlmayaGec} />
                 ))}
               </div>
             </>
@@ -281,14 +298,6 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
         </div>
       )}
 
-      {secili && (
-        <SatinAlmaFormu
-          sonuc={secili}
-          profil={ozet?.profil}
-          onKapat={() => setSecili(null)}
-          onTamamlandi={onSatinAlindi}
-        />
-      )}
     </>
   );
 }
