@@ -673,12 +673,13 @@ interface DomainSettings {
   domainAktif: boolean; domainTest: boolean;
   domainResellerId: string; domainKarMarji: number; domainMinKar: number;
   domainApiKeySet: boolean;
+  cfZoneId: string;
 }
 
 function AlanAdiAyarlari() {
   const [s, setS] = useState<DomainSettings>({
     domainAktif: false, domainTest: true, domainResellerId: "",
-    domainKarMarji: 35, domainMinKar: 50, domainApiKeySet: false,
+    domainKarMarji: 35, domainMinKar: 50, domainApiKeySet: false, cfZoneId: "",
   });
   const [apiKey, setApiKey] = useState(""); // yeni anahtar; boşsa mevcut korunur
   const [saving, setSaving] = useState(false);
@@ -761,6 +762,25 @@ function AlanAdiAyarlari() {
             onChange={e => setS(p => ({ ...p, domainMinKar: Number(e.target.value) }))}
             className={inputCls} placeholder="50" />
           <p className="text-[11px] text-on-surface-variant mt-1">Yüzde bu tutarın altında kalırsa bunun kadar kâr eklenir.</p>
+        </div>
+      </div>
+
+      <div className="border-t border-white/10 pt-4 mb-4">
+        <p className="text-xs font-semibold text-on-surface mb-1">Üyenin Kendi Alan Adını Bağlaması</p>
+        <p className="text-[11px] text-on-surface-variant mb-3">
+          Üye elindeki adresi (bizden almadığı) tanıtım sayfasına ücretsiz bağlayabilir.
+          Sertifika Cloudflare for SaaS ile üretilir — bunun için qontac.net alan adının
+          Cloudflare&apos;deki Zone ID&apos;si gerekir.
+        </p>
+        <div className="md:w-1/2">
+          <label className="block text-xs text-on-surface-variant mb-1.5">Cloudflare Zone ID (qontac.net)</label>
+          <input value={s.cfZoneId} onChange={e => setS(p => ({ ...p, cfZoneId: e.target.value }))}
+            className={inputCls} placeholder="örn. 9f5c603bbf44f679ef74f3c672ad851" />
+          <p className="text-[11px] text-on-surface-variant mt-1">
+            Cloudflare panelinde alan adınızı açın; sağ alttaki <strong>API</strong> kutusunda
+            <strong> Zone ID</strong> yazar. Boş bırakılırsa CLOUDFLARE_ZONE_ID ortam değişkeni,
+            o da yoksa alan adı Cloudflare&apos;de aranarak bulunur.
+          </p>
         </div>
       </div>
 

@@ -12,11 +12,13 @@ type DomainView = {
   domainResellerId: string;
   domainKarMarji: number; domainMinKar: number;
   domainApiKeySet: boolean;
+  cfZoneId: string;
 };
 
 function view(s: {
   domainAktif: boolean; domainTest: boolean; domainResellerId: string;
   domainApiKey: string; domainKarMarji: number; domainMinKar: number;
+  cfZoneId: string;
 } | null): DomainView {
   return {
     domainAktif: s?.domainAktif ?? false,
@@ -25,6 +27,7 @@ function view(s: {
     domainKarMarji: s?.domainKarMarji ?? 35,
     domainMinKar: s?.domainMinKar ?? 50,
     domainApiKeySet: Boolean(s?.domainApiKey),
+    cfZoneId: s?.cfZoneId ?? "",
   };
 }
 
@@ -51,6 +54,9 @@ export async function PUT(req: NextRequest) {
     domainResellerId: String(body.domainResellerId ?? "").trim(),
     domainKarMarji: Number.isFinite(marj) ? Math.min(500, Math.max(0, Math.round(marj))) : 35,
     domainMinKar: Number.isFinite(minKar) ? Math.min(10000, Math.max(0, Math.round(minKar))) : 50,
+    // Cloudflare zone kimliği 32 haneli onaltılık bir dizedir; boş bırakılabilir
+    // (o zaman env değişkenine, o da yoksa ada göre aramaya düşülür).
+    cfZoneId: String(body.cfZoneId ?? "").trim().toLowerCase().slice(0, 40),
   };
 
   const yeniKey = String(body.domainApiKey ?? "").trim();

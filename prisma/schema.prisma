@@ -426,6 +426,9 @@ model SiteSettings {
   domainApiKey           String   @default("")    // X-API-KEY — gizli
   domainKarMarji         Int      @default(35)    // bayi maliyeti üzerine eklenen yüzde
   domainMinKar           Int      @default(50)    // en az bu kadar TL kâr (yüzde düşük kalırsa)
+  // Üyenin kendi alan adını bağlaması (Cloudflare for SaaS custom hostname).
+  // Custom hostname'ler bu zone altında açılır — Cloudflare panelindeki qontac.net Zone ID'si.
+  cfZoneId               String   @default("")
   updatedAt              DateTime @updatedAt
 }
 
@@ -511,6 +514,7 @@ model Translation {
 // üzerinden kaydedilir, Cloudflare'e zone olarak eklenir ve üyenin kart sayfasına bağlanır.
 enum AlanAdiDurum {
   ODEME_BEKLIYOR // sipariş oluştu, banka onayı bekleniyor
+  DNS_BEKLIYOR   // üyenin kendi alan adı: DNS kayıtlarını girmesi bekleniyor
   KAYIT_EDILIYOR // ödeme alındı, registrar/Cloudflare adımları sürüyor
   YAYILIYOR      // kayıt tamam, NS yayılımı bekleniyor
   AKTIF          // adres yayında
@@ -532,6 +536,13 @@ model AlanAdi {
   satisTutar   Int     @default(0) // üyeye kesilen tutar (tam TL — QNB tam TL istiyor)
   siparisNo    String? // Order.siparisNo
 
+  // Üyenin kendi kayıt kuruluşunda duran alan adı mı? (satın alınmadı, bağlandı)
+  harici Boolean @default(false)
+  // Cloudflare for SaaS custom hostname kimlikleri (apex + www)
+  cfCustomHostnameIdleri String[] @default([])
+  // Üyeye gösterilen DNS kayıtları: [{ tip, ad, deger, aciklama }]
+  dnsKayitlari Json @default("[]")
+
   // Registrar / Cloudflare tarafı
   registrarOrderCode String   @default("")
   contactHandle      String   @default("")
@@ -546,6 +557,8 @@ model AlanAdi {
 
   // WHOIS kişi bilgileri — yalnızca registrar kaydı ve yenileme için tutulur.
   iletisim Json?
+  // Uzantıya özel zorunlu alanlar (.com.tr belge bilgileri gibi): { "key": "değer" }
+  tldNitelikleri Json @default("{}")
   // Üyenin işaretlediği tanıtım kontrol listesi maddeleri: { "imza": true, ... }
   tanitimAdimlari Json @default("{}")
 

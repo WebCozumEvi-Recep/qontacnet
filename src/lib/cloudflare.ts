@@ -1,4 +1,5 @@
 import "server-only";
+import { prisma } from "@/lib/prisma";
 
 // Cloudflare API v4 istemcisi — üyenin satın aldığı alan adını zone olarak ekler,
 // CNAME ile qontac.net'e bağlar ve kart sayfasına 301 yönlendirme kuralı kurar.
@@ -135,6 +136,140 @@ export async function yonlendirmeKurali(cfg: CloudflareConfig, zoneId: string, h
     },
   );
   return ruleset.id;
+}
+
+// ——————————————————————————————— Cloudflare for SaaS (üyenin kendi alan adı)
+//
+// Üye alan adını kendi kayıt kuruluşunda tutuyorsa nameserver'ları alamayız;
+// bunun yerine kendi zone'umuzda (qontac.net) o ana bilgisayar için bir
+// "custom hostname" açarız. Cloudflare sahiplik ve SSL doğrulamasını TXT
+// kayıtlarıyla yapar, sertifikayı kendisi üretir ve yeniler.
+//
+// Gerekli: hesapta Cloudflare for SaaS açık olmalı ve CLOUDFLARE_ZONE_ID
+// (qontac.net zone'u) tanımlı olmalı; tanımsızsa ada göre aranır.
+
+/**
+ * qontac.net zone kimliği — custom hostname'ler bu zone altında açılır.
+ * Sırayla: admin panelindeki ayar → CLOUDFLARE_ZONE_ID → Cloudflare'de ada göre arama.
+ */
+export async function anaZoneId(cfg: CloudflareConfig): Promise<string> {
+  const ayar = await prisma.siteSettings.findUnique({
+    where: { id: "site" },
+    select: { cfZoneId: true },
+  }).catch(() => null);
+  if (ayar?.cfZoneId) return ayar.cfZoneId;
+
+  const env = process.env.CLOUDFLARE_ZONE_ID;
+  if (env) return env;
+
+  const kok = (process.env.NEXT_PUBLIC_BASE_URL || "https://qontac.net").replace(/^https?:\/\//, "").split("/")[0];
+  const zonelar = await cf<Zone[]>(cfg, `/zones?name=${encodeURIComponent(kok)}&account.id=${cfg.accountId}`);
+  if (zonelar.length === 0) throw new CloudflareError(`"${kok}" zone'u Cloudflare hesabında bulunamadı.`);
+  return zonelar[0].id;
+}
+
+/** Üyeye gösterilecek tek bir DNS kaydı. */
+export interface DnsKaydi {
+  tip: "TXT" | "CNAME";
+  ad: string;
+  deger: string;
+  aciklama: string;
+}
+
+export interface CustomHostname {
+  id: string;
+  hostname: string;
+  /** "pending" | "active" | "blocked" ... — sahiplik doğrulaması. */
+  status: string;
+  /** "pending_validation" | "active" ... — sertifika durumu. */
+  sslStatus: string;
+  /** Üyenin kendi DNS panelinde açması gereken doğrulama kayıtları. */
+  dogrulama: DnsKaydi[];
+}
+
+interface ChYanit {
+  id: string;
+  hostname: string;
+  status: string;
+  ownership_verification?: { type?: string; name?: string; value?: string };
+  ownership_verification_http?: { http_url?: string; http_body?: string };
+  ssl?: {
+    status?: string;
+    txt_name?: string;
+    txt_value?: string;
+    validation_records?: { txt_name?: string; txt_value?: string }[];
+  };
+}
+
+function chCoz(y: ChYanit): CustomHostname {
+  const dogrulama: DnsKaydi[] = [];
+
+  // Sahiplik doğrulaması — hostname zaten bize CNAME'liyse Cloudflare bu alanı
+  // hiç döndürmez, o yüzden varlığı kontrol edilir.
+  if (y.ownership_verification?.name && y.ownership_verification.value) {
+    dogrulama.push({
+      tip: "TXT",
+      ad: y.ownership_verification.name,
+      deger: y.ownership_verification.value,
+      aciklama: "Alan adının size ait olduğunu doğrular.",
+    });
+  }
+
+  // SSL doğrulaması — sertifika bu kayıt görülmeden üretilmez.
+  const ssl = y.ssl ?? {};
+  const sslKayitlari = [
+    ...(ssl.txt_name && ssl.txt_value ? [{ txt_name: ssl.txt_name, txt_value: ssl.txt_value }] : []),
+    ...(ssl.validation_records ?? []),
+  ];
+  for (const r of sslKayitlari) {
+    if (!r.txt_name || !r.txt_value) continue;
+    if (dogrulama.some(d => d.ad === r.txt_name)) continue;
+    dogrulama.push({
+      tip: "TXT",
+      ad: r.txt_name,
+      deger: r.txt_value,
+      aciklama: "Güvenlik sertifikasının (https) üretilmesi için gerekir.",
+    });
+  }
+
+  return {
+    id: y.id,
+    hostname: y.hostname,
+    status: y.status,
+    sslStatus: ssl.status || "",
+    dogrulama,
+  };
+}
+
+/** Custom hostname açar; aynı ad zaten varsa mevcut kaydı döner (idempotent). */
+export async function customHostnameOlustur(cfg: CloudflareConfig, zoneId: string, hostname: string): Promise<CustomHostname> {
+  const mevcut = await cf<ChYanit[]>(cfg, `/zones/${zoneId}/custom_hostnames?hostname=${encodeURIComponent(hostname)}`);
+  const eslesen = mevcut.find(h => h.hostname === hostname);
+  if (eslesen) return chCoz(eslesen);
+
+  const y = await cf<ChYanit>(cfg, `/zones/${zoneId}/custom_hostnames`, {
+    method: "POST",
+    body: {
+      hostname,
+      ssl: {
+        method: "txt", // http doğrulaması adres henüz bize bakmadığı için çalışmaz
+        type: "dv",
+        settings: { min_tls_version: "1.2" },
+        bundle_method: "ubiquitous",
+        wildcard: false,
+      },
+    },
+  });
+  return chCoz(y);
+}
+
+export async function customHostnameDurum(cfg: CloudflareConfig, zoneId: string, id: string): Promise<CustomHostname> {
+  return chCoz(await cf<ChYanit>(cfg, `/zones/${zoneId}/custom_hostnames/${id}`));
+}
+
+/** Bağlantı kaldırıldığında custom hostname'i siler (sertifika da iptal olur). */
+export async function customHostnameSil(cfg: CloudflareConfig, zoneId: string, id: string): Promise<void> {
+  await cf(cfg, `/zones/${zoneId}/custom_hostnames/${id}`, { method: "DELETE" });
 }
 
 /** SSL modunu "Full" yapar — origin sertifikası alan adıyla eşleşmediği için strict olmamalı. */

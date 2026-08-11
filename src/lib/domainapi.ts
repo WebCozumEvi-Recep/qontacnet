@@ -149,7 +149,28 @@ interface TldYanit {
       register?: { period: number; price: number; currency: string }[];
       renew?: { period: number; price: number; currency: string }[];
     }[];
+    attributes?: {
+      key: string;
+      description?: string | null;
+      isRequired: boolean;
+      type?: string | null;
+      options?: { value?: string | null; description?: string | null }[] | null;
+    }[];
   }[];
+}
+
+/**
+ * Uzantıya özel ek alan (registrar'ın `tldAttributes` sözlüğü). Örneğin `.com.tr`
+ * kaydında istenen belge/marka bilgileri bu şekilde gelir; kayıt isteğinde
+ * `{key: değer}` olarak gönderilir.
+ */
+export interface TldNitelik {
+  anahtar: string;
+  aciklama: string;
+  zorunlu: boolean;
+  /** Serviste tanımlı tip ("String", "Select" vb.) — seçenek varsa liste gösterilir. */
+  tip: string;
+  secenekler: { deger: string; aciklama: string }[];
 }
 
 export interface TldMaliyet {
@@ -157,6 +178,8 @@ export interface TldMaliyet {
   kayitKurus: number;
   /** 1 yıllık yenileme maliyeti (TRY, kuruş). */
   yenilemeKurus: number;
+  /** Uzantının kayıt sırasında istediği ek alanlar (çoğu uzantıda boş). */
+  nitelikler: TldNitelik[];
 }
 
 function birYillikKurus(liste: { period: number; price: number; currency: string }[] | undefined): number {
@@ -177,6 +200,15 @@ async function tldMaliyetleriniCek(cfg: DomainApiConfig): Promise<Record<string,
     harita[item.name.toLowerCase()] = {
       kayitKurus: birYillikKurus(grup.register),
       yenilemeKurus: birYillikKurus(grup.renew),
+      nitelikler: (item.attributes ?? []).map(a => ({
+        anahtar: a.key,
+        aciklama: a.description || a.key,
+        zorunlu: Boolean(a.isRequired),
+        tip: a.type || "String",
+        secenekler: (a.options ?? [])
+          .map(o => ({ deger: o.value ?? "", aciklama: o.description || o.value || "" }))
+          .filter(o => o.deger),
+      })).filter(a => a.anahtar),
     };
   }
   return harita;
@@ -253,10 +285,19 @@ export interface KayitSonuc {
 /**
  * Alan adını kaydeder. Dört iletişim rolü de (registrant/admin/billing/tech)
  * aynı kişiye bağlanır — üye kendi adına kaydettiriyor.
+ *
+ * `nitelikler`, uzantıya özel zorunlu alanlardır (`.com.tr` gibi); servise
+ * `tldAttributes` sözlüğü olarak geçer, boşsa alan hiç gönderilmez.
  */
 export async function domainKaydet(
   cfg: DomainApiConfig,
-  opts: { alanAdi: string; yil: number; nameServers: string[]; iletisim: IletisimBilgisi },
+  opts: {
+    alanAdi: string;
+    yil: number;
+    nameServers: string[];
+    iletisim: IletisimBilgisi;
+    nitelikler?: Record<string, string>;
+  },
 ): Promise<KayitSonuc> {
   const kisi = contactDto(opts.iletisim);
   const yanit = await istek<{ success: boolean; message?: string; domainId?: string; status?: string; expirationDate?: string }>(
@@ -269,6 +310,9 @@ export async function domainKaydet(
         period: opts.yil,
         nameServers: opts.nameServers,
         contacts: ["Registrant", "Administrative", "Billing", "Technical"].map(rol => ({ ...kisi, contactType: rol })),
+        ...(opts.nitelikler && Object.keys(opts.nitelikler).length > 0
+          ? { tldAttributes: opts.nitelikler }
+          : {}),
         useTrusteeContact: false,
       },
     },

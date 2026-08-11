@@ -5,6 +5,7 @@ import { etiketHatasi, etiketNormalize, harfDonustur, ONERILEN_TLDLER } from "@/
 import { fiyatMetni } from "@/lib/domain-fiyat";
 import { PazarlamaAraclari } from "./PazarlamaAraclari";
 import { SatinAlmaFormu } from "./SatinAlmaFormu";
+import { DnsTalimatlari, type DnsKaydi } from "./DnsTalimatlari";
 import { KartFormu, BOS_KART, type KartAlanlari } from "@/components/odeme/KartFormu";
 import { odemeyeGit, type OdemeYaniti } from "@/components/odeme/odeme-yonlendir";
 
@@ -12,7 +13,7 @@ export interface AlanAdiKaydi {
   id: string;
   alanAdi: string;
   tld: string;
-  durum: "ODEME_BEKLIYOR" | "KAYIT_EDILIYOR" | "YAYILIYOR" | "AKTIF" | "HATA" | "SURESI_DOLDU";
+  durum: "ODEME_BEKLIYOR" | "DNS_BEKLIYOR" | "KAYIT_EDILIYOR" | "YAYILIYOR" | "AKTIF" | "HATA" | "SURESI_DOLDU";
   yil: number;
   satisTutar: number;
   kayitTarihi: string | null;
@@ -21,6 +22,10 @@ export interface AlanAdiKaydi {
   hataMesaji: string;
   cfNameServers: string[];
   tanitimAdimlari: Record<string, boolean>;
+  /** Üyenin kendi kayıt kuruluşundaki adresi mi (satın alınmadı, bağlandı)? */
+  harici: boolean;
+  /** Bağlanan adres için üyenin girmesi gereken DNS kayıtları. */
+  dnsKayitlari: DnsKaydi[];
 }
 
 interface SorguSonucu {
@@ -31,6 +36,8 @@ interface SorguSonucu {
   fiyat: number;
   satinAlinabilir: boolean;
   not: string;
+  /** Uzantıya özel ek alanlar — satın alma formunda sorulur (ör. .com.tr). */
+  nitelikler?: { anahtar: string; aciklama: string; zorunlu: boolean; tip: string; secenekler: { deger: string; aciklama: string }[] }[];
 }
 
 interface Ozet {
@@ -45,6 +52,7 @@ interface Ozet {
 
 const DURUM_ROZET: Record<AlanAdiKaydi["durum"], { metin: string; renk: string; ikon: string }> = {
   ODEME_BEKLIYOR: { metin: "Ödeme bekleniyor", renk: "text-amber-400 border-amber-400/30 bg-amber-400/10", ikon: "pending" },
+  DNS_BEKLIYOR: { metin: "DNS kaydı bekleniyor", renk: "text-amber-400 border-amber-400/30 bg-amber-400/10", ikon: "dns" },
   KAYIT_EDILIYOR: { metin: "Kaydediliyor", renk: "text-sky-400 border-sky-400/30 bg-sky-400/10", ikon: "progress_activity" },
   YAYILIYOR: { metin: "Yayına alınıyor", renk: "text-sky-400 border-sky-400/30 bg-sky-400/10", ikon: "cloud_sync" },
   AKTIF: { metin: "Yayında", renk: "text-green-400 border-green-400/30 bg-green-400/10", ikon: "check_circle" },
@@ -126,13 +134,25 @@ export default function WebAdresinPage() {
 function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatinAlindi: () => void }) {
   const [girdi, setGirdi] = useState("");
   const [tld, setTld] = useState<string>(ONERILEN_TLDLER[0]); // ".com"
+  // Uzantı listesi servisin sattığı tüm uzantılardan gelir; gelene kadar öneriler gösterilir.
+  const [tldler, setTldler] = useState<string[]>(ONERILEN_TLDLER);
   const [sorgulaniyor, setSorgulaniyor] = useState(false);
   const [sonuclar, setSonuclar] = useState<SorguSonucu[] | null>(null);
   const [hata, setHata] = useState("");
   const [secili, setSecili] = useState<SorguSonucu | null>(null);
+  // "al" = yeni adres satın al, "bagla" = elindeki adresi bağla.
+  const [mod, setMod] = useState<"al" | "bagla">("al");
 
   const kartAktif = ozet?.kartAktif ?? false;
   const satisAcik = ozet?.satisAcik ?? false;
+
+  useEffect(() => {
+    if (!satisAcik) return;
+    fetch("/api/me/alan-adi/sorgula")
+      .then(r => r.json())
+      .then(j => { if (j?.ok && Array.isArray(j.tldler) && j.tldler.length) setTldler(j.tldler as string[]); })
+      .catch(() => {});
+  }, [satisAcik]);
 
   async function sorgula(e?: React.FormEvent) {
     e?.preventDefault();
@@ -201,17 +221,36 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
         </div>
       </div>
 
+      {/* Yol seçimi — yeni adres mi, elindeki adres mi? */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {([
+          { deger: "al" as const, ikon: "shopping_cart", baslik: "Yeni adres al", metin: "Sizin için kaydedelim, kurulumu biz yapalım." },
+          { deger: "bagla" as const, ikon: "link", baslik: "Kendi adresim var", metin: "Elinizdeki adresi ücretsiz bağlayın." },
+        ]).map(o => (
+          <button key={o.deger} type="button" onClick={() => setMod(o.deger)}
+            className={`text-left glass-card rounded-2xl p-4 border transition-all ${
+              mod === o.deger ? "border-primary/60 bg-primary/5" : "border-white/10 hover:border-white/20"
+            }`}>
+            <span className={`material-symbols-outlined ${mod === o.deger ? "text-primary" : "text-on-surface-variant"}`}>{o.ikon}</span>
+            <p className="text-sm font-medium text-on-surface mt-1">{o.baslik}</p>
+            <p className="text-xs text-on-surface-variant mt-0.5">{o.metin}</p>
+          </button>
+        ))}
+      </div>
+
       {!kartAktif && (
         <div className="glass-card rounded-2xl p-4 border border-amber-400/30 bg-amber-400/5 flex items-start gap-3">
           <span className="material-symbols-outlined text-amber-400">warning</span>
           <div>
             <p className="text-sm font-semibold text-on-surface">Önce kartınızı aktive edin.</p>
-            <p className="text-xs text-on-surface-variant">Web adresi satın alabilmek için fiziksel kartınızın aktif olması gerekiyor.</p>
+            <p className="text-xs text-on-surface-variant">Web adresi almak veya bağlamak için fiziksel kartınızın aktif olması gerekiyor.</p>
           </div>
         </div>
       )}
 
-      {!satisAcik && (
+      {mod === "bagla" && <KendiAdresiniBagla kartAktif={kartAktif} onBaglandi={onSatinAlindi} />}
+
+      {mod === "al" && !satisAcik && (
         <div className="glass-card rounded-2xl p-4 border border-white/10 flex items-start gap-3">
           <span className="material-symbols-outlined text-on-surface-variant">info</span>
           <p className="text-xs text-on-surface-variant">
@@ -221,6 +260,7 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
       )}
 
       {/* Sorgu kutusu */}
+      {mod === "al" && (
       <form onSubmit={sorgula} className="glass-card rounded-2xl p-5 sm:p-6">
         <label className="block text-sm font-semibold text-on-surface mb-3" style={{ fontFamily: "Sora, sans-serif" }}>
           Almak istediğiniz adresi yazın
@@ -246,7 +286,7 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
               aria-label="Uzantı"
               className="bg-surface-dim border-l border-white/10 px-3 py-3 text-sm text-on-surface outline-none focus:text-primary disabled:opacity-50 cursor-pointer"
             >
-              {ONERILEN_TLDLER.map(t => <option key={t} value={t}>.{t}</option>)}
+              {tldler.map(t => <option key={t} value={t}>.{t}</option>)}
             </select>
           </div>
           <button type="submit" disabled={sorgulaniyor || !satisAcik}
@@ -268,9 +308,10 @@ function SatinAlmaGorunumu({ ozet, onSatinAlindi }: { ozet: Ozet | null; onSatin
           </p>
         )}
       </form>
+      )}
 
       {/* Sonuçlar */}
-      {sonuclar && (
+      {mod === "al" && sonuclar && (
         <div className="glass-card rounded-2xl p-5 sm:p-6">
           <p className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>
             Sorgu sonuçları
@@ -380,12 +421,108 @@ function SonucSatiri({ sonuc, oneCikan, kartAktif, onSec }: {
   );
 }
 
+// ————————————————————————————————— Kendi alan adını bağlama (ücretsiz)
+
+function KendiAdresiniBagla({ kartAktif, onBaglandi }: { kartAktif: boolean; onBaglandi: () => void }) {
+  const [girdi, setGirdi] = useState("");
+  const [gonderiliyor, setGonderiliyor] = useState(false);
+  const [hata, setHata] = useState("");
+  const [sonuc, setSonuc] = useState<{ id: string; alanAdi: string; dnsKayitlari: DnsKaydi[] } | null>(null);
+  const [kontrolEdiliyor, setKontrolEdiliyor] = useState(false);
+  const [not, setNot] = useState("");
+
+  async function bagla(e: React.FormEvent) {
+    e.preventDefault();
+    setHata(""); setNot(""); setGonderiliyor(true);
+
+    const j = await fetch("/api/me/alan-adi/bagla", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ alanAdi: girdi }),
+    }).then(r => r.json()).catch(() => null);
+
+    setGonderiliyor(false);
+    if (!j?.ok) { setHata(j?.error || "Adres bağlanamadı."); return; }
+    setSonuc({ id: j.id, alanAdi: j.alanAdi, dnsKayitlari: j.dnsKayitlari as DnsKaydi[] });
+  }
+
+  async function kontrolEt() {
+    if (!sonuc) return;
+    setKontrolEdiliyor(true);
+
+    const j = await fetch("/api/me/alan-adi/bagla", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: sonuc.id }),
+    }).then(r => r.json()).catch(() => null);
+
+    setKontrolEdiliyor(false);
+    if (!j?.ok) { setNot(j?.error || "Kontrol yapılamadı."); return; }
+
+    setNot(j.not as string);
+    if (Array.isArray(j.dnsKayitlari)) setSonuc(p => (p ? { ...p, dnsKayitlari: j.dnsKayitlari as DnsKaydi[] } : p));
+    // Hazırsa sayfa sahip görünümüne geçsin.
+    if (j.hazir) onBaglandi();
+  }
+
+  if (sonuc) {
+    return (
+      <DnsTalimatlari
+        alanAdi={sonuc.alanAdi}
+        kayitlar={sonuc.dnsKayitlari}
+        not={not}
+        kontrolEt={kontrolEt}
+        kontrolEdiliyor={kontrolEdiliyor}
+      />
+    );
+  }
+
+  return (
+    <form onSubmit={bagla} className="glass-card rounded-2xl p-5 sm:p-6">
+      <label className="block text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>
+        Elinizdeki adresi yazın
+      </label>
+      <p className="text-xs text-on-surface-variant mb-3">
+        Adres sizde kalır — biz yalnızca tanıtım sayfanıza bağlarız. Bu hizmet ücretsizdir.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          value={girdi}
+          onChange={e => { setGirdi(e.target.value); setHata(""); }}
+          disabled={!kartAktif}
+          placeholder="firmaadi.com"
+          autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="url"
+          className="flex-1 min-w-0 bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-all disabled:opacity-50 lowercase"
+        />
+        <button type="submit" disabled={gonderiliyor || !kartAktif || !girdi.trim()}
+          className="px-6 py-3 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2">
+          <span className={`material-symbols-outlined text-base ${gonderiliyor ? "animate-spin" : ""}`}>
+            {gonderiliyor ? "progress_activity" : "link"}
+          </span>
+          Bağla
+        </button>
+      </div>
+      <p className="text-[11px] text-on-surface-variant mt-2">
+        Adresi uzantısıyla birlikte yazın (ör. firmaadi.com, firmaadi.com.tr). Sonraki adımda,
+        kendi DNS panelinize gireceğiniz kayıtları kopyala-yapıştır hazır vereceğiz.
+      </p>
+      {hata && (
+        <p className="text-xs text-red-400 flex items-center gap-1 mt-2">
+          <span className="material-symbols-outlined text-sm">error</span>{hata}
+        </p>
+      )}
+    </form>
+  );
+}
+
 // ————————————————————————————————————————— Durum B: adresi var
 
 function SahipGorunumu({ kayit, ozet, onDegisti }: {
   kayit: AlanAdiKaydi; ozet: Ozet; onDegisti: () => void;
 }) {
   const [kopyalandi, setKopyalandi] = useState(false);
+  const [kontrolEdiliyor, setKontrolEdiliyor] = useState(false);
+  const [dnsNot, setDnsNot] = useState("");
   const rozet = DURUM_ROZET[kayit.durum];
   const yayinda = kayit.durum === "AKTIF";
 
@@ -395,6 +532,27 @@ function SahipGorunumu({ kayit, ozet, onDegisti }: {
     navigator.clipboard.writeText(`https://${kayit.alanAdi}`);
     setKopyalandi(true);
     setTimeout(() => setKopyalandi(false), 2000);
+  }
+
+  /** Bağlanan (satın alınmayan) adreste DNS kayıtlarının girilip girilmediğini sorar. */
+  async function dnsKontrolEt() {
+    setKontrolEdiliyor(true);
+    const j = await fetch("/api/me/alan-adi/bagla", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: kayit.id }),
+    }).then(r => r.json()).catch(() => null);
+
+    setKontrolEdiliyor(false);
+    setDnsNot(j?.ok ? (j.not as string) : (j?.error || "Kontrol yapılamadı."));
+    if (j?.ok) onDegisti();
+  }
+
+  /** Bağlantıyı kaldırır — adres üyede kalır, yalnızca bizdeki bağ silinir. */
+  async function baglantiyiKaldir() {
+    if (!confirm(`${kayit.alanAdi} bağlantısı kaldırılsın mı? Adres sizde kalır.`)) return;
+    await fetch(`/api/me/alan-adi/bagla?id=${encodeURIComponent(kayit.id)}`, { method: "DELETE" }).catch(() => {});
+    onDegisti();
   }
 
   return (
@@ -420,7 +578,13 @@ function SahipGorunumu({ kayit, ozet, onDegisti }: {
           </button>
         </div>
 
-        {kayit.durum === "YAYILIYOR" && (
+        {kayit.harici && kayit.durum === "DNS_BEKLIYOR" && (
+          <p className="text-xs text-on-surface-variant mt-4 max-w-md mx-auto">
+            Adresi bağladık. Aşağıdaki DNS kayıtlarını kendi panelinize eklediğinizde
+            adresiniz otomatik olarak yayına girecek.
+          </p>
+        )}
+        {!kayit.harici && kayit.durum === "YAYILIYOR" && (
           <p className="text-xs text-on-surface-variant mt-4 max-w-md mx-auto">
             Adresiniz kaydedildi ve tanıtım sayfanıza bağlandı. Dünya genelinde yayılması
             genellikle 1-4 saat sürer; bu süre içinde açılmazsa endişelenmeyin.
@@ -433,7 +597,26 @@ function SahipGorunumu({ kayit, ozet, onDegisti }: {
         )}
       </div>
 
-      {/* Özet kutuları */}
+      {/* Bağlanan adres henüz doğrulanmadıysa kayıtları göster */}
+      {kayit.harici && kayit.durum !== "AKTIF" && (
+        <>
+          <DnsTalimatlari
+            alanAdi={kayit.alanAdi}
+            kayitlar={kayit.dnsKayitlari ?? []}
+            not={dnsNot}
+            kontrolEt={dnsKontrolEt}
+            kontrolEdiliyor={kontrolEdiliyor}
+          />
+          <button type="button" onClick={baglantiyiKaldir}
+            className="text-xs text-on-surface-variant hover:text-red-400 transition-colors inline-flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">link_off</span>
+            Bu adresin bağlantısını kaldır
+          </button>
+        </>
+      )}
+
+      {/* Özet kutuları — bağlanan adreste bitiş/yenileme bizde değil */}
+      {!kayit.harici && (
       <div className="grid sm:grid-cols-3 gap-3">
         <BilgiKutusu ikon="event" baslik="Bitiş tarihi"
           deger={kayit.bitisTarihi ? new Date(kayit.bitisTarihi).toLocaleDateString("tr-TR") : "—"}
@@ -443,9 +626,10 @@ function SahipGorunumu({ kayit, ozet, onDegisti }: {
         <BilgiKutusu ikon="autorenew" baslik="Yenileme"
           deger={kayit.otoYenile ? "Hatırlatmalı" : "Kapalı"} alt="süre bitmeden e-posta göndeririz" />
       </div>
+      )}
 
-      {/* Yenileme — süre yaklaştıysa veya dolduysa göster */}
-      {(kayit.durum === "SURESI_DOLDU" || (kalanGun !== null && kalanGun <= 90)) && (
+      {/* Yenileme — yalnızca bizden alınan adresler için */}
+      {!kayit.harici && (kayit.durum === "SURESI_DOLDU" || (kalanGun !== null && kalanGun <= 90)) && (
         <YenilemeKutusu kayit={kayit} kalanGun={kalanGun} />
       )}
 

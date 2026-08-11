@@ -115,6 +115,29 @@ export async function POST(req: NextRequest) {
     if (maliyetKurus <= 0) {
       return NextResponse.json({ ok: false, error: "Bu uzantı için fiyat alınamadı. Lütfen daha sonra tekrar deneyin." }, { status: 502 });
     }
+
+    // Uzantıya özel alanlar (ör. .com.tr) — tanımı servisten gelir, değeri formdan.
+    // Kayıt anında değil ödeme öncesinde doğrulanır ki üye parasını verdikten
+    // sonra eksik belge yüzünden kurulum hatasına düşmesin.
+    const nitelikTanim = maliyetler[tld]?.nitelikler ?? [];
+    const gelen = (body.tldNitelikleri ?? {}) as Record<string, unknown>;
+    const nitelikler: Record<string, string> = {};
+    for (const n of nitelikTanim) {
+      const deger = String(gelen[n.anahtar] ?? "").trim();
+      if (!deger) {
+        if (n.zorunlu) {
+          return NextResponse.json(
+            { ok: false, error: `.${tld} uzantısı için "${n.aciklama}" alanı zorunludur.` },
+            { status: 400 },
+          );
+        }
+        continue;
+      }
+      if (n.secenekler.length > 0 && !n.secenekler.some(s => s.deger === deger)) {
+        return NextResponse.json({ ok: false, error: `"${n.aciklama}" alanı için geçersiz seçim.` }, { status: 400 });
+      }
+      nitelikler[n.anahtar] = deger.slice(0, 255);
+    }
     const tutar = satisFiyati(maliyetKurus, fiyatAyar);
 
     const siparisNo = await nextSiparisNo();
@@ -153,6 +176,7 @@ export async function POST(req: NextRequest) {
         satisTutar: tutar,
         siparisNo: order.siparisNo,
         iletisim: { ...iletisim },
+        tldNitelikleri: nitelikler,
       },
       update: {
         memberId: session.sub,
@@ -162,6 +186,7 @@ export async function POST(req: NextRequest) {
         satisTutar: tutar,
         siparisNo: order.siparisNo,
         iletisim: { ...iletisim },
+        tldNitelikleri: nitelikler,
         hataMesaji: "",
       },
     });

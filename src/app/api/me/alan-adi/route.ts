@@ -19,6 +19,7 @@ export async function GET() {
         id: true, alanAdi: true, tld: true, durum: true, yil: true, satisTutar: true,
         kayitTarihi: true, bitisTarihi: true, otoYenile: true, hataMesaji: true,
         cfNameServers: true, tanitimAdimlari: true, createdAt: true,
+        harici: true, dnsKayitlari: true,
       },
     }),
     prisma.kartGoruntuleme.count({ where: { memberId: session.sub, kaynak: "DOMAIN" } }),

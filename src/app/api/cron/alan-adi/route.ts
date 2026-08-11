@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendMail, htmlLayout, row } from "@/lib/mailer";
 import { yayilimKontrol } from "@/lib/alan-adi-kurulum";
+import { haricAlanAdiKontrol } from "@/lib/alan-adi-baglama";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 //
 // Yaptıkları:
 //   1. YAYILIYOR durumundakilerin Cloudflare zone'unu kontrol edip AKTIF'e çeker
+//      ve DNS_BEKLIYOR durumundaki bağlı adreslerin doğrulamasını yoklar
 //   2. Süresi dolanları SURESI_DOLDU'ya çeker
 //   3. Bitişe 60/30/7 gün kala üyeye hatırlatma e-postası gönderir (her eşik bir kez)
 
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
   if (!yetkili(req)) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
 
   const simdi = Date.now();
-  const rapor = { yayilim: 0, suresiDolan: 0, hatirlatma: 0 };
+  const rapor = { yayilim: 0, baglanan: 0, suresiDolan: 0, hatirlatma: 0 };
 
   // 1 — yayılım kontrolü
   const yayiliyor = await prisma.alanAdi.findMany({ where: { durum: "YAYILIYOR" }, select: { id: true } });
@@ -35,9 +37,21 @@ export async function GET(req: NextRequest) {
     if (await yayilimKontrol(a.id)) rapor.yayilim++;
   }
 
+  // 1b — üyenin kendi adresi: DNS kayıtları girildiyse yayına al.
+  // Üye "kontrol et" demeyi unutsa da adres kendiliğinden açılsın.
+  const dnsBekleyen = await prisma.alanAdi.findMany({
+    where: { durum: "DNS_BEKLIYOR", harici: true },
+    select: { id: true },
+  });
+  for (const a of dnsBekleyen) {
+    const sonuc = await haricAlanAdiKontrol(a.id).catch(() => null);
+    if (sonuc?.hazir) rapor.baglanan++;
+  }
+
   // 2 — süresi dolanlar
   const dolan = await prisma.alanAdi.updateMany({
-    where: { durum: { in: ["AKTIF", "YAYILIYOR"] }, bitisTarihi: { lt: new Date(simdi) } },
+    // Bağlanan adreslerin süresini biz takip etmiyoruz (harici: false).
+    where: { durum: { in: ["AKTIF", "YAYILIYOR"] }, harici: false, bitisTarihi: { lt: new Date(simdi) } },
     data: { durum: "SURESI_DOLDU" },
   });
   rapor.suresiDolan = dolan.count;
@@ -45,7 +59,7 @@ export async function GET(req: NextRequest) {
   // 3 — yenileme hatırlatmaları
   const enUzak = new Date(simdi + Math.max(...ESIKLER) * 864e5);
   const yaklasanlar = await prisma.alanAdi.findMany({
-    where: { durum: "AKTIF", otoYenile: true, bitisTarihi: { not: null, lte: enUzak } },
+    where: { durum: "AKTIF", harici: false, otoYenile: true, bitisTarihi: { not: null, lte: enUzak } },
     include: { member: { select: { email: true, ad: true } } },
   });
 

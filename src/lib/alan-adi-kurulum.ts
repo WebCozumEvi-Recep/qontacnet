@@ -97,6 +97,9 @@ export async function alanAdiKurulumBaslat(alanAdiId: string): Promise<void> {
         yil: kayit.yil,
         nameServers,
         iletisim,
+        // Uzantıya özel zorunlu alanlar (.com.tr belge bilgileri gibi) satın alma
+        // sırasında toplanıp kayda yazılır; registrar `tldAttributes` olarak ister.
+        nitelikler: (kayit.tldNitelikleri ?? {}) as Record<string, string>,
       });
       await prisma.alanAdi.update({
         where: { id: alanAdiId },

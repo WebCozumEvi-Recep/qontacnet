@@ -4,10 +4,20 @@ import { fiyatMetni } from "@/lib/domain-fiyat";
 import { KartFormu, BOS_KART, type KartAlanlari } from "@/components/odeme/KartFormu";
 import { odemeyeGit, type OdemeYaniti } from "@/components/odeme/odeme-yonlendir";
 
+interface TldNitelik {
+  anahtar: string;
+  aciklama: string;
+  zorunlu: boolean;
+  tip: string;
+  secenekler: { deger: string; aciklama: string }[];
+}
+
 interface Sonuc {
   alanAdi: string;
   tld: string;
   fiyat: number;
+  /** Uzantıya özel ek alanlar (ör. .com.tr belge bilgileri) — servisten gelir. */
+  nitelikler?: TldNitelik[];
 }
 
 const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none transition-all";
@@ -94,6 +104,10 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
   const [ulkeSecim, setUlkeSecim] = useState<"TR" | "DIGER">("TR");
   const [ulkeAdi, setUlkeAdi] = useState("");
 
+  // Uzantıya özel alanların değerleri: { anahtar: değer }.
+  const nitelikler = useMemo(() => sonuc.nitelikler ?? [], [sonuc.nitelikler]);
+  const [nitelikDeger, setNitelikDeger] = useState<Record<string, string>>({});
+
   const [onay, setOnay] = useState(false);
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [hata, setHata] = useState("");
@@ -144,6 +158,7 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
         tld: sonuc.tld,
         alanAdiEtiketi: sonuc.alanAdi.split(".")[0],
         sozlesmeOnay: onay,
+        tldNitelikleri: nitelikDeger,
         ...(kartGerekli ? { kart } : {}),
       }),
     }).then(r => r.json()).catch(() => null);
@@ -248,6 +263,43 @@ export function SatinAlmaFormu({ sonuc, profil, onKapat, onTamamlandi }: {
           <Alan label="Posta Kodu"><input required inputMode="numeric" value={form.postaKodu} onChange={set("postaKodu")} className={inputCls} /></Alan>
         </div>
       </div>
+
+      {/* Uzantıya özel alanlar — yalnızca servis istiyorsa gösterilir (.com.tr vb.) */}
+      {nitelikler.length > 0 && (
+        <div className="glass-card rounded-2xl p-5 sm:p-6">
+          <p className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>
+            .{sonuc.tld} Uzantısı İçin Ek Bilgiler
+          </p>
+          <p className="text-xs text-on-surface-variant mb-4">
+            Bu uzantının kayıt kuruluşu aşağıdaki bilgileri zorunlu tutuyor. Eksik veya hatalı
+            bilgi kaydın reddedilmesine yol açar.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {nitelikler.map(n => (
+              <Alan key={n.anahtar} label={n.aciklama + (n.zorunlu ? "" : " (isteğe bağlı)")}>
+                {n.secenekler.length > 0 ? (
+                  <select
+                    required={n.zorunlu}
+                    value={nitelikDeger[n.anahtar] ?? ""}
+                    onChange={e => setNitelikDeger(p => ({ ...p, [n.anahtar]: e.target.value }))}
+                    className={inputCls}
+                  >
+                    <option value="">Seçin</option>
+                    {n.secenekler.map(o => <option key={o.deger} value={o.deger}>{o.aciklama}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    required={n.zorunlu}
+                    value={nitelikDeger[n.anahtar] ?? ""}
+                    onChange={e => setNitelikDeger(p => ({ ...p, [n.anahtar]: e.target.value }))}
+                    className={inputCls}
+                  />
+                )}
+              </Alan>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Ödeme */}
       {kartGerekli && (
