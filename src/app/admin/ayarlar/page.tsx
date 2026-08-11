@@ -310,7 +310,7 @@ function SiteKimligi() {
       {/* Footer İletişim Bilgileri */}
       <div className="border-t border-white/10 pt-5 mb-5">
         <p className="text-sm font-semibold text-on-surface mb-1">Footer İletişim Bilgileri</p>
-        <p className="text-[11px] text-on-surface-variant mb-4">Ana sayfa footer'ında gösterilir.</p>
+        <p className="text-[11px] text-on-surface-variant mb-4">Ana sayfa footer&apos;ında gösterilir.</p>
         <div className="mb-4">
           <label className="block text-xs text-on-surface-variant mb-1.5">Footer Açıklama Metni</label>
           <textarea value={s.iletisimAciklama} onChange={e => setS(p => ({ ...p, iletisimAciklama: e.target.value }))} rows={2}
@@ -335,7 +335,7 @@ function SiteKimligi() {
       {/* Sosyal Medya Linkleri */}
       <div className="border-t border-white/10 pt-5 mb-5">
         <p className="text-sm font-semibold text-on-surface mb-1">Sosyal Medya Linkleri</p>
-        <p className="text-[11px] text-on-surface-variant mb-4">Boş bıraktığınız ikonlar footer'da gösterilmez.</p>
+        <p className="text-[11px] text-on-surface-variant mb-4">Boş bıraktığınız ikonlar footer&apos;da gösterilmez.</p>
         <div className="grid md:grid-cols-2 gap-4">
           {([
             ["sosyalLinkedin", "LinkedIn", "https://linkedin.com/company/..."],
