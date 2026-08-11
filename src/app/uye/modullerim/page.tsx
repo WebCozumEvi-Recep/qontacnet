@@ -16,6 +16,8 @@ interface Icerik {
   arkaplan?: string; html?: string; hizalama?: string;
   /** Üyenin bu modül için seçtiği Material Symbols ikonu (tanımdakinin yerine geçer). */
   ikonAd?: string;
+  /** Seçilen ikonun yuvarlak zemin ve ikon rengi (boşsa tanımın rengi kullanılır). */
+  butonRenk?: string; ikonRenk?: string;
 }
 interface Modul {
   id: string;
@@ -554,11 +556,26 @@ export default function ModullerimPage() {
         setLocal(m.id, { icerik });
         kaydet(m.id, { icerik });
       };
+      const renkUygula = (patch: { butonRenk?: string; ikonRenk?: string }) => {
+        const icerik = { ...(m.icerik ?? {}), ...patch };
+        setLocal(m.id, { icerik });
+        kaydet(m.id, { icerik });
+      };
       return (
         <IkonGaleri
           secili={m.icerik?.ikonAd}
           onSec={uygula}
-          onVarsayilan={() => uygula("")}
+          onVarsayilan={() => {
+            // Seçim tümüyle temizlenir; modül yeniden tanımın ikon ve renklerine döner.
+            const icerik = { ...(m.icerik ?? {}), ikonAd: "", butonRenk: "", ikonRenk: "" };
+            setLocal(m.id, { icerik });
+            kaydet(m.id, { icerik });
+          }}
+          renkler={m.icerik?.ikonAd ? {
+            butonRenk: m.icerik?.butonRenk || m.tanim?.butonRenk || "#d4af37",
+            ikonRenk: m.icerik?.ikonRenk || m.tanim?.ikonRenk || "#000000",
+            onDegis: renkUygula,
+          } : undefined}
           onKapat={() => setIkonSecilen(null)}
         />
       );

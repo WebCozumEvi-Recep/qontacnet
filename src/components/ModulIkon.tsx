@@ -90,12 +90,19 @@ type IkonVeri = { ikon?: string; ikonAd?: string; butonRenk?: string; ikonRenk?:
  * dışı kalır — yoksa görsel her zaman kazandığı için seçim işe yaramaz görünürdü.
  */
 export function modulIkonVerisi(
-  modul: { icerik?: { ikonAd?: string } | null; tanim?: IkonVeri | null },
+  modul: { icerik?: { ikonAd?: string; butonRenk?: string; ikonRenk?: string } | null; tanim?: IkonVeri | null },
 ): IkonVeri {
   const tanim = modul.tanim ?? {};
-  const secilen = modul.icerik?.ikonAd;
-  if (!secilen) return tanim;
-  return { ...tanim, ikon: "", ikonAd: secilen };
+  const ic = modul.icerik ?? {};
+  if (!ic.ikonAd) return tanim;
+  return {
+    ...tanim,
+    ikon: "",
+    ikonAd: ic.ikonAd,
+    // Renk seçilmediyse modül tanımının rengi korunur.
+    butonRenk: ic.butonRenk || tanim.butonRenk,
+    ikonRenk: ic.ikonRenk || tanim.ikonRenk,
+  };
 }
 
 // Modül ikonunu render eder: yüklenen görsel varsa onu, yoksa renkli yuvarlak + Material ikon
@@ -120,11 +127,17 @@ export function ModulIkon({ veri, size = 44 }: { veri: IkonVeri; size?: number }
  * `onVarsayilan` verilirse "Varsayılana dön" düğmesi çıkar (üyenin seçimini
  * silip modül tanımının kendi ikonuna geri dönmek için).
  */
-export function IkonGaleri({ secili, onSec, onKapat, onVarsayilan }: {
+export function IkonGaleri({ secili, onSec, onKapat, onVarsayilan, renkler }: {
   secili?: string;
   onSec: (ad: string) => void;
   onKapat: () => void;
   onVarsayilan?: () => void;
+  /** Verilirse ikon yuvarlağının ve ikonun rengi de bu pencereden ayarlanır. */
+  renkler?: {
+    butonRenk: string;
+    ikonRenk: string;
+    onDegis: (patch: { butonRenk?: string; ikonRenk?: string }) => void;
+  };
 }) {
   const [arama, setArama] = useState("");
   const [grup, setGrup] = useState("Tümü");
@@ -207,13 +220,34 @@ export function IkonGaleri({ secili, onSec, onKapat, onVarsayilan }: {
           ))}
         </div>
 
-        {onVarsayilan && (
-          <div className="pt-3 mt-1 border-t border-white/10">
+        {(renkler || onVarsayilan) && (
+          <div className="pt-3 mt-1 border-t border-white/10 flex items-center gap-4 flex-wrap">
+            {renkler && (
+              <>
+                <ModulIkon veri={{ ikonAd: secili, butonRenk: renkler.butonRenk, ikonRenk: renkler.ikonRenk }} size={32} />
+                <label className="flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer" title="Yuvarlak rengi">
+                  <span className="w-6 h-6 rounded-md border border-white/20" style={{ background: renkler.butonRenk }} />
+                  Zemin
+                  <input type="color" value={renkler.butonRenk}
+                    onChange={e => renkler.onDegis({ butonRenk: e.target.value })} className="w-0 h-0 opacity-0" />
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer" title="İkon rengi">
+                  <span className="w-6 h-6 rounded-md border border-white/20 flex items-center justify-center" style={{ background: "#0f1321" }}>
+                    <span className="material-symbols-outlined text-[14px]" style={{ color: renkler.ikonRenk }}>format_color_fill</span>
+                  </span>
+                  İkon
+                  <input type="color" value={renkler.ikonRenk}
+                    onChange={e => renkler.onDegis({ ikonRenk: e.target.value })} className="w-0 h-0 opacity-0" />
+                </label>
+              </>
+            )}
+            {onVarsayilan && (
             <button type="button" onClick={() => { onVarsayilan(); onKapat(); }}
-              className="text-xs text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1">
+              className="ml-auto text-xs text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">refresh</span>
               Varsayılan ikona dön
             </button>
+            )}
           </div>
         )}
       </div>
