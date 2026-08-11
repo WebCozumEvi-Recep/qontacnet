@@ -8,7 +8,9 @@
  * Yeni ikon eklendiğinde çalıştır:  node scripts/build-icon-font.mjs
  */
 import { execSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { join } from "node:path";
 
 const OUT = "public/fonts/material-symbols-subset.woff2";
 const UA =
@@ -16,52 +18,47 @@ const UA =
 
 const sh = (cmd) => execSync(cmd, { encoding: "utf8", shell: "/bin/bash" });
 
+/** src/ altındaki tüm .ts/.tsx dosyaları. */
+function kaynakDosyalari(dizin = "src") {
+  const liste = [];
+  for (const g of readdirSync(dizin, { withFileTypes: true })) {
+    const yol = join(dizin, g.name);
+    if (g.isDirectory()) liste.push(...kaynakDosyalari(yol));
+    else if (/\.tsx?$/.test(g.name)) liste.push(yol);
+  }
+  return liste;
+}
+
 const icons = new Set();
 const add = (text) => text.split(/\s+/).filter(Boolean).forEach((i) => icons.add(i));
 
-// 1) <span className="material-symbols-outlined">ikon_adi</span>
-add(
-  sh(
-    `grep -rhoE 'material-symbols-outlined[^>]*>[^<{]*' --include='*.tsx' src/ ` +
-      `| sed -E 's/.*>[[:space:]]*//' | grep -oE '^[a-z_0-9]+' || true`,
-  ),
-);
+// Dosyaları JS ile tarıyoruz — grep satır bazlı çalıştığı ve kabuk tırnakları
+// kolayca bozulduğu için birden çok satıra yayılan JSX'te ikon kaçırılıyordu.
+for (const dosya of kaynakDosyalari()) {
+  const icerik = readFileSync(dosya, "utf8");
 
-// 1b) <span className="material-symbols-outlined">{kosul ? "ikon_a" : "ikon_b"}</span>
-// İkon adının JSX ifadesi içinde geçtiği durumlar — (1) numaralı desen `{` görünce durur.
-add(
-  sh(
-    `grep -rhoE 'material-symbols-outlined[^>]*>\\{[^}]*\\}' --include='*.tsx' src/ ` +
-      `| grep -oE '"[a-z_0-9]+"' | tr -d '"' || true`,
-  ),
-);
+  // a) <span className="material-symbols-outlined ...">GÖVDE</span>
+  //    Gövde düz metin ("check") ya da JSX ifadesi ({kosul ? "a" : "b"}) olabilir;
+  //    ifadedeki tüm string literalleri aday sayıyoruz.
+  for (const m of icerik.matchAll(/material-symbols-outlined[^>]*>([\s\S]*?)<\//g)) {
+    const govde = m[1];
+    const duz = govde.trim().match(/^([a-z][a-z_0-9]{2,})/);
+    if (duz) add(duz[1]);
+    for (const s of govde.matchAll(/"([a-z][a-z_0-9]{2,})"/g)) add(s[1]);
+  }
 
-// 2) { icon: "ikon_adi" } / { ikonAd: "..." } biçimindeki prop tanımları
-add(
-  sh(
-    `grep -rhoE '(icon|ikonAd|ikon): "[a-z_0-9]+"' --include='*.tsx' --include='*.ts' src/ ` +
-      `| grep -oE '"[a-z_0-9]+"' | tr -d '"' || true`,
-  ),
-);
+  // b) icon / ikon / ikonAd — hem JSX prop'u (icon="x") hem nesne alanı (icon: "x")
+  for (const m of icerik.matchAll(/\b(?:icon|ikon|ikonAd)\s*[:=]\s*"([a-z_0-9]+)"/g)) add(m[1]);
+}
 
-// 2b) <Stat icon="ikon_adi" /> biçimindeki JSX prop'ları — (2) numaralı desen
-// yalnız nesne alanlarını (`icon: "..."`) yakalar, eşittirli hâli buradan gelir.
-add(
-  sh(
-    `grep -rhoE '(icon|ikon|ikonAd)="[a-z_0-9]+"' --include='*.tsx' src/ ` +
-      `| grep -oE '"[a-z_0-9]+"' | tr -d '"' || true`,
-  ),
-);
-
-// 3) Üye modül ikon kataloğu (DB'den seçilebilen ikonlar)
+// Üye modül ikon kataloğu (DB'den seçilebilen ikonlar — kaynakta JSX olarak geçmez)
 const galeri = readFileSync("src/components/ModulIkon.tsx", "utf8").match(
   /IKON_GALERI = \[([\s\S]*?)\];/,
 );
 if (galeri) add(galeri[1].match(/"[a-z_0-9]+"/g).map((s) => s.slice(1, -1)).join(" "));
 
-// 4) Elle eklenenler — grep desenleri satır bazlı çalıştığı için, ikon adı
-// birden çok satıra yayılan bir JSX ifadesinde geçiyorsa yakalanamaz.
-// Böyle ikonları buraya yazın.
+// Elle eklenenler — kaynakta hiç geçmeyen ama çalışma anında kullanılabilecek
+// ikonlar (ör. veritabanından gelen adlar) buraya yazılır.
 add(`
   autorenew cloud_sync event_busy pending lock print badge storefront
   travel_explore campaign chat checklist edit_note share tag refresh
@@ -71,7 +68,35 @@ add(`
   progress_activity work
 `);
 
-const names = [...icons].sort();
+// Adayları Material Symbols'ün resmî ikon listesiyle süzüyoruz: JSX gövdesindeki
+// her string literali aday saydığımız için ikon olmayan metinler ("gonderiliyor"
+// gibi durum değerleri) de listeye giriyor. Google Fonts bilinmeyen ada 400
+// döndüğü için bu süzme aynı zamanda yazım hatalarına karşı koruma sağlar.
+const CODEPOINTS =
+  "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/" +
+  "MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints";
+
+const gecerli = new Set(
+  sh(`curl -sS ${JSON.stringify(CODEPOINTS)}`)
+    .split("\n")
+    .map((satir) => satir.split(" ")[0])
+    .filter(Boolean),
+);
+
+const disarida = [...icons].filter((i) => !gecerli.has(i)).sort();
+if (disarida.length > 0) {
+  // Uyarı stderr'e — `--list` çıktısı boru hattında saf ad listesi kalsın.
+  console.error(`Material Symbols'te bulunmayan ${disarida.length} ad atlandı: ${disarida.join(", ")}`);
+}
+
+const names = [...icons].filter((i) => gecerli.has(i)).sort();
+
+// `node scripts/build-icon-font.mjs --list` → font indirmeden ad listesini basar.
+if (process.argv.includes("--list")) {
+  console.log(names.join("\n"));
+  process.exit(0);
+}
+
 console.log(`${names.length} ikon bulundu.`);
 
 const cssUrl =
@@ -85,3 +110,20 @@ if (!fontUrl) throw new Error("Google Fonts yanıtında woff2 bağlantısı bulu
 const font = execSync(`curl -sS ${JSON.stringify(fontUrl)}`, { maxBuffer: 1 << 28 });
 writeFileSync(OUT, font);
 console.log(`${OUT} yazıldı (${(font.length / 1024).toFixed(1)} KB).`);
+
+// Dosya adı sabit olduğu için tarayıcı ve Cloudflare eski subset'i önbellekten
+// sunabiliyor; yeni eklenen ikonlar ekranda yazı olarak kalıyordu. Font
+// değiştiğinde URL'deki ?v= damgasını içerik özetiyle güncelliyoruz.
+const damga = createHash("sha256").update(font).digest("hex").slice(0, 8);
+const kullananlar = ["src/app/globals.css", "src/app/layout.tsx"];
+for (const dosya of kullananlar) {
+  const eski = readFileSync(dosya, "utf8");
+  const yeni = eski.replace(
+    /\/fonts\/material-symbols-subset\.woff2(\?v=[a-f0-9]+)?/g,
+    `/fonts/material-symbols-subset.woff2?v=${damga}`,
+  );
+  if (yeni !== eski) {
+    writeFileSync(dosya, yeni);
+    console.log(`${dosya} güncellendi (?v=${damga}).`);
+  }
+}
