@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { ModulIkon } from "@/components/ModulIkon";
+import { ModulIkon, IkonGaleri, modulIkonVerisi } from "@/components/ModulIkon";
 import { UyeModulLightbox, uyeModulDolu, type UyeModul } from "@/components/UyeModulLightbox";
 import { BrandGlyph, type BrandKey } from "@/components/BrandGlyph";
 
@@ -14,6 +14,8 @@ interface Icerik {
   gorseller?: { url: string }[];
   baslik?: string; link?: string; kod?: string; sorular?: { soru: string; cevap: string }[];
   arkaplan?: string; html?: string; hizalama?: string;
+  /** Üyenin bu modül için seçtiği Material Symbols ikonu (tanımdakinin yerine geçer). */
+  ikonAd?: string;
 }
 interface Modul {
   id: string;
@@ -365,7 +367,7 @@ function KartOnizleme({ kart, moduller, onModul }: { kart: KartVeri; moduller: U
         {moduller.map(m => (
           <button key={m.id} type="button" onClick={() => onModul(m)} aria-label={m.baslik} title={m.baslik}
             className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
-            <ModulIkon veri={m.tanim ?? {}} size={44} />
+            <ModulIkon veri={modulIkonVerisi(m)} size={44} />
           </button>
         ))}
       </div>
@@ -382,6 +384,8 @@ export default function ModullerimPage() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [aktifModul, setAktifModul] = useState<UyeModul | null>(null);
   const [kart, setKart] = useState<KartVeri | null>(null);
+  // İkon galerisi açık olan modülün kimliği
+  const [ikonSecilen, setIkonSecilen] = useState<string | null>(null);
 
   // Önizleme için kartın public halini çek (show* filtreleri uygulanmış gelir)
   useEffect(() => {
@@ -479,7 +483,14 @@ export default function ModullerimPage() {
           {moduller.map(m => (
             <div key={m.id} className="glass-card rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-3">
-                <ModulIkon veri={m.tanim ?? {}} size={32} />
+                {/* İkona tıklayınca galeri açılır — üye modülünün simgesini kendi seçer. */}
+                <button type="button" onClick={() => setIkonSecilen(m.id)} title="İkonu değiştir"
+                  className="relative group rounded-full shrink-0">
+                  <ModulIkon veri={modulIkonVerisi(m)} size={32} />
+                  <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-surface-dim border border-white/20 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary" style={{ fontSize: 11 }}>edit</span>
+                  </span>
+                </button>
                 <input value={m.baslik}
                   onChange={e => setLocal(m.id, { baslik: e.target.value })}
                   onBlur={() => kaydet(m.id, { baslik: m.baslik })}
@@ -497,6 +508,11 @@ export default function ModullerimPage() {
               <ModulEditor modul={m} onChange={ic => setLocal(m.id, { icerik: ic })} />
 
               <div className="flex items-center justify-end gap-3">
+                <button type="button" onClick={() => setIkonSecilen(m.id)}
+                  className="mr-auto px-3 py-2 rounded-xl glass-card text-xs text-on-surface flex items-center gap-1.5 hover:bg-white/5 transition-all">
+                  <span className="material-symbols-outlined text-sm">{m.icerik?.ikonAd || m.tanim?.ikonAd || "widgets"}</span>
+                  İkon Seç
+                </button>
                 {savedId === m.id && <span className="text-xs text-tertiary">Kaydedildi ✓</span>}
                 <button onClick={() => kaydet(m.id, { baslik: m.baslik, icerik: m.icerik })} disabled={savingId === m.id}
                   className="px-4 py-2 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-60">
@@ -528,6 +544,25 @@ export default function ModullerimPage() {
         <KartOnizleme kart={kart} moduller={yayindakiler} onModul={setAktifModul} />
       )}
     </div>
+
+    {ikonSecilen && (() => {
+      const m = moduller.find(x => x.id === ikonSecilen);
+      if (!m) return null;
+      // Seçim anında kaydedilir — ayrıca "Kaydet"e basmak gerekmesin.
+      const uygula = (ikonAd: string) => {
+        const icerik = { ...(m.icerik ?? {}), ikonAd };
+        setLocal(m.id, { icerik });
+        kaydet(m.id, { icerik });
+      };
+      return (
+        <IkonGaleri
+          secili={m.icerik?.ikonAd}
+          onSec={uygula}
+          onVarsayilan={() => uygula("")}
+          onKapat={() => setIkonSecilen(null)}
+        />
+      );
+    })()}
 
     {aktifModul && kart && (
       <UyeModulLightbox modul={aktifModul} color={kart.kartRenk} memberId={kart.id} iletisimAdi={kart.ad} onClose={() => setAktifModul(null)} />

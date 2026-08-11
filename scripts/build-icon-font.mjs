@@ -51,11 +51,14 @@ for (const dosya of kaynakDosyalari()) {
   for (const m of icerik.matchAll(/\b(?:icon|ikon|ikonAd)\s*[:=]\s*"([a-z_0-9]+)"/g)) add(m[1]);
 }
 
-// Üye modül ikon kataloğu (DB'den seçilebilen ikonlar — kaynakta JSX olarak geçmez)
-const galeri = readFileSync("src/components/ModulIkon.tsx", "utf8").match(
-  /IKON_GALERI = \[([\s\S]*?)\];/,
+// Üye modül ikon kataloğu — üyenin seçebildiği tüm ikonlar. Dosyadaki her
+// string literali aday sayıyoruz; ikon olmayanlar aşağıdaki geçerlilik
+// süzgecinde zaten eleniyor.
+add(
+  (readFileSync("src/components/ModulIkon.tsx", "utf8").match(/"[a-z][a-z_0-9]{2,}"/g) ?? [])
+    .map((s) => s.slice(1, -1))
+    .join(" "),
 );
-if (galeri) add(galeri[1].match(/"[a-z_0-9]+"/g).map((s) => s.slice(1, -1)).join(" "));
 
 // Elle eklenenler — kaynakta hiç geçmeyen ama çalışma anında kullanılabilecek
 // ikonlar (ör. veritabanından gelen adlar) buraya yazılır.

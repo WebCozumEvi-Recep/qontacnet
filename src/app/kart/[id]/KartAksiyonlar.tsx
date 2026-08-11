@@ -4,7 +4,7 @@
 // Kartın statik gövdesi sunucuda render edilir; burası yalnızca etkileşim taşır.
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { ModulIkon } from "@/components/ModulIkon";
+import { ModulIkon, modulIkonVerisi } from "@/components/ModulIkon";
 import { UyeModulLightbox, uyeModulDolu, type UyeModul } from "@/components/UyeModulLightbox";
 import { BrandGlyph, type BrandKey } from "@/components/BrandGlyph";
 import type { KartBilgisi, KartKaynak } from "@/lib/kart-data";
@@ -125,7 +125,7 @@ export function KartAksiyonlar({
         {uyeModuller.filter(uyeModulDolu).map((m) => (
           <button key={m.id} onClick={() => setAktifModul(m)} aria-label={m.baslik} title={m.baslik}
             className="hover:scale-110 active:scale-95 transition-transform shadow-lg rounded-full">
-            <ModulIkon veri={m.tanim ?? {}} size={56} />
+            <ModulIkon veri={modulIkonVerisi(m)} size={56} />
           </button>
         ))}
       </div>

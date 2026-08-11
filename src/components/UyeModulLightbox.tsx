@@ -2,7 +2,7 @@
 // Üye modüllerinin kart üzerindeki popup davranışı — hem public kart sayfası
 // hem de üye panelindeki Modüllerim önizlemesi aynı bileşeni kullanır.
 import { useEffect, useRef, useState } from "react";
-import { ModulIkon } from "@/components/ModulIkon";
+import { ModulIkon, modulIkonVerisi } from "@/components/ModulIkon";
 
 export type UyeTip = "GALERI" | "TEXT" | "VIDEO" | "LINK" | "GORSEL" | "FORM" | "TEK_GORSEL" | "HTML" | "SSS" | "HERO" | "BASVURU";
 export interface UyeModul { id: string; tip: UyeTip; baslik: string; icerik: Record<string, unknown>; tanim?: { ikon: string; ikonAd: string; butonRenk: string; ikonRenk: string } | null }
@@ -156,7 +156,7 @@ export function UyeModulLightbox({ modul, color, memberId, iletisimAdi, onClose 
         style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4 gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <ModulIkon veri={modul.tanim ?? {}} size={28} />
+            <ModulIkon veri={modulIkonVerisi(modul)} size={28} />
             <h3 className="text-sm font-semibold text-on-surface truncate" style={{ fontFamily: "Sora, sans-serif" }}>{modul.baslik}</h3>
           </div>
           <button onClick={onClose} className="flex items-center gap-1 text-on-surface-variant hover:text-on-surface text-xs flex-shrink-0">
