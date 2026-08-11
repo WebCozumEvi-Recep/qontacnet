@@ -44,6 +44,15 @@ add(
   ),
 );
 
+// 2b) <Stat icon="ikon_adi" /> biçimindeki JSX prop'ları — (2) numaralı desen
+// yalnız nesne alanlarını (`icon: "..."`) yakalar, eşittirli hâli buradan gelir.
+add(
+  sh(
+    `grep -rhoE '(icon|ikon|ikonAd)="[a-z_0-9]+"' --include='*.tsx' src/ ` +
+      `| grep -oE '"[a-z_0-9]+"' | tr -d '"' || true`,
+  ),
+);
+
 // 3) Üye modül ikon kataloğu (DB'den seçilebilen ikonlar)
 const galeri = readFileSync("src/components/ModulIkon.tsx", "utf8").match(
   /IKON_GALERI = \[([\s\S]*?)\];/,
