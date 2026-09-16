@@ -16,6 +16,11 @@ interface Siparis { id: string; siparisNo: string; firma: string; firmaId: strin
 interface KartForm { firmaId: string; orderId: string; memberId: string; notlar: string; adet: string }
 const BOS_FORM: KartForm = { firmaId: "", orderId: "", memberId: "", notlar: "", adet: "1" };
 
+// Toplu düzenlemede DEGISTIRME seçili alanlar olduğu gibi kalır; "" alanı temizler.
+const DEGISTIRME = "__degistirme__";
+interface TopluForm { firmaId: string; orderId: string; notDegistir: boolean; notlar: string }
+const BOS_TOPLU: TopluForm = { firmaId: DEGISTIRME, orderId: DEGISTIRME, notDegistir: false, notlar: "" };
+
 const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none";
 
 export default function SatilanKartlarPage() {
@@ -37,6 +42,12 @@ export default function SatilanKartlarPage() {
 
   const [silinecek, setSilinecek] = useState<Kart | null>(null);
   const [qrKart, setQrKart] = useState<Kart | null>(null);
+
+  // Toplu işlem
+  const [secili, setSecili] = useState<Set<string>>(new Set());
+  const [topluDuzenle, setTopluDuzenle] = useState(false);
+  const [topluForm, setTopluForm] = useState<TopluForm>(BOS_TOPLU);
+  const [topluSil, setTopluSil] = useState(false);
 
   function yukle() {
     return fetch("/api/admin/kartlar").then(r => r.json()).then(j => {
@@ -112,7 +123,45 @@ export default function SatilanKartlarPage() {
     if (!silinecek) return;
     const res = await fetch(`/api/admin/kartlar/${silinecek.id}`, { method: "DELETE" });
     const j = await res.json();
-    if (j.ok) { setKartlar(p => p.filter(k => k.id !== silinecek.id)); setSilinecek(null); }
+    if (j.ok) {
+      setKartlar(p => p.filter(k => k.id !== silinecek.id));
+      setSecili(p => { const y = new Set(p); y.delete(silinecek.id); return y; });
+      setSilinecek(null);
+    }
+  }
+
+  const tumuSecili = liste.length > 0 && liste.every(k => secili.has(k.id));
+  function tumunuSec() {
+    setSecili(tumuSecili ? new Set() : new Set(liste.map(k => k.id)));
+  }
+  function secimDegistir(id: string) {
+    setSecili(p => { const y = new Set(p); if (y.has(id)) y.delete(id); else y.add(id); return y; });
+  }
+  const seciliKartlar = kartlar.filter(k => secili.has(k.id));
+
+  async function topluIstek(govde: Record<string, unknown>) {
+    setKaydediliyor(true); setHata("");
+    try {
+      const res = await fetch("/api/admin/kartlar/toplu", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [...secili], ...govde }),
+      });
+      const j = await res.json();
+      if (!j.ok) { setHata(j.error || "İşlem başarısız."); return false; }
+      await yukle();
+      setSecili(new Set());
+      return true;
+    } finally { setKaydediliyor(false); }
+  }
+
+  async function topluKaydet(e: React.FormEvent) {
+    e.preventDefault();
+    const govde: Record<string, unknown> = { islem: "guncelle" };
+    if (topluForm.firmaId !== DEGISTIRME) govde.firmaId = topluForm.firmaId;
+    if (topluForm.orderId !== DEGISTIRME) govde.orderId = topluForm.orderId;
+    if (topluForm.notDegistir) govde.notlar = topluForm.notlar;
+    if (Object.keys(govde).length === 1) { setHata("Değiştirilecek bir alan seçin."); return; }
+    if (await topluIstek(govde)) setTopluDuzenle(false);
   }
 
   function tsvIndir() {
@@ -161,6 +210,21 @@ export default function SatilanKartlarPage() {
         </button>
       </div>
 
+      {secili.size > 0 && (
+        <div className="sticky top-2 z-30 glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center gap-2 border border-primary/30">
+          <span className="text-sm text-on-surface font-medium mr-auto">{secili.size.toLocaleString("tr-TR")} kart seçildi</span>
+          <button onClick={() => setSecili(new Set())} className="px-3 py-1.5 rounded-lg text-xs border border-white/10 text-on-surface-variant hover:bg-white/5">Seçimi Kaldır</button>
+          <button onClick={() => { setTopluForm(BOS_TOPLU); setHata(""); setTopluDuzenle(true); }}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-primary/15 border border-primary/25 text-primary">
+            <span className="material-symbols-outlined text-sm">edit</span>Toplu Düzenle
+          </button>
+          <button onClick={() => { setHata(""); setTopluSil(true); }}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 border border-red-500/30 text-red-400">
+            <span className="material-symbols-outlined text-sm">delete</span>Toplu Sil
+          </button>
+        </div>
+      )}
+
       {loading ? <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant">Yükleniyor...</div>
         : liste.length === 0 ? (
           <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant text-sm">
@@ -168,11 +232,14 @@ export default function SatilanKartlarPage() {
           </div>
         ) : (
           <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="hidden lg:grid grid-cols-[110px_1.3fr_1fr_110px_1.6fr_80px_76px] gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
-              <span>Seri No</span><span>Üye</span><span>Firma</span><span>Sipariş</span><span>Kart Adresi</span><span>Durum</span><span />
+            <div className="flex lg:grid lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_76px] items-center gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
+              <input type="checkbox" checked={tumuSecili} onChange={tumunuSec} title="Listedeki tümünü seç" className="w-4 h-4 accent-[#d4af37] cursor-pointer" />
+              <span className="lg:hidden normal-case tracking-normal text-xs">Tümünü seç</span>
+              <span className="hidden lg:block">Seri No</span><span className="hidden lg:block">Üye</span><span className="hidden lg:block">Firma</span><span className="hidden lg:block">Sipariş</span><span className="hidden lg:block">Kart Adresi</span><span className="hidden lg:block">Durum</span><span className="hidden lg:block" />
             </div>
             {liste.map(k => (
-              <div key={k.id} className="grid grid-cols-1 lg:grid-cols-[110px_1.3fr_1fr_110px_1.6fr_80px_76px] gap-1.5 lg:gap-3 lg:items-center px-4 py-3 border-b border-white/5 last:border-0">
+              <div key={k.id} className={`grid grid-cols-[24px_1fr] lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_76px] gap-x-3 gap-y-1.5 lg:items-center px-4 py-3 border-b border-white/5 last:border-0 ${secili.has(k.id) ? "bg-primary/5" : ""}`}>
+                <input type="checkbox" checked={secili.has(k.id)} onChange={() => secimDegistir(k.id)} className="w-4 h-4 mt-0.5 lg:mt-0 accent-[#d4af37] cursor-pointer row-span-7 lg:row-span-1" />
                 <div>
                   <p className="text-xs font-mono text-on-surface">{k.seriNo}</p>
                   <p className="text-[10px] text-on-surface-variant">{trDate(k.createdAt)}</p>
@@ -303,6 +370,91 @@ export default function SatilanKartlarPage() {
                 a.download = `${qrKart.seriNo}-qr.svg`;
                 a.click();
               }} className="flex-1 py-2 rounded-xl text-sm font-semibold bg-primary text-black">SVG İndir</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toplu düzenle */}
+      {topluDuzenle && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
+              <div>
+                <h3 className="font-semibold text-on-surface">Toplu Düzenle</h3>
+                <p className="text-xs text-on-surface-variant">{secili.size.toLocaleString("tr-TR")} kart · yalnız değiştirdiğiniz alanlar güncellenir</p>
+              </div>
+              <button onClick={() => setTopluDuzenle(false)} className="text-on-surface-variant hover:text-on-surface">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={topluKaydet}>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Referans Firma</label>
+                  <select value={topluForm.firmaId} onChange={e => setTopluForm(p => ({ ...p, firmaId: e.target.value }))} className={inputCls}>
+                    <option value={DEGISTIRME}>— Değiştirme —</option>
+                    <option value="">Firmayı kaldır</option>
+                    {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
+                  </select>
+                  {seciliKartlar.some(k => k.memberId) && topluForm.firmaId && topluForm.firmaId !== DEGISTIRME && (
+                    <p className="text-[11px] text-on-surface-variant/70 mt-1">Üyeye bağlı kartlarda üyenin firması da güncellenir.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Sipariş</label>
+                  <select value={topluForm.orderId} onChange={e => setTopluForm(p => ({ ...p, orderId: e.target.value }))} className={inputCls}>
+                    <option value={DEGISTIRME}>— Değiştirme —</option>
+                    <option value="">Sipariş bağını kaldır</option>
+                    {siparisler.map(s => (
+                      <option key={s.id} value={s.id}>{s.siparisNo} · {s.musteriAd || s.firma} · {s.adet} adet</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-xs text-on-surface-variant mb-1 cursor-pointer">
+                    <input type="checkbox" checked={topluForm.notDegistir} onChange={e => setTopluForm(p => ({ ...p, notDegistir: e.target.checked }))} className="accent-[#d4af37]" />
+                    Notu değiştir
+                  </label>
+                  <input value={topluForm.notlar} disabled={!topluForm.notDegistir} onChange={e => setTopluForm(p => ({ ...p, notlar: e.target.value }))}
+                    placeholder="Boş bırakılırsa notlar silinir" className={`${inputCls} disabled:opacity-40`} />
+                </div>
+              </div>
+              <div className="px-6 pb-5">
+                {hata && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{hata}</p>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setTopluDuzenle(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">İptal</button>
+                  <button type="submit" disabled={kaydediliyor} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black disabled:opacity-60">
+                    {kaydediliyor ? "Kaydediliyor..." : `${secili.size} Kartı Güncelle`}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toplu sil onayı */}
+      {topluSil && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-outlined text-red-400 text-2xl">delete_forever</span>
+            </div>
+            <h3 className="font-semibold text-on-surface text-center mb-1">{secili.size} Kartı Sil</h3>
+            <p className="text-xs text-on-surface-variant text-center mb-5">
+              {seciliKartlar.filter(k => k.aktif).length > 0 && (
+                <span className="block text-red-400 mb-1">{seciliKartlar.filter(k => k.aktif).length} kart aktif ve üyeye bağlı; bağlantıları kaldırılacak.</span>
+              )}
+              Bu kartlara yazılmış NFC/QR adresleri artık çalışmaz. Bu işlem geri alınamaz.
+            </p>
+            {hata && <p className="text-xs text-red-400 text-center mb-3">{hata}</p>}
+            <div className="flex gap-3">
+              <button onClick={() => setTopluSil(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">İptal</button>
+              <button disabled={kaydediliyor} onClick={async () => { if (await topluIstek({ islem: "sil" })) setTopluSil(false); }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white disabled:opacity-60">
+                {kaydediliyor ? "Siliniyor..." : "Evet, Sil"}
+              </button>
             </div>
           </div>
         </div>
