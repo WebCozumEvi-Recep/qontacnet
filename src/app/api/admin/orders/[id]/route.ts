@@ -11,8 +11,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) return NextResponse.json({ ok: false, error: "Sipariş bulunamadı." }, { status: 404 });
   // Ürün kataloğundaki açıklamayı da ekle (sipariş ürün adıyla eşleşirse)
-  const product = await prisma.product.findFirst({ where: { ad: order.urun }, select: { aciklama: true } });
-  return NextResponse.json({ ok: true, order: { ...order, urunAciklama: product?.aciklama ?? "" } });
+  const [product, firma, uye] = await Promise.all([
+    prisma.product.findFirst({ where: { ad: order.urun }, select: { aciklama: true } }),
+    order.firmaId ? prisma.firma.findUnique({ where: { id: order.firmaId }, select: { ad: true } }) : null,
+    order.memberId ? prisma.member.findUnique({ where: { id: order.memberId }, select: { ad: true, soyad: true, resetToken: true } }) : null,
+  ]);
+  const { hesapToken: _t, ...guvenli } = order;
+  void _t;
+  return NextResponse.json({
+    ok: true,
+    order: {
+      ...guvenli,
+      urunAciklama: product?.aciklama ?? "",
+      firmaAd: firma?.ad ?? null,
+      uye: uye ? { ad: `${uye.ad} ${uye.soyad}`.trim(), sifreBekliyor: !!uye.resetToken } : null,
+    },
+  });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

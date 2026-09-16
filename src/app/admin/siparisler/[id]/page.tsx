@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { siparisDurumMap, trDate } from "@/lib/labels";
 
@@ -11,6 +12,8 @@ interface Order {
   odemeDurum?: string; odemeRef?: string;
   faturaTip?: string; tcKimlik?: string; vergiNo?: string; vergiDairesi?: string; firmaUnvan?: string;
   urunAciklama?: string;
+  firmaId?: string | null; firmaAd?: string | null; memberId?: string | null;
+  uye?: { ad: string; sifreBekliyor: boolean } | null;
 }
 
 export default function SiparisDetayPage() {
@@ -89,8 +92,9 @@ export default function SiparisDetayPage() {
   const fmt = (n: number) => `₺${n.toLocaleString("tr-TR")}`;
   const durum = siparisDurumMap[order.durum] ?? { label: order.durum, color: "#aaa", icon: "receipt" };
   // Site siparişlerinde müşteri = ad soyad; firma varsa ikinci satırda gösterilir
-  const musteriBaslik = order.kaynak === "SITE" && order.musteriAd ? order.musteriAd : order.firma;
-  const musteriAlt = order.kaynak === "SITE" && order.musteriAd && order.firma && order.firma !== order.musteriAd ? order.firma : "";
+  const siteSiparisi = order.kaynak === "SITE" || order.kaynak === "FIRMA_LINK";
+  const musteriBaslik = siteSiparisi && order.musteriAd ? order.musteriAd : order.firma;
+  const musteriAlt = siteSiparisi && order.musteriAd && order.firma && order.firma !== order.musteriAd ? order.firma : "";
 
   return (
     <>
@@ -225,10 +229,29 @@ export default function SiparisDetayPage() {
           </div>
 
           {/* Site siparişi müşteri bilgileri */}
-          {order.kaynak === "SITE" && (
+          {order.firmaId && (
+            <div className="px-6 pb-4">
+              <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-400/20 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                <p className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-base text-violet-300">handshake</span>
+                  <span className="text-on-surface-variant text-xs">Satışı getiren firma: </span>
+                  <Link href={`/admin/firmalar/${order.firmaId}`} className="text-violet-300 font-medium hover:underline">{order.firmaAd ?? "Silinmiş firma"}</Link>
+                  <span className="text-on-surface-variant text-xs">({order.kaynak === "FIRMA_LINK" ? "satış linkinden" : "admin tarafından atandı"})</span>
+                </p>
+                {order.uye && (
+                  <p className="text-xs text-on-surface-variant">
+                    Üye hesabı: <Link href="/admin/uyeler" className="text-on-surface hover:underline">{order.uye.ad}</Link>
+                    {order.uye.sifreBekliyor && <span className="ml-1.5 text-amber-300">(şifre bekliyor)</span>}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {siteSiparisi && (
             <div className="px-6 pb-6">
               <div className="p-4 rounded-xl bg-primary/5 border border-primary/15">
-                <p className="text-xs text-primary mb-2 font-medium">Site Üzerinden Satın Alım — Müşteri Bilgileri</p>
+                <p className="text-xs text-primary mb-2 font-medium">{order.kaynak === "FIRMA_LINK" ? "Firma Linkinden Satın Alım" : "Site Üzerinden Satın Alım"} — Müşteri Bilgileri</p>
                 <div className="grid sm:grid-cols-2 gap-2 text-sm text-on-surface">
                   {order.musteriAd && <p><span className="text-on-surface-variant text-xs">Ad Soyad: </span>{order.musteriAd}</p>}
                   {order.telefon && <p><span className="text-on-surface-variant text-xs">Telefon: </span>{order.telefon}</p>}
@@ -290,7 +313,7 @@ export default function SiparisDetayPage() {
             <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Müşteri</div>
             <div className="font-semibold text-gray-900">{musteriBaslik}</div>
             {musteriAlt && <div className="text-xs text-gray-500 mt-0.5">{musteriAlt}</div>}
-            {order.kaynak === "SITE" && order.adres && <div className="text-xs text-gray-500 mt-0.5">{order.adres}</div>}
+            {siteSiparisi && order.adres && <div className="text-xs text-gray-500 mt-0.5">{order.adres}</div>}
           </div>
           <div>
             <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Ürün</div>

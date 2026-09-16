@@ -144,7 +144,7 @@ export default function AdminSiparislerPage() {
               <span className="material-symbols-outlined" style={{ color: siparisDurumMap[o.durum].color }}>{siparisDurumMap[o.durum].icon}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="text-on-surface font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>{o.siparisNo}</span>
                 <span className="text-xs px-2 py-0.5 rounded-full"
                   style={{ background: `${siparisDurumMap[o.durum].color}15`, color: siparisDurumMap[o.durum].color, border: `1px solid ${siparisDurumMap[o.durum].color}30` }}>
@@ -152,6 +152,13 @@ export default function AdminSiparislerPage() {
                 </span>
                 {(o.kaynak === "SITE" || o.kaynak === "FIRMA_LINK") && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">{o.kaynak === "FIRMA_LINK" ? "Firma Linki" : "Site"}</span>
+                )}
+                {o.firmaId && (
+                  <Link href={`/admin/firmalar/${o.firmaId}`} title="Satışı getiren firma"
+                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-400/30 hover:bg-violet-500/20 max-w-[220px]">
+                    <span className="material-symbols-outlined text-[13px]">handshake</span>
+                    <span className="truncate">{firmalar.find(f => f.id === o.firmaId)?.ad ?? "Silinmiş firma"}</span>
+                  </Link>
                 )}
                 {o.odemeDurum && odemeBadge[o.odemeDurum] && (
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${odemeBadge[o.odemeDurum].cls}`}>
