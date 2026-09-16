@@ -62,7 +62,7 @@ export const PRODUCTS_TEXT = {
   cancel: "İptal",
   toPayment: "Ödemeye Geç",
   redirecting: "Ödemeye yönlendiriliyor...",
-  securePay: "Ödeme, QNB sanal POS güvenli ödeme sayfasında 3D Secure ile alınır.",
+  securePay: "Ödemeniz 3D Secure ile güvenli şekilde alınır.",
   orderFailed: "Sipariş oluşturulamadı.",
   payOk: "Ödemeniz Alındı",
   payFail: "Ödeme Tamamlanamadı",
