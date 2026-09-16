@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { FirmaSatis } from "./FirmaSatis";
+import { GaleriliGorsel } from "@/components/urun/Galeri";
+import { tumGorseller } from "@/lib/urun-gorsel";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ odeme?: string; no?: string }> };
 
@@ -13,7 +15,7 @@ async function veriGetir(id: string) {
   if (!firma || firma.durum !== "AKTIF" || !firma.urunId) return null;
   const urun = await prisma.product.findUnique({
     where: { id: firma.urunId },
-    select: { id: true, ad: true, aciklama: true, fiyat: true, gorsel: true, aktif: true, firmaId: true },
+    select: { id: true, ad: true, aciklama: true, fiyat: true, gorsel: true, gorseller: true, aktif: true, firmaId: true },
   });
   if (!urun || !urun.aktif || urun.fiyat <= 0 || (urun.firmaId && urun.firmaId !== firma.id)) return null;
   return { firma, urun };
@@ -67,10 +69,7 @@ export default async function FirmaSatisSayfasi({ params, searchParams }: Props)
         </header>
 
         <section className="glass-card rounded-2xl p-5 flex flex-col sm:flex-row gap-5">
-          {urun.gorsel && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={urun.gorsel} alt={urun.ad} className="w-full sm:w-40 aspect-square object-cover rounded-xl" />
-          )}
+          <GaleriliGorsel gorseller={tumGorseller(urun)} ad={urun.ad} className="w-full sm:w-40 aspect-square flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{urun.ad}</h1>
             {urun.aciklama && <p className="text-sm text-on-surface-variant mt-2 whitespace-pre-line">{urun.aciklama}</p>}

@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { PRODUCTS_TEXT, type ProductsText } from "@/lib/i18n/ui-text";
 import { SiparisFormu } from "@/components/siparis/SiparisFormu";
+import { Lightbox } from "@/components/urun/Galeri";
+import { tumGorseller } from "@/lib/urun-gorsel";
 
 interface Urun {
   id: string;
@@ -11,20 +13,6 @@ interface Urun {
   gorsel: string;
   gorseller?: string;
   tip: string;
-}
-
-// Ürünün tüm görsellerini tek diziye toplar (ana görsel + galeri)
-function tumGorseller(u: Urun): string[] {
-  const ek = (() => {
-    if (!u.gorseller) return [];
-    try {
-      const arr = JSON.parse(u.gorseller);
-      return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
-    } catch {
-      return [];
-    }
-  })();
-  return [u.gorsel, ...ek].filter(Boolean);
 }
 
 const TIP_LABEL: Record<string, string> = {
@@ -121,86 +109,6 @@ export default function Products({ t = PRODUCTS_TEXT }: { t?: ProductsText }) {
       )}
       <OdemeSonuc t={t} />
     </section>
-  );
-}
-
-// Ürün görsellerini tam ekran galeri/lightbox olarak gösterir
-function Lightbox({ gorseller, baslangic, ad, onClose, t }: { gorseller: string[]; baslangic: number; ad: string; onClose: () => void; t: ProductsText }) {
-  const [index, setIndex] = useState(baslangic);
-  const coklu = gorseller.length > 1;
-  const ileri = () => setIndex((i) => (i + 1) % gorseller.length);
-  const geri = () => setIndex((i) => (i - 1 + gorseller.length) % gorseller.length);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowRight" && coklu) ileri();
-      else if (e.key === "ArrowLeft" && coklu) geri();
-    }
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [coklu]);
-
-  return (
-    <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center p-4 bg-black/85 backdrop-blur-sm" onClick={onClose}>
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
-        aria-label={t.close}
-      >
-        <span className="material-symbols-outlined">close</span>
-      </button>
-
-      <div className="relative flex items-center justify-center w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
-        {coklu && (
-          <button
-            type="button"
-            onClick={geri}
-            className="absolute left-0 sm:-left-14 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-10"
-            aria-label={t.prev}
-          >
-            <span className="material-symbols-outlined">chevron_left</span>
-          </button>
-        )}
-        <img
-          src={gorseller[index]}
-          alt={`${ad} — görsel ${index + 1}`}
-          className="max-h-[78vh] max-w-full object-contain rounded-2xl shadow-2xl select-none"
-        />
-        {coklu && (
-          <button
-            type="button"
-            onClick={ileri}
-            className="absolute right-0 sm:-right-14 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-10"
-            aria-label={t.next}
-          >
-            <span className="material-symbols-outlined">chevron_right</span>
-          </button>
-        )}
-      </div>
-
-      <p className="text-white/80 text-sm mt-3 font-medium" onClick={(e) => e.stopPropagation()}>{ad}</p>
-
-      {coklu && (
-        <div className="flex items-center gap-2 mt-3 flex-wrap justify-center max-w-full" onClick={(e) => e.stopPropagation()}>
-          {gorseller.map((g, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setIndex(i)}
-              className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${i === index ? "border-primary" : "border-white/20 opacity-60 hover:opacity-100"}`}
-            >
-              <img src={g} alt={`küçük görsel ${i + 1}`} className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
