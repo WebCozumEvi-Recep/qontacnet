@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from "react";
 interface Product {
   id: string; ad: string; aciklama: string; fiyat: number;
   gorsel: string; gorseller: string; aktif: boolean; tip: string; sira: number;
+  firmaId: string | null;
 }
 
 interface ProductForm {
   ad: string; aciklama: string; fiyat: string;
   gorsel: string; gorseller: string[]; aktif: boolean; tip: string; sira: string;
+  firmaId: string;
 }
 
-const emptyForm: ProductForm = { ad: "", aciklama: "", fiyat: "", gorsel: "", gorseller: [], aktif: true, tip: "NFC_KART", sira: "0" };
+const emptyForm: ProductForm = { ad: "", aciklama: "", fiyat: "", gorsel: "", gorseller: [], aktif: true, tip: "NFC_KART", sira: "0", firmaId: "" };
 
 // Veritabanındaki JSON string'i diziye çevirir
 function parseGorseller(raw: string): string[] {
@@ -165,15 +167,23 @@ export default function AdminUrunlerPage() {
   const [editError, setEditError] = useState("");
 
   const [deleteUrun, setDeleteUrun] = useState<Product | null>(null);
+  const [firmalar, setFirmalar] = useState<{ id: string; ad: string }[]>([]);
+  const [kapsam, setKapsam] = useState(""); // "" tümü, "genel", ya da firma id
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/urunler").then(r => r.json()).then(j => { if (j.ok) setUrunler(j.urunler); }).finally(() => setLoading(false));
+    fetch("/api/admin/firmalar").then(r => r.json()).then(j => {
+      if (j.ok) setFirmalar(j.firmalar.map((f: { id: string; ad: string }) => ({ id: f.id, ad: f.ad })));
+    });
   }, []);
+
+  const firmaAd = (id: string | null) => firmalar.find(f => f.id === id)?.ad ?? "Silinmiş firma";
+  const gorunen = urunler.filter(u => !kapsam || (kapsam === "genel" ? !u.firmaId : u.firmaId === kapsam));
 
   function openEdit(u: Product) {
     setEditUrun(u);
-    setEditForm({ ad: u.ad, aciklama: u.aciklama, fiyat: String(u.fiyat), gorsel: u.gorsel, gorseller: parseGorseller(u.gorseller), aktif: u.aktif, tip: u.tip, sira: String(u.sira) });
+    setEditForm({ ad: u.ad, aciklama: u.aciklama, fiyat: String(u.fiyat), gorsel: u.gorsel, gorseller: parseGorseller(u.gorseller), aktif: u.aktif, tip: u.tip, sira: String(u.sira), firmaId: u.firmaId ?? "" });
     setEditError("");
   }
 
@@ -226,8 +236,14 @@ export default function AdminUrunlerPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-on-surface">Ürün Kataloğu</h1>
-          <p className="text-sm text-on-surface-variant mt-0.5">Siparişlerde ve sitede gösterilecek ürünleri yönetin.</p>
+          <p className="text-sm text-on-surface-variant mt-0.5">Siparişlerde ve sitede gösterilecek ürünleri yönetin. Firmaya özel ürünler ana sayfada listelenmez.</p>
         </div>
+        <select value={kapsam} onChange={e => setKapsam(e.target.value)}
+          className="ml-auto mr-3 bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+          <option value="">Tüm ürünler</option>
+          <option value="genel">Genel katalog (ana sayfa)</option>
+          {firmalar.filter(f => urunler.some(u => u.firmaId === f.id)).map(f => <option key={f.id} value={f.id}>{f.ad} özel</option>)}
+        </select>
         <button onClick={() => { setNewForm(emptyForm); setNewError(""); setNewModal(true); }}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
           <span className="material-symbols-outlined text-base">add</span>Yeni Ürün
@@ -250,7 +266,7 @@ export default function AdminUrunlerPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-on-surface-variant">Yükleniyor...</td></tr>
-              ) : urunler.map(u => (
+              ) : gorunen.map(u => (
                 <tr key={u.id} className="border-b border-white/5 hover:bg-white/3 transition-all">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -263,6 +279,11 @@ export default function AdminUrunlerPage() {
                       )}
                       <div>
                         <p className="text-on-surface font-medium">{u.ad}</p>
+                        {u.firmaId && (
+                          <p className="inline-flex items-center gap-1 text-[11px] text-violet-300 mt-0.5">
+                            <span className="material-symbols-outlined text-[13px]">lock</span>{firmaAd(u.firmaId)} özel · ana sayfada gizli
+                          </p>
+                        )}
                         {u.aciklama && <p className="text-xs text-on-surface-variant line-clamp-1 max-w-xs">{u.aciklama}</p>}
                       </div>
                     </div>
@@ -343,6 +364,14 @@ export default function AdminUrunlerPage() {
                     <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${newForm.aktif ? "left-5" : "left-1"}`} />
                   </button>
                 </div>
+                <div className="col-span-2">
+                  <label className="text-xs text-on-surface-variant mb-1 block">Firmaya Özel</label>
+                  <select value={newForm.firmaId} onChange={e => setNewForm(p => ({ ...p, firmaId: e.target.value }))}
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                    <option value="">Hayır — genel ürün, ana sayfada listelenir</option>
+                    {firmalar.map(fr => <option key={fr.id} value={fr.id}>{fr.ad} (yalnız bu firmanın satış sayfasında)</option>)}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="text-xs text-on-surface-variant mb-1 block">Açıklama</label>
@@ -404,6 +433,14 @@ export default function AdminUrunlerPage() {
                     className={`relative w-10 h-6 rounded-full transition-all ${editForm.aktif ? "bg-primary" : "bg-white/10"}`}>
                     <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${editForm.aktif ? "left-5" : "left-1"}`} />
                   </button>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs text-on-surface-variant mb-1 block">Firmaya Özel</label>
+                  <select value={editForm.firmaId} onChange={e => setEditForm(p => ({ ...p, firmaId: e.target.value }))}
+                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                    <option value="">Hayır — genel ürün, ana sayfada listelenir</option>
+                    {firmalar.map(fr => <option key={fr.id} value={fr.id}>{fr.ad} (yalnız bu firmanın satış sayfasında)</option>)}
+                  </select>
                 </div>
               </div>
               <div>

@@ -481,8 +481,12 @@ model Product {
   aktif     Boolean  @default(true)
   tip       String   @default("NFC_KART")
   sira      Int      @default(0)
+  // Firmaya özel ürün: ana sayfada listelenmez, yalnız bu firmanın satış sayfasında satılır
+  firmaId   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([firmaId])
 }
 
 model Application {

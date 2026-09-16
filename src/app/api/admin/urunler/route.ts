@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
   if (typeof body.ad !== "string" || !body.ad.trim())
     return NextResponse.json({ ok: false, error: "Ürün adı zorunludur." }, { status: 400 });
 
+  const firmaId = typeof body.firmaId === "string" && body.firmaId ? body.firmaId : null;
+  if (firmaId && !(await prisma.firma.findUnique({ where: { id: firmaId }, select: { id: true } })))
+    return NextResponse.json({ ok: false, error: "Firma bulunamadı." }, { status: 404 });
+
   const urun = await prisma.product.create({
     data: {
       ad: String(body.ad).trim(),
@@ -37,6 +41,7 @@ export async function POST(req: NextRequest) {
       aktif: body.aktif !== false,
       tip: typeof body.tip === "string" ? body.tip.trim() : "NFC_KART",
       sira: typeof body.sira === "number" ? body.sira : 0,
+      firmaId,
     },
   });
   return NextResponse.json({ ok: true, urun });

@@ -79,7 +79,8 @@ export async function siteSiparisiOlustur(req: Request, body: Record<string, unk
     }
 
     const urun = await prisma.product.findUnique({ where: { id: String(urunId) } });
-    if (!urun || !urun.aktif) {
+    // Firmaya özel ürün yalnız o firmanın satış sayfasından alınabilir
+    if (!urun || !urun.aktif || (urun.firmaId && urun.firmaId !== sec.firmaId)) {
       return NextResponse.json({ ok: false, error: "Ürün bulunamadı." }, { status: 404 });
     }
 

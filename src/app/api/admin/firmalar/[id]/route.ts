@@ -26,8 +26,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.logo === "string") data.logo = body.logo.trim();
   if ("urunId" in body) {
     const urunId = typeof body.urunId === "string" && body.urunId ? body.urunId : null;
-    if (urunId && !(await prisma.product.findUnique({ where: { id: urunId }, select: { id: true } }))) {
-      return NextResponse.json({ ok: false, error: "Ürün bulunamadı." }, { status: 404 });
+    if (urunId) {
+      const urun = await prisma.product.findUnique({ where: { id: urunId }, select: { firmaId: true } });
+      if (!urun) return NextResponse.json({ ok: false, error: "Ürün bulunamadı." }, { status: 404 });
+      if (urun.firmaId && urun.firmaId !== id) {
+        return NextResponse.json({ ok: false, error: "Bu ürün başka bir firmaya özel." }, { status: 400 });
+      }
     }
     data.urunId = urunId;
   }

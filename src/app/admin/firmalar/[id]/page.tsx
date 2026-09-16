@@ -9,7 +9,7 @@ interface Firma {
   durum: string; createdAt: string; logo: string; urunId: string | null;
   uyeSayisi: number; satilanKart: number; aktifKart: number;
 }
-interface Urun { id: string; ad: string; fiyat: number; aktif: boolean }
+interface Urun { id: string; ad: string; fiyat: number; aktif: boolean; firmaId: string | null }
 interface Order { id: string; siparisNo: string; urun: string; adet: number; tutar: number; createdAt: string }
 
 export default function FirmaDetayPage({ params }: { params: Promise<{ id: string }> }) {
@@ -139,11 +139,18 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
             <select value={firma.urunId ?? ""} onChange={e => patch({ urunId: e.target.value })} disabled={busy}
               className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none">
               <option value="">— Ürün seçilmedi (satış kapalı) —</option>
-              {urunler.map(u => (
-                <option key={u.id} value={u.id} disabled={!u.aktif}>{u.ad} · ₺{u.fiyat.toLocaleString("tr-TR")}{u.aktif ? "" : " (pasif)"}</option>
+              {([
+                ["Bu firmaya özel", urunler.filter(u => u.firmaId === firma.id)],
+                ["Genel katalog", urunler.filter(u => !u.firmaId)],
+              ] as const).map(([grup, liste]) => liste.length > 0 && (
+                <optgroup key={grup} label={grup}>
+                  {liste.map(u => (
+                    <option key={u.id} value={u.id} disabled={!u.aktif}>{u.ad} · ₺{u.fiyat.toLocaleString("tr-TR")}{u.aktif ? "" : " (pasif)"}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
-            <p className="text-[11px] text-on-surface-variant/70 mt-1">Ürünler ve fiyatları Ürünler menüsünden yönetilir.</p>
+            <p className="text-[11px] text-on-surface-variant/70 mt-1">Firmaya özel kart ve fiyat, Ürünler menüsünde ürün eklerken bu firma seçilerek tanımlanır.</p>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-white/5">

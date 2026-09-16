@@ -13,9 +13,9 @@ async function veriGetir(id: string) {
   if (!firma || firma.durum !== "AKTIF" || !firma.urunId) return null;
   const urun = await prisma.product.findUnique({
     where: { id: firma.urunId },
-    select: { id: true, ad: true, aciklama: true, fiyat: true, gorsel: true, aktif: true },
+    select: { id: true, ad: true, aciklama: true, fiyat: true, gorsel: true, aktif: true, firmaId: true },
   });
-  if (!urun || !urun.aktif || urun.fiyat <= 0) return null;
+  if (!urun || !urun.aktif || urun.fiyat <= 0 || (urun.firmaId && urun.firmaId !== firma.id)) return null;
   return { firma, urun };
 }
 
