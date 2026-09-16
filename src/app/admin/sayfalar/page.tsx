@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { LOCALES, LOCALE_LABELS, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { SOZLESME, SOZLESME_YER_TUTUCULARI } from "@/lib/sozlesmeler";
+
+const SATIN_ALMA_SAYFALARI: string[] = Object.values(SOZLESME);
+const DOLDURULAN_SAYFALAR: string[] = [SOZLESME.onBilgi, SOZLESME.mesafeli];
 
 const RichEditor = dynamic(() => import("@/components/RichEditor"), {
   ssr: false,
@@ -89,7 +93,10 @@ export default function AdminSayfalarPage() {
               <div key={s.id} className="flex items-center gap-3 py-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-on-surface font-medium truncate">{s.baslik}</p>
-                  <p className="text-xs text-on-surface-variant">/sayfa/{s.slug}</p>
+                  <p className="text-xs text-on-surface-variant">
+                    /sayfa/{s.slug}
+                    {SATIN_ALMA_SAYFALARI.includes(s.slug) && <span className="ml-2 text-primary">· satın almada onaylatılır</span>}
+                  </p>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${s.aktif ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-on-surface-variant"}`}>
                   {s.aktif ? "Yayında" : "Gizli"}
@@ -218,6 +225,14 @@ function SayfaDuzenle({ sayfa, onClose, onSaved }: { sayfa: Sayfa; onClose: () =
         </div>
         <div>
           <label className="block text-xs text-on-surface-variant mb-1.5">İçerik</label>
+          {DOLDURULAN_SAYFALAR.includes(sayfa.slug) && (
+            <div className="mb-2 p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-on-surface-variant">
+              Bu metin satın alma sırasında alıcıya gösterilir. Aşağıdaki ifadeler otomatik doldurulur:
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                {SOZLESME_YER_TUTUCULARI.map(([k, a]) => <span key={k}><code className="text-primary">{k}</code> {a}</span>)}
+              </div>
+            </div>
+          )}
           {kaynak ? (
             <RichEditor value={icerik} onChange={setIcerik} />
           ) : (

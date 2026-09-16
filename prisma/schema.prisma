@@ -347,6 +347,8 @@ model Order {
   memberId  String?      // siparişle açılan / bağlanan üye hesabı
   // Firma linkinden gelen siparişte şifre belirleme anahtarı; ödeme onaylanınca üyenin resetToken'ı olur
   hesapToken String?     @unique
+  // Satın almada onaylanan sözleşmeler: { zaman, ip, sayfalar: [{ slug, surum }] }
+  sozlesmeKayit Json?
   urun      String
   adet      Int
   tutar     Int

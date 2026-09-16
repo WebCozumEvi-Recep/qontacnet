@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PRODUCTS_TEXT, type ProductsText } from "@/lib/i18n/ui-text";
 import { KartFormu, BOS_KART, type KartAlanlari } from "@/components/odeme/KartFormu";
 import { odemeyeGit, type OdemeYaniti } from "@/components/odeme/odeme-yonlendir";
+import { SozlesmeOnaylari } from "@/components/siparis/SozlesmeOnaylari";
 
 export interface SiparisUrun { id: string; ad: string; fiyat: number }
 
@@ -17,12 +18,14 @@ interface Props {
   firmaAlani?: boolean;
   /** Adet girişi gösterilsin mi; gizliyse her sipariş 1 adettir. */
   adetAlani?: boolean;
+  /** Üyelik sözleşmesi onayı da istensin mi (ödeme sonrası hesap açılan akış). */
+  uyelikOnayi?: boolean;
   /** Banka ekranına geçmeden hemen önce sipariş yanıtıyla çağrılır. */
   onOdemeOncesi?: (yanit: { siparisNo: string; hesapToken?: string | null }) => void;
 }
 
 // Ürün satın alma formu: müşteri + fatura + (gerekiyorsa) kart bilgisi → 3D ödeme.
-export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis", onClose, firmaAlani = true, adetAlani = true, onOdemeOncesi }: Props) {
+export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis", onClose, firmaAlani = true, adetAlani = true, uyelikOnayi = false, onOdemeOncesi }: Props) {
   const [form, setForm] = useState({
     musteriAd: "", firma: "", email: "", telefon: "", adres: "", adet: "1", notlar: "",
     faturaTip: "BIREYSEL", tcKimlik: "", vergiNo: "", vergiDairesi: "", firmaUnvan: "",
@@ -30,6 +33,7 @@ export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [kart, setKart] = useState<KartAlanlari>(BOS_KART);
+  const [onay, setOnay] = useState({ satis: false, uyelik: false });
   // Seçili ödeme sağlayıcısı kart bilgisini bizden mi bekliyor? (DijiGate: evet, QNB: hayır)
   const [kartGerekli, setKartGerekli] = useState(false);
 
@@ -54,7 +58,7 @@ export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, urunId: urun.id, adet: adetNum, ...(kartGerekli ? { kart } : {}) }),
+      body: JSON.stringify({ ...form, urunId: urun.id, adet: adetNum, sozlesmeOnay: onay.satis, uyelikOnay: onay.uyelik, ...(kartGerekli ? { kart } : {}) }),
     });
     const j = await res.json();
     if (j.ok && j.odeme) {
@@ -173,6 +177,22 @@ export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis
             <KartFormu kart={kart} onChange={setKart} />
           </div>
         )}
+
+        <SozlesmeOnaylari
+          uyelik={uyelikOnayi}
+          onay={onay}
+          onChange={setOnay}
+          degerler={{
+            "{{ALICI_AD}}": form.musteriAd,
+            "{{ALICI_TELEFON}}": form.telefon,
+            "{{ALICI_EPOSTA}}": form.email,
+            "{{ALICI_ADRES}}": form.adres,
+            "{{URUN}}": urun.ad,
+            "{{ADET}}": String(adetNum),
+            "{{TUTAR}}": `₺${toplam.toLocaleString("tr-TR")}`,
+            "{{TARIH}}": new Date().toLocaleDateString("tr-TR"),
+          }}
+        />
 
         {error && (
           <p className="text-xs text-red-400 flex items-center gap-1 mb-3">

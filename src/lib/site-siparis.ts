@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { nextSiparisNo } from "@/lib/siparis-no";
 import { odemeBaslat, odemeAcikMi, kartBilgisiGerekliMi, kartCoz, istemciIp, OdemeYapilandirmaHatasi } from "@/lib/odeme";
 import { DijigateError } from "@/lib/dijigate";
+import { aktifSozlesmeler } from "@/lib/sozlesme-durum";
+import { SOZLESME } from "@/lib/sozlesmeler";
 
 export interface SiteSiparisSecenek {
   /** Satışı getiren firma — firma satış sayfasında dolu. */
@@ -47,6 +49,23 @@ export async function siteSiparisiOlustur(req: Request, body: Record<string, unk
       }
     }
 
+    // Aktif satış sözleşmeleri onaylanmadan sipariş alınmaz; onay siparişe kaydedilir.
+    const sozlesmeler = await aktifSozlesmeler();
+    const satisSozlesmeleri = [sozlesmeler[SOZLESME.onBilgi], sozlesmeler[SOZLESME.mesafeli]].filter(Boolean);
+    const uyelikSozlesmeleri = sec.kaynak === "FIRMA_LINK"
+      ? [sozlesmeler[SOZLESME.uyelik], sozlesmeler[SOZLESME.kvkk]].filter(Boolean)
+      : [];
+    if (satisSozlesmeleri.length && body.sozlesmeOnay !== true) {
+      return NextResponse.json({ ok: false, error: "Devam etmek için satış sözleşmelerini onaylamanız gerekir." }, { status: 400 });
+    }
+    if (uyelikSozlesmeleri.length && body.uyelikOnay !== true) {
+      return NextResponse.json({ ok: false, error: "Devam etmek için üyelik sözleşmesini onaylamanız gerekir." }, { status: 400 });
+    }
+    const onaylanan = [...satisSozlesmeleri, ...uyelikSozlesmeleri];
+    const sozlesmeKayit = onaylanan.length
+      ? { zaman: new Date().toISOString(), ip: istemciIp(req.headers), sayfalar: onaylanan.map(x => ({ slug: x!.slug, surum: x!.surum })) }
+      : undefined;
+
     if (!(await odemeAcikMi())) {
       return NextResponse.json({ ok: false, error: "Ödeme sistemi henüz yapılandırılmadı. Lütfen daha sonra tekrar deneyin." }, { status: 503 });
     }
@@ -79,6 +98,7 @@ export async function siteSiparisiOlustur(req: Request, body: Record<string, unk
         firma: String(firma || firmaUnvan || musteriAd),
         firmaId: sec.firmaId ?? null,
         hesapToken,
+        sozlesmeKayit,
         urun: urun.ad,
         adet: adetNum,
         tutar,
