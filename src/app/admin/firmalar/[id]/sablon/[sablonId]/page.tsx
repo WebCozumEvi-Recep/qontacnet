@@ -80,9 +80,14 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
   function alanEkle(tip: AlanTipi) {
     const icerik = tip === "metin" ? (firmaWeb.replace(/^https?:\/\//, "").replace(/\/$/, "") || "www.firmaniz.com") : "";
     const a = yeniAlan(tip, yuz, icerik);
+    // Yeni alanlar üst üste binmesin: aynı yüzdeki alan sayısına göre basamaklı yerleştir
+    if (tip !== "qr") {
+      const sira = sablon!.alanlar.filter(x => x.yuz === yuz && x.tip !== "qr").length;
+      a.y = Math.round((0.2 + (sira % 7) * 0.11) * 1000) / 1000;
+    }
     guncelle({ alanlar: [...sablon!.alanlar, a] });
     setSeciliId(a.id);
-    setEkleMenusu(false);
+    if (a.gorunur) setYuz(a.yuz);
   }
   function alanSil(id: string) {
     const kalan = sablon!.alanlar.filter(a => a.id !== id);
@@ -288,31 +293,29 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
           <div className="glass-card rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Alanlar</p>
-              <div className="relative">
-                <button onClick={() => setEkleMenusu(v => !v)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/15 border border-primary/25 text-primary">
-                  <span className="material-symbols-outlined text-sm">add</span>Alan Ekle
-                </button>
-                {ekleMenusu && (
-                  <div className="absolute right-0 top-full mt-1 z-20 w-56 rounded-xl border border-white/10 shadow-2xl p-1" style={{ background: "#1a1a2e" }}>
-                    {EKLENEBILIR.map(t => {
-                      const tekli = (DINAMIK_TIPLER as AlanTipi[]).includes(t);
-                      const var_ = tekli && mevcutTipler.has(t);
-                      return (
-                        <button key={t} disabled={var_} onClick={() => alanEkle(t)}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left text-on-surface hover:bg-white/5 disabled:opacity-35 disabled:hover:bg-transparent">
-                          <span className="material-symbols-outlined text-base text-primary">{ALAN_IKON[t]}</span>
-                          <span className="flex-1">{ALAN_ETIKET[t]}</span>
-                          {var_ && <span className="text-[10px] text-on-surface-variant">ekli</span>}
-                          {t === "metin" && <span className="text-[10px] text-on-surface-variant">web vb.</span>}
-                          {t === "gorsel" && <span className="text-[10px] text-on-surface-variant">logo</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <button onClick={() => setEkleMenusu(v => !v)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border ${ekleMenusu ? "bg-primary text-black border-primary" : "bg-primary/15 border-primary/25 text-primary"}`}>
+                <span className="material-symbols-outlined text-sm">{ekleMenusu ? "close" : "add"}</span>Alan Ekle
+              </button>
             </div>
+
+            {/* Kartın içinde açılır (glass-card taşmayı kestiği için açılır liste kullanılmıyor) */}
+            {ekleMenusu && (
+              <div className="grid grid-cols-3 gap-1.5 p-2 rounded-xl bg-white/[0.03] border border-white/8">
+                {EKLENEBILIR.map(t => {
+                  const ekli = (DINAMIK_TIPLER as AlanTipi[]).includes(t) && mevcutTipler.has(t);
+                  return (
+                    <button key={t} type="button" disabled={ekli} onClick={() => alanEkle(t)}
+                      title={ekli ? "Bu alan şablonda zaten var" : `${ALAN_ETIKET[t]} ekle`}
+                      className="flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg text-[11px] text-on-surface border border-white/10 hover:border-primary/40 hover:bg-primary/10 disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:border-white/10">
+                      <span className="material-symbols-outlined text-lg text-primary">{ALAN_IKON[t]}</span>
+                      <span className="leading-tight text-center">{t === "adSoyad" ? "Ad Soyad" : ALAN_ETIKET[t]}</span>
+                      {ekli && <span className="text-[9px] text-on-surface-variant">ekli</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {sablon.alanlar.length === 0 ? (
               <p className="text-xs text-on-surface-variant text-center py-3">Alan yok — &quot;Alan Ekle&quot; ile ekleyin.</p>
