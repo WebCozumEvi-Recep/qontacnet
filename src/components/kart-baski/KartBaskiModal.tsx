@@ -2,9 +2,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { KartTuvali } from "@/components/kart-baski/KartTuvali";
-import { alanlariDuzenle, jpgIndir, yazdir, type KartDegerleri, type KartSablonVerisi, type Yon } from "@/lib/kart-baski";
+import { ALAN_ETIKET, alanlariDuzenle, zeminRengi, jpgIndir, yazdir, type KartDegerleri, type KartSablonVerisi, type Yon } from "@/lib/kart-baski";
 
-interface HamSablon { id: string; firmaId: string; ad: string; yon: Yon; onGorsel: string; arkaGorsel: string; alanlar: unknown }
+interface HamSablon { id: string; firmaId: string; ad: string; yon: Yon; onGorsel: string; arkaGorsel: string; onRenk: string; arkaRenk: string; alanlar: unknown }
 
 interface Props {
   seriNo: string;
@@ -44,11 +44,11 @@ export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, on
 
   const sablon: KartSablonVerisi | null = useMemo(() => {
     const s = sablonlar?.find(x => x.id === seciliId);
-    return s ? { id: s.id, ad: s.ad, yon: s.yon, onGorsel: s.onGorsel, arkaGorsel: s.arkaGorsel, alanlar: alanlariDuzenle(s.alanlar, s.yon) } : null;
+    return s ? { id: s.id, ad: s.ad, yon: s.yon, onGorsel: s.onGorsel, arkaGorsel: s.arkaGorsel, onRenk: zeminRengi(s.onRenk), arkaRenk: zeminRengi(s.arkaRenk), alanlar: alanlariDuzenle(s.alanlar, s.yon) } : null;
   }, [sablonlar, seciliId]);
 
   // Arka yüzde hiç içerik yoksa (görsel/alan) yalnız ön yüz basılır
-  const arkaVar = !!sablon && (!!sablon.arkaGorsel || sablon.alanlar.some(a => a.yuz === "arka" && a.gorunur));
+  const arkaVar = !!sablon && (!!sablon.arkaGorsel || sablon.arkaRenk !== "#ffffff" || sablon.alanlar.some(a => a.yuz === "arka" && a.gorunur));
   const firmaAd = (id: string) => firmalar.find(f => f.id === id)?.ad ?? "Diğer";
   const gruplar = useMemo(() => {
     const m = new Map<string, HamSablon[]>();
@@ -56,7 +56,7 @@ export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, on
     return [...m.entries()].sort(([a], [b]) => (a === firmaId ? -1 : b === firmaId ? 1 : 0));
   }, [sablonlar, firmaId]);
 
-  const ad = dosyaAdi(`${seriNo}-${degerler.adSoyad || "kart"}`);
+  const ad = dosyaAdi(`${seriNo}-${`${degerler.ad} ${degerler.soyad}`.trim() || "kart"}`);
   const sayfalar = () => [on.current, arkaVar ? arka.current : null].filter((c): c is HTMLCanvasElement => !!c);
 
   return (
@@ -97,9 +97,9 @@ export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, on
                   ))}
                 </select>
               </div>
-              {(["adSoyad", "unvan", "gsm"] as const).map(k => (
+              {(["ad", "soyad", "unvan", "gsm"] as const).map(k => (
                 <div key={k}>
-                  <label className="text-xs text-on-surface-variant mb-1 block">{k === "adSoyad" ? "Ad Soyad" : k === "gsm" ? "GSM" : "Unvan"}</label>
+                  <label className="text-xs text-on-surface-variant mb-1 block">{ALAN_ETIKET[k]}</label>
                   <input value={degerler[k]} onChange={e => setDegerler(d => ({ ...d, [k]: e.target.value }))} className={inputCls} />
                 </div>
               ))}

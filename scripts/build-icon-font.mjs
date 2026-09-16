@@ -60,6 +60,12 @@ add(
     .join(" "),
 );
 
+// Kart baskı editörü ikonları değişkenlerden ({ikon}) basar; bu dosyalardaki tüm
+// string literalleri aday sayılır (ikon olmayanlar geçerlilik süzgecinde elenir).
+for (const dosya of ["src/lib/kart-baski.ts", "src/app/admin/firmalar/[id]/sablon/[sablonId]/page.tsx"]) {
+  add((readFileSync(dosya, "utf8").match(/"[a-z][a-z_0-9]{2,}"/g) ?? []).map((s) => s.slice(1, -1)).join(" "));
+}
+
 // Elle eklenenler — kaynakta hiç geçmeyen ama çalışma anında kullanılabilecek
 // ikonlar (ör. veritabanından gelen adlar) buraya yazılır.
 add(`

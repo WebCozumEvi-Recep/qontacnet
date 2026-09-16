@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
       yon,
       onGorsel: okunan.data.onGorsel ?? "",
       arkaGorsel: okunan.data.arkaGorsel ?? "",
+      onRenk: okunan.data.onRenk ?? "#ffffff",
+      arkaRenk: okunan.data.arkaRenk ?? "#ffffff",
       alanlar: okunan.data.alanlar ?? (varsayilanAlanlar(yon) as unknown as object),
     },
   });

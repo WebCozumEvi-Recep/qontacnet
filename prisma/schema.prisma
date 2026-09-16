@@ -608,6 +608,9 @@ model KartSablonu {
   yon        String   @default("yatay") // "yatay" (85.6×54 mm) | "dikey" (54×85.6 mm)
   onGorsel   String   @default("")
   arkaGorsel String   @default("")
+  // Zemin rengi (görsel yoksa ya da görselin altında) — "#rrggbb"
+  onRenk     String   @default("#ffffff")
+  arkaRenk   String   @default("#ffffff")
   // [{ tip, yuz, x, y, genislik, boyut, renk, font, kalin, hiza, gorunur }] — konum/ölçüler kart boyutuna oranla (0–1)
   alanlar    Json     @default("[]")
   createdAt  DateTime @default(now())

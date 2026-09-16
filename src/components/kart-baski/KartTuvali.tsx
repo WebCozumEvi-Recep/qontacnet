@@ -2,15 +2,16 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import {
-  fontYukle, gorselYukle, yuzCiz, olcu,
-  type AlanTipi, type KartDegerleri, type KartSablonVerisi, type Yuz,
+  fontYukle, gorselYukle, ikonFontuYukle, yuzCiz, olcu,
+  type KartDegerleri, type KartSablonVerisi, type Yuz,
 } from "@/lib/kart-baski";
 
 interface Props {
   sablon: KartSablonVerisi;
   yuz: Yuz;
   degerler: KartDegerleri;
-  vurgu?: AlanTipi | null;
+  /** Seçim çerçevesi çizilecek alanın id'si (editör) */
+  vurgu?: string | null;
   className?: string;
   /** Editörde sürükleme için: tuval üzerindeki işaretçi olayları (koordinatlar 0–1 oranında) */
   onIsaretci?: (tur: "bas" | "surukle" | "birak", x: number, y: number) => void;
@@ -26,25 +27,35 @@ export const KartTuvali = forwardRef<HTMLCanvasElement | null, Props>(function K
   useImperativeHandle(ref, () => tuval.current as HTMLCanvasElement);
 
   const zemin = yuz === "on" ? sablon.onGorsel : sablon.arkaGorsel;
-  const fontlar = [...new Set(sablon.alanlar.filter(a => a.yuz === yuz && a.tip !== "qr").map(a => a.font))].join("|");
+  const yuzAlanlari = sablon.alanlar.filter(a => a.yuz === yuz && a.gorunur);
+  const yazili = yuzAlanlari.filter(a => a.tip !== "qr" && a.tip !== "ikon" && a.tip !== "gorsel");
+  // Yükleme bağımlılıkları: değişmedikçe yeniden yüklenmez
+  const fontlar = [...new Set(yazili.map(a => a.font))].sort().join("|");
+  const resimler = [...new Set(yuzAlanlari.filter(a => a.tip === "gorsel" && a.icerik).map(a => a.icerik))].sort().join("|");
+  const ikonVar = yuzAlanlari.some(a => a.tip === "ikon");
 
   useEffect(() => {
     let iptal = false;
-    Promise.all([gorselYukle(zemin), ...fontlar.split("|").filter(Boolean).map(fontYukle)]).then(() => {
-      if (!iptal) setSurum(s => s + 1);
-    });
+    Promise.all([
+      gorselYukle(zemin),
+      ...resimler.split("|").filter(Boolean).map(gorselYukle),
+      ...fontlar.split("|").filter(Boolean).map(fontYukle),
+      ikonVar ? ikonFontuYukle() : null,
+    ]).then(() => { if (!iptal) setSurum(s => s + 1); });
     return () => { iptal = true; };
-  }, [zemin, fontlar]);
+  }, [zemin, fontlar, resimler, ikonVar]);
 
   useEffect(() => {
     let iptal = false;
-    gorselYukle(zemin).then(img => {
+    const kaynaklar = [zemin, ...resimler.split("|").filter(Boolean)];
+    Promise.all(kaynaklar.map(gorselYukle)).then(([img, ...digerleri]) => {
       const ctx = tuval.current?.getContext("2d");
       if (iptal || !ctx) return;
-      yuzCiz(ctx, sablon, yuz, img, degerler, qr.current, vurgu);
+      const harita = new Map(kaynaklar.slice(1).map((k, i) => [k, digerleri[i]] as const));
+      yuzCiz(ctx, sablon, yuz, img, degerler, qr.current, harita, vurgu);
     });
     return () => { iptal = true; };
-  }, [sablon, yuz, degerler, vurgu, zemin, surum]);
+  }, [sablon, yuz, degerler, vurgu, zemin, resimler, surum]);
 
   const { w, h } = olcu(sablon.yon);
   const olay = (tur: "bas" | "surukle" | "birak") => (e: React.PointerEvent<HTMLCanvasElement>) => {

@@ -424,7 +424,8 @@ export default function SatilanKartlarPage() {
           firmaId={baskiKart.firmaId}
           firmalar={firmalar}
           baslangic={{
-            adSoyad: baskiKart.member ? `${baskiKart.member.ad} ${baskiKart.member.soyad}`.trim() : "",
+            ad: baskiKart.member?.ad ?? "",
+            soyad: baskiKart.member?.soyad ?? "",
             unvan: baskiKart.member?.unvan ?? "",
             gsm: baskiKart.member?.telefon ?? "",
           }}
