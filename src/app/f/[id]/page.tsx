@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import Footer from "@/components/Footer";
 import { FirmaSatis } from "./FirmaSatis";
 import { GaleriliGorsel } from "@/components/urun/Galeri";
 import { tumGorseller } from "@/lib/urun-gorsel";
@@ -36,7 +37,8 @@ export default async function FirmaSatisSayfasi({ params, searchParams }: Props)
 
   if (!veri) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <>
+      <div className="min-h-[70vh] bg-background flex items-center justify-center p-6">
         <div className="glass-card rounded-2xl p-8 max-w-md w-full text-center space-y-4">
           <span className="material-symbols-outlined text-5xl text-on-surface-variant">storefront</span>
           <h1 className="text-lg font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Satış sayfası kullanılamıyor</h1>
@@ -46,12 +48,15 @@ export default async function FirmaSatisSayfasi({ params, searchParams }: Props)
           </Link>
         </div>
       </div>
+      <Footer />
+      </>
     );
   }
 
   const { firma, urun } = veri;
   return (
-    <div className="min-h-screen bg-background px-4 py-8 md:py-12">
+    <>
+    <div className="bg-background px-4 py-8 md:py-12">
       <div className="max-w-2xl mx-auto space-y-6">
         <header className="flex items-center gap-4">
           {firma.logo ? (
@@ -84,5 +89,7 @@ export default async function FirmaSatisSayfasi({ params, searchParams }: Props)
         </p>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }

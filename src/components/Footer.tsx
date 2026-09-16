@@ -15,7 +15,8 @@ export default async function Footer() {
   const [s, sayfalar, { t }] = await Promise.all([getSiteSettings(), getAktifSayfalar(), getI18n()]);
 
   const logoText = s?.logoText || "QONTAC";
-  const firmaUnvan ="WAQUR TEKNOLOJİ TARIM MADENCİLİK SAN. VE TİC. LTD. ŞTİ.";
+  // Satıcı unvanı Ayarlar > Satıcı Bilgileri'nden gelir (sözleşmelerle aynı kaynak)
+  const firmaUnvan = s?.saticiUnvan || "WAQUR TEKNOLOJİ TARIM MADENCİLİK SAN. VE TİC. LTD. ŞTİ.";
   const email = s?.iletisimEmail || "info@qontac.net";
   const telefon = s?.iletisimTelefon || "+90 850 302 40 04";
   const adres = s?.iletisimAdres || "Çakmak Mh. Alemdağ Cd. No:488/3 Ümraniye / İstanbul";
