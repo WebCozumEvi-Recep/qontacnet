@@ -10,11 +10,14 @@ interface Kart {
   member: { id: string; ad: string; soyad: string; email: string; telefon: string } | null;
 }
 interface Secenek { id: string; ad: string }
-interface Uye { id: string; ad: string; email: string; telefon: string; kartVar: boolean }
+interface Uye { id: string; ad: string; email: string; telefon: string; firmaId: string | null; kartVar: boolean }
 interface Siparis { id: string; siparisNo: string; firma: string; firmaId: string | null; musteriAd: string; urun: string; adet: number }
 
-interface KartForm { firmaId: string; orderId: string; memberId: string; notlar: string; adet: string }
-const BOS_FORM: KartForm = { firmaId: "", orderId: "", memberId: "", notlar: "", adet: "1" };
+interface KartForm { firmaId: string; orderId: string; memberId: string; notlar: string; adet: string; baslangic: string }
+
+// Türkiye saatine göre "YYYY-AA-GG"
+const gunAnahtari = (d: Date) => d.toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
+const BOS_FORM = (): KartForm => ({ firmaId: "", orderId: "", memberId: "", notlar: "", adet: "1", baslangic: gunAnahtari(new Date()) });
 
 // Toplu düzenlemede DEGISTIRME seçili alanlar olduğu gibi kalır; "" alanı temizler.
 const DEGISTIRME = "__degistirme__";
@@ -37,6 +40,7 @@ export default function SatilanKartlarPage() {
 
   const [modal, setModal] = useState<{ kart: Kart | null } | null>(null); // kart null → yeni
   const [form, setForm] = useState<KartForm>(BOS_FORM);
+  const [olusan, setOlusan] = useState<Kart[] | null>(null); // yeni kart sonrası adres özeti
   const [kaydediliyor, setKaydediliyor] = useState(false);
   const [hata, setHata] = useState("");
 
@@ -81,11 +85,14 @@ export default function SatilanKartlarPage() {
   }
 
   function yeniAc() {
-    setForm(BOS_FORM); setHata(""); setModal({ kart: null });
+    setForm(BOS_FORM()); setHata(""); setOlusan(null); setModal({ kart: null });
   }
   function duzenleAc(k: Kart) {
-    setForm({ firmaId: k.firmaId ?? "", orderId: k.orderId ?? "", memberId: k.memberId ?? "", notlar: k.notlar, adet: "1" });
-    setHata(""); setModal({ kart: k });
+    setForm({
+      firmaId: k.firmaId ?? "", orderId: k.orderId ?? "", memberId: k.memberId ?? "", notlar: k.notlar, adet: "1",
+      baslangic: gunAnahtari(k.aktivasyonAt ? new Date(k.aktivasyonAt) : new Date()),
+    });
+    setHata(""); setOlusan(null); setModal({ kart: k });
   }
 
   // Sipariş seçilince firma boşsa siparişin referans firmasıyla doldur.
@@ -102,19 +109,26 @@ export default function SatilanKartlarPage() {
       if (modal.kart) {
         const res = await fetch(`/api/admin/kartlar/${modal.kart.id}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firmaId: form.firmaId, orderId: form.orderId, memberId: form.memberId, notlar: form.notlar }),
+          body: JSON.stringify({ firmaId: form.firmaId, orderId: form.orderId, memberId: form.memberId, notlar: form.notlar, baslangic: form.memberId ? form.baslangic : undefined }),
         });
         const j = await res.json();
         if (!j.ok) { setHata(j.error || "Kaydedilemedi."); return; }
       } else {
         const res = await fetch("/api/admin/kartlar", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firmaId: form.firmaId, orderId: form.orderId, notlar: form.notlar, adet: Number(form.adet) || 1 }),
+          body: JSON.stringify({
+            firmaId: form.firmaId, orderId: form.orderId, notlar: form.notlar,
+            adet: form.memberId ? 1 : Number(form.adet) || 1,
+            memberId: form.memberId || undefined, baslangic: form.baslangic,
+          }),
         });
         const j = await res.json();
         if (!j.ok) { setHata(j.error || "Oluşturulamadı."); return; }
+        await yukle(); // üye listesindeki "kartı var" bilgisi de tazelensin
+        setOlusan(j.kartlar);
+        return;
       }
-      await yukle(); // üye listesindeki "kartı var" bilgisi de tazelensin
+      await yukle();
       setModal(null);
     } finally { setKaydediliyor(false); }
   }
@@ -179,7 +193,10 @@ export default function SatilanKartlarPage() {
   const aktifSayi = kartlar.filter(k => k.aktif).length;
   const referansli = kartlar.filter(k => k.firmaId).length;
   const duzenlenen = modal?.kart;
-  const secilebilirUyeler = uyeler.filter(u => !u.kartVar || u.id === duzenlenen?.memberId);
+  // Kartı olmayan üyeler: firma seçiliyse o firmanınkiler, değilse firmasızlar (düzenlenen kartın üyesi her zaman listede)
+  const secilebilirUyeler = uyeler.filter(u =>
+    u.id === duzenlenen?.memberId || (!u.kartVar && (form.firmaId ? u.firmaId === form.firmaId : !u.firmaId)));
+  const gelecekMi = (k: Kart) => !!k.aktif && !!k.aktivasyonAt && new Date(k.aktivasyonAt) > new Date();
 
   return (
     <div className="space-y-6 max-w-[1200px]">
@@ -263,8 +280,10 @@ export default function SatilanKartlarPage() {
                     <span className="material-symbols-outlined text-sm">qr_code_2</span>
                   </button>
                 </div>
-                {k.aktif
-                  ? <span className="text-xs text-tertiary" title={k.aktivasyonAt ? trDate(k.aktivasyonAt) : ""}>Aktif</span>
+                {gelecekMi(k)
+                  ? <span className="text-xs text-amber-300" title="Başlangıç tarihi">{trDate(k.aktivasyonAt!)}&apos;de başlar</span>
+                  : k.aktif
+                  ? <span className="text-xs text-tertiary" title={k.aktivasyonAt ? `Aktivasyon: ${trDate(k.aktivasyonAt)}` : ""}>Aktif</span>
                   : <span className="text-xs text-on-surface-variant/50">Bekliyor</span>}
                 <div className="flex gap-1 lg:justify-end">
                   <button onClick={() => duzenleAc(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface" title="Düzenle">
@@ -288,7 +307,7 @@ export default function SatilanKartlarPage() {
       {/* Kart ekle / düzenle */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+          <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <div>
                 <h3 className="font-semibold text-on-surface">{duzenlenen ? "Kartı Düzenle" : "Kart Ekle"}</h3>
@@ -298,35 +317,76 @@ export default function SatilanKartlarPage() {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
+            {olusan ? (
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-2 text-tertiary text-sm font-medium">
+                  <span className="material-symbols-outlined">check_circle</span>
+                  {olusan.length > 1 ? `${olusan.length} kart oluşturuldu` : "Kart oluşturuldu"}
+                </div>
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                  {olusan.map(k => (
+                    <div key={k.id} className="p-3 rounded-xl bg-white/3 border border-white/8 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-mono text-on-surface">{k.seriNo}</span>
+                        {k.member && <span className="text-xs text-on-surface-variant truncate">{`${k.member.ad} ${k.member.soyad}`.trim()}</span>}
+                      </div>
+                      {k.member && k.aktivasyonAt && (
+                        <p className="text-xs text-on-surface-variant">Başlangıç: <span className="text-on-surface">{trDate(k.aktivasyonAt)}</span></p>
+                      )}
+                      {([["NFC", kartNfcUrl(k.token), "n"], ["QR", kartQrUrl(k.token), "q"]] as const).map(([etiket, url, on]) => (
+                        <div key={on} className="flex items-center gap-2">
+                          <span className="text-[10px] w-7 text-on-surface-variant">{etiket}</span>
+                          <code className="flex-1 min-w-0 truncate text-xs text-primary">{url}</code>
+                          <UrlButon etiket="Kopyala" url={url} kopyalandi={kopyalanan === `${on}${k.id}`} onClick={() => kopyala(`${on}${k.id}`, url)} />
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={yeniAc} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">Yeni Kart</button>
+                  <button type="button" onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black">Tamam</button>
+                </div>
+              </div>
+            ) : (
             <form onSubmit={kaydet}>
               <div className="p-6 space-y-4">
                 <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Firma</label>
+                  <select value={form.firmaId} onChange={e => setForm(p => ({ ...p, firmaId: e.target.value, memberId: duzenlenen ? p.memberId : "" }))} className={inputCls}>
+                    <option value="">— Firmasız —</option>
+                    {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Üye</label>
+                  <select value={form.memberId} onChange={e => setForm(p => ({ ...p, memberId: e.target.value }))} className={inputCls}>
+                    <option value="">{duzenlenen ? "— Bağlı değil (üye kartı okutunca kendisi bağlar) —" : "— Üye seçmeden boş kart oluştur —"}</option>
+                    {secilebilirUyeler.map(u => <option key={u.id} value={u.id}>{u.ad} · {u.telefon || u.email}</option>)}
+                  </select>
+                  <p className="text-[11px] text-on-surface-variant/70 mt-1">
+                    {form.firmaId ? "Bu firmanın kartı olmayan üyeleri listelenir." : "Firmasız ve kartı olmayan üyeler listelenir."}
+                    {!duzenlenen && secilebilirUyeler.length === 0 && " Uygun üye yok — Üyeler menüsünden ekleyebilirsiniz."}
+                  </p>
+                </div>
+                {form.memberId && (
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Kart Başlangıç Tarihi</label>
+                    <input type="date" required value={form.baslangic} onChange={e => setForm(p => ({ ...p, baslangic: e.target.value }))}
+                      className={`${inputCls} [color-scheme:dark]`} />
+                    <p className="text-[11px] text-on-surface-variant/70 mt-1">Kart bu tarihten itibaren okutulunca üyenin kartvizitini açar; öncesinde bekleme mesajı gösterir.</p>
+                  </div>
+                )}
+                <div>
                   <label className="text-xs text-on-surface-variant mb-1 block">Sipariş</label>
                   <select value={form.orderId} onChange={e => siparisSec(e.target.value)} className={inputCls}>
-                    <option value="">— Siparişsiz —</option>
+                    <option value="">— Siparişsiz (ücretsiz kart) —</option>
                     {siparisler.map(s => (
                       <option key={s.id} value={s.id}>{s.siparisNo} · {s.musteriAd || s.firma} · {s.adet} adet</option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="text-xs text-on-surface-variant mb-1 block">Referans Firma</label>
-                  <select value={form.firmaId} onChange={e => setForm(p => ({ ...p, firmaId: e.target.value }))} className={inputCls}>
-                    <option value="">— Firmasız —</option>
-                    {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
-                  </select>
-                  <p className="text-[11px] text-on-surface-variant/70 mt-1">Kart aktive edildiğinde üye bu firmaya bağlanır.</p>
-                </div>
-                {duzenlenen ? (
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Üye</label>
-                    <select value={form.memberId} onChange={e => setForm(p => ({ ...p, memberId: e.target.value }))} className={inputCls}>
-                      <option value="">— Bağlı değil (üye kartı okutunca kendisi bağlar) —</option>
-                      {secilebilirUyeler.map(u => <option key={u.id} value={u.id}>{u.ad} · {u.telefon || u.email}</option>)}
-                    </select>
-                    <p className="text-[11px] text-on-surface-variant/70 mt-1">Üye seçilirse kart hemen aktive edilir.</p>
-                  </div>
-                ) : (
+                {!duzenlenen && !form.memberId && (
                   <div>
                     <label className="text-xs text-on-surface-variant mb-1 block">Adet</label>
                     <input type="number" min={1} max={50} value={form.adet} onChange={e => setForm(p => ({ ...p, adet: e.target.value }))} className={inputCls} />
@@ -334,7 +394,7 @@ export default function SatilanKartlarPage() {
                 )}
                 <div>
                   <label className="text-xs text-on-surface-variant mb-1 block">Not</label>
-                  <input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Ör. metal kart, siyah" className={inputCls} />
+                  <input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Ör. ücretsiz tanıtım kartı" className={inputCls} />
                 </div>
               </div>
               <div className="px-6 pb-5">
@@ -342,11 +402,12 @@ export default function SatilanKartlarPage() {
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">İptal</button>
                   <button type="submit" disabled={kaydediliyor} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black disabled:opacity-60">
-                    {kaydediliyor ? "Kaydediliyor..." : duzenlenen ? "Kaydet" : "Oluştur"}
+                    {kaydediliyor ? "Kaydediliyor..." : duzenlenen ? "Kaydet" : form.memberId ? "Kartı Oluştur ve Tanımla" : "Oluştur"}
                   </button>
                 </div>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

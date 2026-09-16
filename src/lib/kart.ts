@@ -12,6 +12,15 @@ async function sonrakiSeriNo(): Promise<string> {
   return `QNT-${yil}-${String((rows[0]?.max ?? 0) + 1).padStart(4, "0")}`;
 }
 
+/** "YYYY-AA-GG" ya da ISO tarih → Date; boş/geçersizse şimdi. Gün başlangıcı Türkiye saatiyle alınır. */
+export function baslangicTarihi(deger: unknown): Date {
+  if (typeof deger === "string" && /^\d{4}-\d{2}-\d{2}$/.test(deger)) {
+    const t = new Date(`${deger}T00:00:00+03:00`);
+    if (!isNaN(t.getTime())) return t;
+  }
+  return new Date();
+}
+
 export interface KartOlusturGirdi {
   firmaId?: string | null;
   orderId?: string | null;

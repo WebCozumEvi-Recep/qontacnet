@@ -24,7 +24,7 @@ export default async function KartAktivasyon({
 
   const card = await prisma.physicalCard.findUnique({
     where: { token },
-    select: { aktif: true, memberId: true },
+    select: { aktif: true, memberId: true, aktivasyonAt: true },
   });
 
   if (!card) {
@@ -34,6 +34,22 @@ export default async function KartAktivasyon({
           <span className="material-symbols-outlined text-5xl text-red-400">error</span>
           <h2 className="text-lg font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Geçersiz Kart</h2>
           <p className="text-sm text-on-surface-variant">Bu QR kodu geçerli bir QONTAC kartına ait değil.</p>
+          <Link href="/" className="inline-block px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold">
+            Ana Sayfaya Dön
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (card.aktif && card.memberId && card.aktivasyonAt && card.aktivasyonAt > new Date()) {
+    const tarih = card.aktivasyonAt.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="glass-card rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <span className="material-symbols-outlined text-5xl text-primary">event_upcoming</span>
+          <h2 className="text-lg font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Kart henüz aktif değil</h2>
+          <p className="text-sm text-on-surface-variant">Bu QONTAC kartı <b className="text-on-surface">{tarih}</b> tarihinde kullanıma açılacak.</p>
           <Link href="/" className="inline-block px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold">
             Ana Sayfaya Dön
           </Link>

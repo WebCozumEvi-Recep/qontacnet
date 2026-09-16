@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { baslangicTarihi } from "@/lib/kart";
 
 const MEMBER_SELECT = { select: { id: true, ad: true, soyad: true, email: true, telefon: true } } as const;
 
@@ -36,12 +37,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
       if (memberId) {
         ops.push(prisma.member.update({ where: { id: memberId }, data: { kartAktif: true, ...(firmaId ? { firmaId } : {}) } }));
-        Object.assign(data, { memberId, aktif: true, aktivasyonAt: new Date() });
+        Object.assign(data, { memberId, aktif: true, aktivasyonAt: baslangicTarihi(body.baslangic) });
       } else {
         Object.assign(data, { memberId: null, aktif: false, aktivasyonAt: null });
       }
     }
-  } else if (kart.memberId && data.firmaId) {
+  }
+  // Üye değişmeden yalnız başlangıç tarihi güncellenebilir
+  const uyeAyni = !("memberId" in body) || (body.memberId || null) === kart.memberId;
+  if (uyeAyni && kart.memberId && typeof body.baslangic === "string" && body.baslangic) {
+    Object.assign(data, { aktivasyonAt: baslangicTarihi(body.baslangic) });
+  }
+  if (!("memberId" in body) && kart.memberId && data.firmaId) {
     // Bağlı üyesi olan kartın firması değişirse üyenin firması da güncellenir.
     ops.push(prisma.member.update({ where: { id: kart.memberId }, data: { firmaId: data.firmaId } }));
   }
