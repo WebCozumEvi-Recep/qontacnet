@@ -9,17 +9,13 @@ import { FirmaSablonu, FirmaSablonuIskelet } from "./FirmaSablonu";
 import type { UyeModul } from "@/components/UyeModulLightbox";
 import { getKartCekirdek, getSablonOnizleme, kartGoruntulemeKaydet, ONIZLE_ONEK, type KartKaynak } from "@/lib/kart-data";
 import { getSiteSettings } from "@/lib/site-settings";
-import { getLocale } from "@/lib/i18n/server";
-import { isLocale, type Locale } from "@/lib/i18n/config";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
-type SearchParams = Promise<{ lang?: string; src?: string }>;
+type SearchParams = Promise<{ src?: string }>;
 type Params = Promise<{ id: string }>;
 
-/** Dil: ?lang= > NEXT_LOCALE çerezi > tr */
-async function cozulenDil(searchParams: SearchParams): Promise<Locale> {
-  const { lang } = await searchParams;
-  return isLocale(lang) ? lang : await getLocale();
-}
+/** Kart her ziyaretçiye her zaman Türkçe açılır (site dil çerezi ve ?lang= yok sayılır). */
+const KART_DILI: Locale = DEFAULT_LOCALE;
 
 /** Gerçek kart ya da şablon önizlemesi — ikisi de aynı görünümü besler. */
 function kartVerisi(id: string, locale: Locale) {
@@ -35,9 +31,9 @@ function kaynakCoz(src: string | undefined): KartKaynak {
   return "LINK";
 }
 
-export async function generateMetadata({ params, searchParams }: { params: Params; searchParams: SearchParams }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
-  const veri = await kartVerisi(id, await cozulenDil(searchParams));
+  const veri = await kartVerisi(id, KART_DILI);
   if (!veri) return { title: "Kart bulunamadı | QONTAC" };
 
   const { card } = veri;
@@ -58,7 +54,7 @@ export async function generateMetadata({ params, searchParams }: { params: Param
 export default async function KartPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   const { id } = await params;
   const { src } = await searchParams;
-  const locale = await cozulenDil(searchParams);
+  const locale = KART_DILI;
 
   // Kart çekirdeği ve site logosu paralel; logo önbellekten geldiği için DB'ye gitmez.
   const [veri, ayarlar] = await Promise.all([kartVerisi(id, locale), getSiteSettings()]);
@@ -73,7 +69,7 @@ export default async function KartPage({ params, searchParams }: { params: Param
   if (!id.startsWith(ONIZLE_ONEK)) after(() => kartGoruntulemeKaydet(id, kaynakCoz(src)));
 
   return (
-    <div className="min-h-screen flex flex-col items-center" style={{ background: "#050816" }}>
+    <div lang="tr" dir="ltr" className="min-h-screen flex flex-col items-center" style={{ background: "#050816" }}>
       <div className="fixed top-0 left-0 w-full h-64 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}20 0%, transparent 70%)` }} />
 
       <div className="w-full max-w-sm mx-auto px-4 py-8 relative z-10">
