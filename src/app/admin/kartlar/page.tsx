@@ -1,430 +1,281 @@
 "use client";
-import { useEffect, useState } from "react";
-import { batchDurumMap, trDate } from "@/lib/labels";
+import { useEffect, useMemo, useState } from "react";
+import { trDate } from "@/lib/labels";
+import { QRCodeSVG } from "qrcode.react";
+import { kartNfcUrl, kartQrUrl } from "@/lib/kart-url";
 
-interface Batch {
-  id: string; kod: string; miktar: number; uretici: string; uretimTarihi: string;
-  durum: string; tahsisFirma: string | null; tahsisFirmaId: string | null; seriPrefix: string; createdAt: string;
+interface Kart {
+  id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null;
+  firmaId: string | null; orderId: string | null; memberId: string | null; notlar: string; createdAt: string;
+  member: { id: string; ad: string; soyad: string; email: string } | null;
 }
+interface Secenek { id: string; ad: string }
+interface Uye { id: string; ad: string; email: string; kartVar: boolean }
+interface Siparis { id: string; siparisNo: string; firma: string; firmaId: string | null; musteriAd: string; urun: string; adet: number }
 
-interface PhysicalCardRow { id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; memberId: string | null; }
-interface BatchDetail extends Batch { seriNumaralari: string[]; physicalCards?: PhysicalCardRow[]; }
+interface KartForm { firmaId: string; orderId: string; memberId: string; notlar: string; adet: string }
+const BOS_FORM: KartForm = { firmaId: "", orderId: "", memberId: "", notlar: "", adet: "1" };
 
-interface EditForm {
-  kod: string; miktar: string; seriPrefix: string; uretici: string;
-  uretimTarihi: string; durum: string; tahsisFirma: string;
-}
+const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none";
 
-export default function AdminKartlarPage() {
-  const [batches, setBatches] = useState<Batch[]>([]);
+export default function SatilanKartlarPage() {
+  const [kartlar, setKartlar] = useState<Kart[]>([]);
+  const [firmalar, setFirmalar] = useState<Secenek[]>([]);
+  const [uyeler, setUyeler] = useState<Uye[]>([]);
+  const [siparisler, setSiparisler] = useState<Siparis[]>([]);
   const [loading, setLoading] = useState(true);
-  const [firmalar, setFirmalar] = useState<{ id: string; ad: string }[]>([]);
 
-  const [detayBatch, setDetayBatch] = useState<BatchDetail | null>(null);
-  const [detayLoading, setDetayLoading] = useState(false);
+  const [arama, setArama] = useState("");
+  const [durumFiltre, setDurumFiltre] = useState<"" | "aktif" | "bekliyor">("");
+  const [firmaFiltre, setFirmaFiltre] = useState("");
+  const [kopyalanan, setKopyalanan] = useState<string | null>(null);
 
-  const [seriModal, setSeriModal] = useState<BatchDetail | null>(null);
-  const [seriSearch, setSeriSearch] = useState("");
-  const [kopyalanan, setKopyalanan] = useState<string | null>(null); // son kopyalanan kartın token'ı
+  const [modal, setModal] = useState<{ kart: Kart | null } | null>(null); // kart null → yeni
+  const [form, setForm] = useState<KartForm>(BOS_FORM);
+  const [kaydediliyor, setKaydediliyor] = useState(false);
+  const [hata, setHata] = useState("");
 
-  const [editBatch, setEditBatch] = useState<Batch | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: "", durum: "", tahsisFirma: "" });
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
+  const [silinecek, setSilinecek] = useState<Kart | null>(null);
+  const [qrKart, setQrKart] = useState<Kart | null>(null);
 
-  const [deleteBatch, setDeleteBatch] = useState<Batch | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const emptyNewForm: EditForm = { kod: "", miktar: "", seriPrefix: "", uretici: "", uretimTarihi: new Date().toISOString().slice(0, 10), durum: "URETIMDE", tahsisFirma: "" };
-  const [newModal, setNewModal] = useState(false);
-  const [newForm, setNewForm] = useState<EditForm>(emptyNewForm);
-  const [newLoading, setNewLoading] = useState(false);
-  const [newError, setNewError] = useState("");
-
-  useEffect(() => {
-    fetch("/api/admin/batches").then(r => r.json()).then(j => { if (j.ok) setBatches(j.batches); }).finally(() => setLoading(false));
-    fetch("/api/admin/firmalar").then(r => r.json()).then(j => { if (j.ok) setFirmalar(j.firmalar.map((f: { id: string; ad: string }) => ({ id: f.id, ad: f.ad }))); });
-  }, []);
-
-  function toDateInput(v?: string | null) {
-    if (!v) return "";
-    return new Date(v).toISOString().slice(0, 10);
-  }
-
-  function openEdit(b: Batch) {
-    setEditBatch(b);
-    setEditForm({
-      kod: b.kod, miktar: String(b.miktar), seriPrefix: b.seriPrefix,
-      uretici: b.uretici, uretimTarihi: toDateInput(b.uretimTarihi),
-      durum: b.durum, tahsisFirma: b.tahsisFirmaId ?? "",
+  function yukle() {
+    return fetch("/api/admin/kartlar").then(r => r.json()).then(j => {
+      if (!j.ok) return;
+      setKartlar(j.kartlar); setFirmalar(j.firmalar); setUyeler(j.uyeler); setSiparisler(j.siparisler);
     });
-    setEditError("");
+  }
+  useEffect(() => { yukle().finally(() => setLoading(false)); }, []);
+
+  const firmaAd = (id: string | null) => (id ? firmalar.find(f => f.id === id)?.ad ?? "—" : "—");
+  const siparisNo = (id: string | null) => (id ? siparisler.find(s => s.id === id)?.siparisNo ?? "—" : "—");
+
+  const liste = useMemo(() => {
+    const q = arama.trim().toLocaleLowerCase("tr");
+    return kartlar.filter(k => {
+      if (durumFiltre === "aktif" && !k.aktif) return false;
+      if (durumFiltre === "bekliyor" && k.aktif) return false;
+      if (firmaFiltre && k.firmaId !== firmaFiltre) return false;
+      if (!q) return true;
+      const uye = k.member ? `${k.member.ad} ${k.member.soyad} ${k.member.email}` : "";
+      return [k.seriNo, k.token, uye, firmaAd(k.firmaId), siparisNo(k.orderId), k.notlar]
+        .some(v => v.toLocaleLowerCase("tr").includes(q));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kartlar, arama, durumFiltre, firmaFiltre, firmalar, siparisler]);
+
+  function kopyala(anahtar: string, metin: string) {
+    navigator.clipboard?.writeText(metin);
+    setKopyalanan(anahtar);
+    setTimeout(() => setKopyalanan(k => (k === anahtar ? null : k)), 1500);
   }
 
-  async function handleNew(e: React.FormEvent) {
+  function yeniAc() {
+    setForm(BOS_FORM); setHata(""); setModal({ kart: null });
+  }
+  function duzenleAc(k: Kart) {
+    setForm({ firmaId: k.firmaId ?? "", orderId: k.orderId ?? "", memberId: k.memberId ?? "", notlar: k.notlar, adet: "1" });
+    setHata(""); setModal({ kart: k });
+  }
+
+  // Sipariş seçilince firma boşsa siparişin referans firmasıyla doldur.
+  function siparisSec(orderId: string) {
+    const s = siparisler.find(x => x.id === orderId);
+    setForm(p => ({ ...p, orderId, firmaId: p.firmaId || s?.firmaId || "" }));
+  }
+
+  async function kaydet(e: React.FormEvent) {
     e.preventDefault();
-    setNewLoading(true); setNewError("");
-    const res = await fetch("/api/admin/batches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...newForm, miktar: parseInt(newForm.miktar) }),
-    });
-    const j = await res.json();
-    setNewLoading(false);
-    if (!j.ok) { setNewError(j.error || "Oluşturma başarısız."); return; }
-    setBatches(prev => [j.batch, ...prev]);
-    setNewModal(false);
-    setNewForm(emptyNewForm);
+    if (!modal) return;
+    setKaydediliyor(true); setHata("");
+    try {
+      if (modal.kart) {
+        const res = await fetch(`/api/admin/kartlar/${modal.kart.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ firmaId: form.firmaId, orderId: form.orderId, memberId: form.memberId, notlar: form.notlar }),
+        });
+        const j = await res.json();
+        if (!j.ok) { setHata(j.error || "Kaydedilemedi."); return; }
+      } else {
+        const res = await fetch("/api/admin/kartlar", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ firmaId: form.firmaId, orderId: form.orderId, notlar: form.notlar, adet: Number(form.adet) || 1 }),
+        });
+        const j = await res.json();
+        if (!j.ok) { setHata(j.error || "Oluşturulamadı."); return; }
+      }
+      await yukle(); // üye listesindeki "kartı var" bilgisi de tazelensin
+      setModal(null);
+    } finally { setKaydediliyor(false); }
   }
 
-  async function handleEdit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editBatch) return;
-    setEditLoading(true); setEditError("");
-    const res = await fetch(`/api/admin/batches/${editBatch.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...editForm, miktar: parseInt(editForm.miktar) }),
-    });
+  async function sil() {
+    if (!silinecek) return;
+    const res = await fetch(`/api/admin/kartlar/${silinecek.id}`, { method: "DELETE" });
     const j = await res.json();
-    setEditLoading(false);
-    if (!j.ok) { setEditError(j.error || "Güncelleme başarısız."); return; }
-    setBatches(prev => prev.map(b => b.id === editBatch.id ? { ...b, ...j.batch } : b));
-    setEditBatch(null);
+    if (j.ok) { setKartlar(p => p.filter(k => k.id !== silinecek.id)); setSilinecek(null); }
   }
 
-  const sum = (d: string) => batches.filter(b => b.durum === d).reduce((a, b) => a + b.miktar, 0);
-  const toplam = batches.reduce((a, b) => a + b.miktar, 0);
-
-  async function openDetay(batch: Batch) {
-    setDetayLoading(true);
-    setDetayBatch(null);
-    const res = await fetch(`/api/admin/batches/${batch.id}`);
-    const j = await res.json();
-    setDetayLoading(false);
-    if (j.ok) setDetayBatch({ ...j.batch, seriNumaralari: (j.physicalCards ?? []).map((c: PhysicalCardRow) => c.seriNo), physicalCards: j.physicalCards ?? [] });
+  function tsvIndir() {
+    const satirlar = liste.map(k => [
+      k.seriNo, k.member ? `${k.member.ad} ${k.member.soyad}`.trim() : "", firmaAd(k.firmaId), siparisNo(k.orderId),
+      kartNfcUrl(k.token), kartQrUrl(k.token), k.aktif ? "Aktif" : "Bekliyor", trDate(k.createdAt),
+    ].join("\t"));
+    const txt = "Seri No\tÜye\tFirma\tSipariş\tNFC URL\tQR URL\tDurum\tTarih\n" + satirlar.join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
+    a.download = "satilan-kartlar.tsv";
+    a.click();
   }
 
-  async function openSeri(batch: Batch) {
-    setSeriSearch("");
-    setSeriModal(null);
-    const res = await fetch(`/api/admin/batches/${batch.id}`);
-    const j = await res.json();
-    if (j.ok) {
-      setSeriModal({ ...j.batch, seriNumaralari: (j.physicalCards ?? []).map((c: PhysicalCardRow) => c.seriNo), physicalCards: j.physicalCards ?? [] });
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteBatch) return;
-    setDeleteLoading(true);
-    const res = await fetch(`/api/admin/batches/${deleteBatch.id}`, { method: "DELETE" });
-    const j = await res.json();
-    setDeleteLoading(false);
-    if (j.ok) { setBatches(prev => prev.filter(b => b.id !== deleteBatch.id)); setDeleteBatch(null); }
-  }
-
-  // Fiziksel kart URL'leri — kaynak ayrımı için ?src parametresi taşır.
-  // NFC çipine nfcUrl, basılı QR'a qrUrl yazılır; ziyaret kaynağı böyle ayrışır.
-  const nfcUrl = (token: string) => `https://qontac.net/k/${token}?src=nfc`;
-  const qrUrl = (token: string) => `https://qontac.net/k/${token}?src=qr`;
-
-  const filteredCards = (seriModal?.physicalCards ?? []).filter(c =>
-    !seriSearch || c.seriNo.toUpperCase().includes(seriSearch.toUpperCase()) || c.token.includes(seriSearch)
-  );
-  const filteredSeri = seriModal?.seriNumaralari.filter(s => s.includes(seriSearch.toUpperCase())) ?? [];
+  const aktifSayi = kartlar.filter(k => k.aktif).length;
+  const referansli = kartlar.filter(k => k.firmaId).length;
+  const duzenlenen = modal?.kart;
+  const secilebilirUyeler = uyeler.filter(u => !u.kartVar || u.id === duzenlenen?.memberId);
 
   return (
     <div className="space-y-6 max-w-[1200px]">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat icon="inventory" label="Toplam Üretilen" value={toplam} color="#d4af37" />
-        <Stat icon="warehouse" label="Stokta" value={sum("STOKTA")} color="#42faba" />
-        <Stat icon="assignment_turned_in" label="Tahsis Edildi" value={sum("TAHSIS")} color="#6001d1" />
-        <Stat icon="factory" label="Üretimde" value={sum("URETIMDE")} color="#f0d289" />
+        <Stat icon="credit_card" label="Satılan Kart" value={kartlar.length} color="#d4af37" />
+        <Stat icon="verified" label="Aktif" value={aktifSayi} color="#42faba" />
+        <Stat icon="hourglass_top" label="Aktivasyon Bekliyor" value={kartlar.length - aktifSayi} color="#f0d289" />
+        <Stat icon="handshake" label="Firma Referanslı" value={referansli} color="#6001d1" />
       </div>
 
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Üretim Partileri (Batch)</h3>
-        <button onClick={() => { setNewForm(emptyNewForm); setNewError(""); setNewModal(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
-          <span className="material-symbols-outlined text-base">add</span>Yeni Üretim Siparişi
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+        <div className="relative flex-1">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
+          <input value={arama} onChange={e => setArama(e.target.value)} placeholder="Seri no, üye, firma, sipariş ara..."
+            className="w-full bg-surface-dim border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:border-primary outline-none" />
+        </div>
+        <select value={durumFiltre} onChange={e => setDurumFiltre(e.target.value as typeof durumFiltre)} className={`${inputCls} md:w-40`}>
+          <option value="">Tüm durumlar</option>
+          <option value="aktif">Aktif</option>
+          <option value="bekliyor">Bekliyor</option>
+        </select>
+        <select value={firmaFiltre} onChange={e => setFirmaFiltre(e.target.value)} className={`${inputCls} md:w-48`}>
+          <option value="">Tüm firmalar</option>
+          {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
+        </select>
+        <button onClick={yeniAc} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all whitespace-nowrap">
+          <span className="material-symbols-outlined text-base">add</span>Kart Ekle
         </button>
       </div>
 
-      {loading ? <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant">Yükleniyor...</div> : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {batches.map(b => (
-            <div key={b.id} className="glass-card rounded-2xl p-5 hover:border-primary/20 transition-all">
-              <div className="flex items-start justify-between mb-4">
+      {loading ? <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant">Yükleniyor...</div>
+        : liste.length === 0 ? (
+          <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant text-sm">
+            {kartlar.length === 0 ? "Henüz kart yok. Satış yapıldıkça “Kart Ekle” ile kart açın." : "Sonuç bulunamadı."}
+          </div>
+        ) : (
+          <div className="glass-card rounded-2xl overflow-hidden">
+            <div className="hidden lg:grid grid-cols-[110px_1.3fr_1fr_110px_1.6fr_80px_76px] gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
+              <span>Seri No</span><span>Üye</span><span>Firma</span><span>Sipariş</span><span>Kart Adresi</span><span>Durum</span><span />
+            </div>
+            {liste.map(k => (
+              <div key={k.id} className="grid grid-cols-1 lg:grid-cols-[110px_1.3fr_1fr_110px_1.6fr_80px_76px] gap-1.5 lg:gap-3 lg:items-center px-4 py-3 border-b border-white/5 last:border-0">
                 <div>
-                  <p className="text-xs text-on-surface-variant">Batch Kodu</p>
-                  <p className="text-on-surface font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>{b.kod}</p>
+                  <p className="text-xs font-mono text-on-surface">{k.seriNo}</p>
+                  <p className="text-[10px] text-on-surface-variant">{trDate(k.createdAt)}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-1 rounded-full whitespace-nowrap" style={{ background: `${batchDurumMap[b.durum].color}15`, color: batchDurumMap[b.durum].color, border: `1px solid ${batchDurumMap[b.durum].color}30` }}>
-                    {batchDurumMap[b.durum].label}
-                  </span>
-                  <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface transition-all" title="Düzenle">
+                <div className="min-w-0">
+                  {k.member ? (
+                    <>
+                      <p className="text-sm text-on-surface truncate">{`${k.member.ad} ${k.member.soyad}`.trim()}</p>
+                      <p className="text-xs text-on-surface-variant truncate">{k.member.email}</p>
+                    </>
+                  ) : <p className="text-xs text-on-surface-variant/50">Üye bağlanmadı</p>}
+                  {k.notlar && <p className="text-[11px] text-on-surface-variant/70 truncate" title={k.notlar}>{k.notlar}</p>}
+                </div>
+                <p className={`text-sm truncate ${k.firmaId ? "text-primary" : "text-on-surface-variant/50"}`}>{firmaAd(k.firmaId)}</p>
+                <p className="text-xs font-mono text-on-surface-variant">{siparisNo(k.orderId)}</p>
+                <div className="flex flex-wrap gap-1.5 min-w-0">
+                  <UrlButon etiket="NFC" url={kartNfcUrl(k.token)} kopyalandi={kopyalanan === `n${k.id}`} onClick={() => kopyala(`n${k.id}`, kartNfcUrl(k.token))} />
+                  <UrlButon etiket="QR" url={kartQrUrl(k.token)} kopyalandi={kopyalanan === `q${k.id}`} onClick={() => kopyala(`q${k.id}`, kartQrUrl(k.token))} />
+                  <button type="button" onClick={() => setQrKart(k)} title="QR kodu göster"
+                    className="inline-flex items-center px-2 py-1 rounded-lg border border-white/10 text-on-surface-variant hover:text-primary">
+                    <span className="material-symbols-outlined text-sm">qr_code_2</span>
+                  </button>
+                </div>
+                {k.aktif
+                  ? <span className="text-xs text-tertiary" title={k.aktivasyonAt ? trDate(k.aktivasyonAt) : ""}>Aktif</span>
+                  : <span className="text-xs text-on-surface-variant/50">Bekliyor</span>}
+                <div className="flex gap-1 lg:justify-end">
+                  <button onClick={() => duzenleAc(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface" title="Düzenle">
                     <span className="material-symbols-outlined text-base">edit</span>
                   </button>
-                  <button onClick={() => setDeleteBatch(b)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400 transition-all" title="Sil">
+                  <button onClick={() => setSilinecek(k)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400" title="Sil">
                     <span className="material-symbols-outlined text-base">delete</span>
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div><p className="text-xs text-on-surface-variant">Miktar</p><p className="text-on-surface font-medium">{b.miktar.toLocaleString("tr-TR")} adet</p></div>
-                <div><p className="text-xs text-on-surface-variant">Seri Prefix</p><p className="text-on-surface font-medium font-mono text-sm">{b.seriPrefix}</p></div>
-                <div><p className="text-xs text-on-surface-variant">Üretici</p><p className="text-on-surface text-sm">{b.uretici}</p></div>
-                <div><p className="text-xs text-on-surface-variant">Üretim Tarihi</p><p className="text-on-surface text-sm">{trDate(b.uretimTarihi)}</p></div>
-              </div>
-              {b.tahsisFirmaId && (
-                <div className="pt-3 border-t border-white/5">
-                  <p className="text-xs text-on-surface-variant">Tahsis Edilen Firma</p>
-                  <p className="text-primary text-sm font-medium">{firmalar.find(f => f.id === b.tahsisFirmaId)?.ad ?? b.tahsisFirma ?? b.tahsisFirmaId}</p>
-                </div>
-              )}
-              <div className="flex gap-2 mt-4 pt-3 border-t border-white/5">
-                <button onClick={() => openDetay(b)} className="flex-1 py-2 glass-card rounded-lg text-xs text-on-surface-variant hover:text-primary transition-all flex items-center justify-center gap-1">
-                  <span className="material-symbols-outlined text-sm">info</span>Detay
-                </button>
-                <button onClick={() => openSeri(b)} className="flex-1 py-2 glass-card rounded-lg text-xs text-on-surface-variant hover:text-primary transition-all flex items-center justify-center gap-1">
-                  <span className="material-symbols-outlined text-sm">list</span>Seri No Listesi
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Detay Modal */}
-      {(detayLoading || detayBatch) && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
-              <h3 className="font-semibold text-on-surface">Batch Detayı</h3>
-              <button onClick={() => { setDetayBatch(null); setDetayLoading(false); }} className="text-on-surface-variant hover:text-on-surface transition-all">
-                <span className="material-symbols-outlined">close</span>
+            ))}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-white/5">
+              <span className="text-xs text-on-surface-variant">{liste.length.toLocaleString("tr-TR")} kart</span>
+              <button onClick={tsvIndir} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20">
+                <span className="material-symbols-outlined text-sm">download</span>TSV İndir
               </button>
             </div>
-            {detayLoading ? (
-              <div className="p-12 text-center text-on-surface-variant text-sm">Yükleniyor...</div>
-            ) : detayBatch && (
-              <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-lg font-bold text-on-surface font-mono">{detayBatch.kod}</p>
-                  <span className="text-xs px-2 py-1 rounded-full" style={{ background: `${batchDurumMap[detayBatch.durum].color}15`, color: batchDurumMap[detayBatch.durum].color, border: `1px solid ${batchDurumMap[detayBatch.durum].color}30` }}>
-                    {batchDurumMap[detayBatch.durum].label}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: "Miktar", value: `${detayBatch.miktar.toLocaleString("tr-TR")} adet` },
-                    { label: "Seri Prefix", value: detayBatch.seriPrefix, mono: true },
-                    { label: "Üretici", value: detayBatch.uretici },
-                    { label: "Üretim Tarihi", value: trDate(detayBatch.uretimTarihi) },
-                    { label: "Kayıt Tarihi", value: trDate(detayBatch.createdAt) },
-                    { label: "Tahsis Firması", value: firmalar.find(f => f.id === detayBatch.tahsisFirmaId)?.ad ?? detayBatch.tahsisFirma ?? "—" },
-                  ].map(({ label, value, mono }) => (
-                    <div key={label}>
-                      <p className="text-xs text-on-surface-variant mb-0.5">{label}</p>
-                      <p className={`text-on-surface text-sm ${mono ? "font-mono" : ""}`}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-3 rounded-xl bg-white/3 border border-white/8 flex items-center justify-between">
-                  <span className="text-xs text-on-surface-variant">Toplam seri numarası</span>
-                  <span className="text-sm font-semibold text-primary">{detayBatch.seriNumaralari.length.toLocaleString("tr-TR")}</span>
-                </div>
-                <div className="flex gap-3 pt-1">
-                  <button onClick={() => { setSeriModal(detayBatch); setSeriSearch(""); setDetayBatch(null); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all flex items-center justify-center gap-1">
-                    <span className="material-symbols-outlined text-sm">list</span>Seri No Listesi
-                  </button>
-                  <button onClick={() => setDeleteBatch(detayBatch)}
-                    className="py-2.5 px-4 rounded-xl text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">delete</span>Sil
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Seri No Listesi Modal */}
-      {seriModal && (
+      {/* Kart ekle / düzenle */}
+      {modal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl rounded-2xl flex flex-col" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", maxHeight: "80vh" }}>
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8 flex-shrink-0">
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
               <div>
-                <h3 className="font-semibold text-on-surface">Seri No Listesi</h3>
-                <p className="text-xs text-on-surface-variant">{seriModal.kod} — {seriModal.miktar.toLocaleString("tr-TR")} adet</p>
+                <h3 className="font-semibold text-on-surface">{duzenlenen ? "Kartı Düzenle" : "Kart Ekle"}</h3>
+                <p className="text-xs text-on-surface-variant font-mono">{duzenlenen ? duzenlenen.seriNo : "Seri no ve kart adresi otomatik üretilir"}</p>
               </div>
-              <button onClick={() => setSeriModal(null)} className="text-on-surface-variant hover:text-on-surface transition-all">
+              <button onClick={() => setModal(null)} className="text-on-surface-variant hover:text-on-surface">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <div className="px-6 py-3 border-b border-white/8 flex-shrink-0">
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
-                <input value={seriSearch} onChange={e => setSeriSearch(e.target.value)} placeholder="Seri numarası ara..."
-                  className="w-full bg-surface-dim border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm focus:border-primary outline-none" />
-              </div>
-            </div>
-            <div className="overflow-y-auto flex-1 p-4 space-y-1.5">
-              {/* PhysicalCard kayıtları varsa NFC/QR URL'leriyle göster, yoksa eski seri listesi */}
-              {filteredCards.length > 0 ? (
-                <>
-                  <div className="hidden sm:flex items-center gap-3 px-3 pb-1 text-[10px] uppercase tracking-wider text-on-surface-variant/60">
-                    <span className="w-2 flex-shrink-0" />
-                    <span className="w-24 flex-shrink-0">Seri No</span>
-                    <span className="flex-1">NFC URL</span>
-                    <span className="flex-1">QR URL</span>
-                    <span className="w-14 flex-shrink-0 text-right">Durum</span>
-                    <span className="w-24 flex-shrink-0 text-right">İşlem</span>
+            <form onSubmit={kaydet}>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Sipariş</label>
+                  <select value={form.orderId} onChange={e => siparisSec(e.target.value)} className={inputCls}>
+                    <option value="">— Siparişsiz —</option>
+                    {siparisler.map(s => (
+                      <option key={s.id} value={s.id}>{s.siparisNo} · {s.musteriAd || s.firma} · {s.adet} adet</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Referans Firma</label>
+                  <select value={form.firmaId} onChange={e => setForm(p => ({ ...p, firmaId: e.target.value }))} className={inputCls}>
+                    <option value="">— Firmasız —</option>
+                    {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
+                  </select>
+                  <p className="text-[11px] text-on-surface-variant/70 mt-1">Kart aktive edildiğinde üye bu firmaya bağlanır.</p>
+                </div>
+                {duzenlenen ? (
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Üye</label>
+                    <select value={form.memberId} onChange={e => setForm(p => ({ ...p, memberId: e.target.value }))} className={inputCls}>
+                      <option value="">— Bağlı değil (üye kartı okutunca kendisi bağlar) —</option>
+                      {secilebilirUyeler.map(u => <option key={u.id} value={u.id}>{u.ad} · {u.email}</option>)}
+                    </select>
+                    <p className="text-[11px] text-on-surface-variant/70 mt-1">Üye seçilirse kart hemen aktive edilir.</p>
                   </div>
-                  {filteredCards.slice(0, 200).map(c => (
-                    <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
-                      <span className={`hidden sm:block w-2 h-2 rounded-full flex-shrink-0 ${c.aktif ? "bg-tertiary" : "bg-white/20"}`} />
-                      <span className="text-xs font-mono text-on-surface flex-shrink-0 sm:w-24">{c.seriNo}</span>
-                      <button type="button" onClick={() => navigator.clipboard?.writeText(nfcUrl(c.token))}
-                        title="Kopyalamak için tıkla — NFC çipine yazılacak adres"
-                        className="text-left text-xs font-mono text-primary/80 hover:text-primary flex-1 truncate transition-colors">
-                        {nfcUrl(c.token)}
-                      </button>
-                      <button type="button" onClick={() => navigator.clipboard?.writeText(qrUrl(c.token))}
-                        title="Kopyalamak için tıkla — basılı QR koduna gömülecek adres"
-                        className="text-left text-xs font-mono text-tertiary/80 hover:text-tertiary flex-1 truncate transition-colors">
-                        {qrUrl(c.token)}
-                      </button>
-                      {c.aktif
-                        ? <span className="text-xs text-tertiary flex-shrink-0 sm:w-14 sm:text-right">Aktif</span>
-                        : <span className="text-xs text-on-surface-variant/40 flex-shrink-0 sm:w-14 sm:text-right">Bekliyor</span>}
-                      <button type="button"
-                        onClick={() => {
-                          navigator.clipboard?.writeText(nfcUrl(c.token));
-                          setKopyalanan(c.token);
-                          setTimeout(() => setKopyalanan(k => (k === c.token ? null : k)), 1500);
-                        }}
-                        title="NFC adresini panoya kopyala"
-                        className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-medium whitespace-nowrap flex-shrink-0 sm:w-24 transition-colors ${
-                          kopyalanan === c.token
-                            ? "bg-tertiary/20 border-tertiary/40 text-tertiary"
-                            : "bg-primary/15 border-primary/25 text-primary"
-                        }`}>
-                        <span className="material-symbols-outlined text-sm">{kopyalanan === c.token ? "check" : "content_copy"}</span>
-                        {kopyalanan === c.token ? "Kopyalandı" : "Kopyala"}
-                      </button>
-                    </div>
-                  ))}
-                </>
-              ) : filteredSeri.slice(0, 200).map(s => (
-                <div key={s} className="px-3 py-1.5 rounded-lg bg-white/3 border border-white/5 text-xs font-mono text-on-surface">{s}</div>
-              ))}
-              {(filteredCards.length > 200 || filteredSeri.length > 200) && (
-                <p className="text-xs text-on-surface-variant text-center mt-3">... ve daha fazlası. Aramayı daraltın.</p>
-              )}
-              {filteredCards.length === 0 && filteredSeri.length === 0 && (
-                <p className="text-xs text-on-surface-variant text-center mt-4">Sonuç bulunamadı.</p>
-              )}
-            </div>
-            <div className="px-6 py-4 border-t border-white/8 flex-shrink-0 flex items-center justify-between gap-2">
-              <span className="text-xs text-on-surface-variant">
-                {(filteredCards.length || filteredSeri.length).toLocaleString("tr-TR")} sonuç
-              </span>
-              <div className="flex gap-2">
-                {filteredCards.length > 0 && (
-                  <button onClick={() => {
-                    const rows = (seriModal?.physicalCards ?? []).map(c => `${c.seriNo}\t${nfcUrl(c.token)}\t${qrUrl(c.token)}\t${c.aktif ? "Aktif" : "Bekliyor"}`);
-                    const txt = "Seri No\tNFC URL\tQR URL\tDurum\n" + rows.join("\n");
-                    const a = document.createElement("a");
-                    a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
-                    a.download = `${seriModal?.kod}-kartlar.tsv`;
-                    a.click();
-                  }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all">
-                    <span className="material-symbols-outlined text-sm">download</span>TSV İndir
-                  </button>
+                ) : (
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">Adet</label>
+                    <input type="number" min={1} max={50} value={form.adet} onChange={e => setForm(p => ({ ...p, adet: e.target.value }))} className={inputCls} />
+                  </div>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Yeni Batch Modal */}
-      {newModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
-              <h3 className="font-semibold text-on-surface">Yeni Üretim Siparişi</h3>
-              <button onClick={() => setNewModal(false)} className="text-on-surface-variant hover:text-on-surface transition-all">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <form onSubmit={handleNew}>
-              <div className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Batch Kodu *</label>
-                    <input required value={newForm.kod} onChange={e => setNewForm(p => ({ ...p, kod: e.target.value }))}
-                      placeholder="QNC-B2501-001"
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Seri Prefix</label>
-                    <input value={newForm.seriPrefix} onChange={e => setNewForm(p => ({ ...p, seriPrefix: e.target.value }))}
-                      placeholder="QNC-2501"
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Miktar (adet) *</label>
-                    <input required type="number" min={1} value={newForm.miktar} onChange={e => setNewForm(p => ({ ...p, miktar: e.target.value }))}
-                      placeholder="500"
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Üretim Tarihi</label>
-                    <input type="date" value={newForm.uretimTarihi} onChange={e => setNewForm(p => ({ ...p, uretimTarihi: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
-                  </div>
-                </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant mb-1 block">Üretici Firma</label>
-                  <input value={newForm.uretici} onChange={e => setNewForm(p => ({ ...p, uretici: e.target.value }))}
-                    placeholder="NFC Solutions Ltd."
-                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
-                    <select value={newForm.durum} onChange={e => setNewForm(p => ({ ...p, durum: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                      <option value="URETIMDE">Üretimde</option>
-                      <option value="STOKTA">Stokta</option>
-                      <option value="TAHSIS">Tahsis Edildi</option>
-                      <option value="BITTI">Bitti</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Tahsis Edilen Firma</label>
-                    <select value={newForm.tahsisFirma} onChange={e => setNewForm(p => ({ ...p, tahsisFirma: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                      <option value="">— Seçilmedi —</option>
-                      {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
-                    </select>
-                  </div>
+                  <label className="text-xs text-on-surface-variant mb-1 block">Not</label>
+                  <input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Ör. metal kart, siyah" className={inputCls} />
                 </div>
               </div>
               <div className="px-6 pb-5">
-                {newError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{newError}</p>}
+                {hata && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{hata}</p>}
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setNewModal(false)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
-                    İptal
-                  </button>
-                  <button type="submit" disabled={newLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
-                    {newLoading ? "Oluşturuluyor..." : "Oluştur"}
+                  <button type="button" onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">İptal</button>
+                  <button type="submit" disabled={kaydediliyor} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black disabled:opacity-60">
+                    {kaydediliyor ? "Kaydediliyor..." : duzenlenen ? "Kaydet" : "Oluştur"}
                   </button>
                 </div>
               </div>
@@ -433,114 +284,61 @@ export default function AdminKartlarPage() {
         </div>
       )}
 
-      {/* Düzenle Modal */}
-      {editBatch && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
-              <div>
-                <h3 className="font-semibold text-on-surface">Batch Düzenle</h3>
-                <p className="text-xs text-on-surface-variant font-mono">{editBatch.kod}</p>
-              </div>
-              <button onClick={() => setEditBatch(null)} className="text-on-surface-variant hover:text-on-surface transition-all">
-                <span className="material-symbols-outlined">close</span>
-              </button>
+      {/* QR kodu */}
+      {qrKart && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setQrKart(null)}>
+          <div className="w-full max-w-xs rounded-2xl p-6 text-center space-y-4" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-mono text-on-surface">{qrKart.seriNo}</p>
+            <div id="kart-qr" className="bg-white rounded-xl p-4 inline-block">
+              <QRCodeSVG value={kartQrUrl(qrKart.token)} size={200} marginSize={0} />
             </div>
-            <form onSubmit={handleEdit}>
-              <div className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Batch Kodu *</label>
-                    <input required value={editForm.kod} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Seri Prefix</label>
-                    <input value={editForm.seriPrefix} onChange={e => setEditForm(p => ({ ...p, seriPrefix: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-on-surface focus:border-primary outline-none transition-all" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Miktar (adet) *</label>
-                    <input required type="number" min={1} value={editForm.miktar} onChange={e => setEditForm(p => ({ ...p, miktar: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Üretim Tarihi</label>
-                    <input type="date" value={editForm.uretimTarihi} onChange={e => setEditForm(p => ({ ...p, uretimTarihi: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-on-surface-variant mb-1 block">Üretici Firma</label>
-                  <input value={editForm.uretici} onChange={e => setEditForm(p => ({ ...p, uretici: e.target.value }))}
-                    placeholder="Üretici firma adı"
-                    className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
-                    <select value={editForm.durum} onChange={e => setEditForm(p => ({ ...p, durum: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                      <option value="URETIMDE">Üretimde</option>
-                      <option value="STOKTA">Stokta</option>
-                      <option value="TAHSIS">Tahsis Edildi</option>
-                      <option value="BITTI">Bitti</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Tahsis Edilen Firma</label>
-                    <select value={editForm.tahsisFirma} onChange={e => setEditForm(p => ({ ...p, tahsisFirma: e.target.value }))}
-                      className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                      <option value="">— Seçilmedi —</option>
-                      {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 pb-5">
-                {editError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setEditBatch(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
-                    İptal
-                  </button>
-                  <button type="submit" disabled={editLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
-                    {editLoading ? "Kaydediliyor..." : "Kaydet"}
-                  </button>
-                </div>
-              </div>
-            </form>
+            <p className="text-[11px] font-mono text-on-surface-variant break-all">{kartQrUrl(qrKart.token)}</p>
+            <div className="flex gap-2">
+              <button onClick={() => setQrKart(null)} className="flex-1 py-2 rounded-xl text-sm border border-white/10 text-on-surface-variant">Kapat</button>
+              <button onClick={() => {
+                const svg = document.querySelector("#kart-qr svg");
+                if (!svg) return;
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }));
+                a.download = `${qrKart.seriNo}-qr.svg`;
+                a.click();
+              }} className="flex-1 py-2 rounded-xl text-sm font-semibold bg-primary text-black">SVG İndir</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Sil Onay Dialog */}
-      {deleteBatch && (
+      {/* Sil onayı */}
+      {silinecek && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-red-400 text-2xl">delete_forever</span>
             </div>
-            <h3 className="font-semibold text-on-surface text-center mb-1">Batch&apos;i Sil</h3>
-            <p className="text-sm text-on-surface-variant text-center mb-1">
-              <span className="text-on-surface font-medium font-mono">{deleteBatch.kod}</span>
-            </p>
+            <h3 className="font-semibold text-on-surface text-center mb-1">Kartı Sil</h3>
+            <p className="text-sm text-on-surface font-mono text-center mb-1">{silinecek.seriNo}</p>
             <p className="text-xs text-on-surface-variant text-center mb-5">
-              {deleteBatch.miktar.toLocaleString("tr-TR")} adetlik bu üretim partisi kalıcı olarak silinecek. Bu işlem geri alınamaz.
+              {silinecek.member ? "Kartın üye bağlantısı da kaldırılacak. " : ""}Bu karta yazılmış NFC/QR adresi artık çalışmaz. Bu işlem geri alınamaz.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteBatch(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5 transition-all">
-                İptal
-              </button>
-              <button onClick={handleDelete} disabled={deleteLoading} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60">
-                {deleteLoading ? "Siliniyor..." : "Evet, Sil"}
-              </button>
+              <button onClick={() => setSilinecek(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">İptal</button>
+              <button onClick={sil} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white">Evet, Sil</button>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function UrlButon({ etiket, url, kopyalandi, onClick }: { etiket: string; url: string; kopyalandi: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} title={`${url}\nKopyalamak için tıkla`}
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-medium whitespace-nowrap transition-colors ${
+        kopyalandi ? "bg-tertiary/20 border-tertiary/40 text-tertiary" : "bg-primary/10 border-primary/25 text-primary"}`}>
+      <span className="material-symbols-outlined text-sm">{kopyalandi ? "check" : "content_copy"}</span>
+      {kopyalandi ? "Kopyalandı" : etiket}
+    </button>
   );
 }
 

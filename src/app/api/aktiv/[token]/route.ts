@@ -28,8 +28,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
     return NextResponse.json({ ok: false, error: "Hesabınıza zaten bir kart bağlı." }, { status: 409 });
   }
 
-  // Kartın batchinden firmaId al
-  const firmaId = card.batch.tahsisFirmaId ?? card.firmaId ?? null;
+  // Firma karttan gelir; eski partili kartlarda partiye düşülür.
+  const firmaId = card.firmaId ?? card.batch?.tahsisFirmaId ?? null;
 
   await prisma.$transaction([
     prisma.physicalCard.update({

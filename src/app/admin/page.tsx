@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { paketLabel, siparisDurumMap, trDate } from "@/lib/labels";
 
 interface Overview {
-  stats: { aktifFirma: number; denemeFirma: number; toplamUye: number; aktifKart: number; mrr: number; yeniBasvuru: number; aktifSiparis: number; stoktakiKart: number };
+  stats: { aktifFirma: number; denemeFirma: number; toplamUye: number; aktifKart: number; mrr: number; yeniBasvuru: number; aktifSiparis: number; bekleyenKart: number };
   revenue: { ay: string; mrr: number }[];
   topFirmalar: { id: string; ad: string; paket: string; uyeSayisi: number }[];
   sonSiparisler: { id: string; siparisNo: string; firma: string; adet: number; durum: string }[];
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon="corporate_fare" label="Aktif Firma" value={s.aktifFirma} sub={`${s.denemeFirma} deneme süresinde`} color="#d4af37" href="/admin/firmalar" />
         <StatCard icon="payments" label="Aylık Gelir (MRR)" value={`₺${(s.mrr / 1000).toFixed(1)}K`} sub="Mevcut ay" color="#42faba" href="/admin/gelir" />
-        <StatCard icon="credit_card" label="Aktif Kart" value={s.aktifKart} sub={`${s.stoktakiKart} stokta`} color="#6001d1" href="/admin/kartlar" />
+        <StatCard icon="credit_card" label="Aktif Kart" value={s.aktifKart} sub={`${s.bekleyenKart} kart aktivasyon bekliyor`} color="#6001d1" href="/admin/kartlar" />
         <StatCard icon="local_shipping" label="Bekleyen Sipariş" value={s.aktifSiparis} sub="Hazırlanıyor / Kargoda" color="#f0d289" href="/admin/siparisler" />
       </div>
 

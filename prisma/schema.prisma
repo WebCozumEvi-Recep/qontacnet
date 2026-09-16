@@ -319,23 +319,29 @@ model CardBatch {
 
 model PhysicalCard {
   id           String    @id @default(cuid())
-  seriNo       String    @unique  // WQR-2026-0001 — üretim seri numarası
+  seriNo       String    @unique  // QNT-2026-0001 — satış seri numarası
   token        String    @unique  // QR URL'deki opak token, seri no içermez
-  batch        CardBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  batchId      String
-  firmaId      String?            // hangi firmaya tahsis edildi
+  // Eski toplu üretim partisi (artık kullanılmıyor; kartlar satış yapıldıkça tek tek açılır)
+  batch        CardBatch? @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchId      String?
+  firmaId      String?            // satışı getiren firma (referans) — aktivasyonda üyeye yazılır
+  orderId      String?            // kartın satıldığı sipariş
+  notlar       String    @default("")
   member       Member?   @relation(fields: [memberId], references: [id])
   memberId     String?   @unique
   aktif        Boolean   @default(false)
   aktivasyonAt DateTime?
   createdAt    DateTime  @default(now())
+
+  @@index([firmaId])
+  @@index([orderId])
 }
 
 model Order {
   id        String       @id @default(cuid())
   siparisNo String       @unique
   firma     String
-  firmaId   String?
+  firmaId   String?      // satışı getiren firma (?ref= linki veya admin seçimi)
   urun      String
   adet      Int
   tutar     Int

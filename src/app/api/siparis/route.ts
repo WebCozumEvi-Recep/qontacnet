@@ -58,12 +58,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Bu ürün için online ödeme yapılamıyor." }, { status: 400 });
     }
 
+    // Firmaya özel satış linkinden (?ref=<firmaId>) gelindiyse referans firma.
+    const ref = typeof body.ref === "string" ? body.ref.slice(0, 50) : "";
+    const refFirma = ref ? await prisma.firma.findUnique({ where: { id: ref }, select: { id: true } }) : null;
+
     const siparisNo = await nextSiparisNo();
 
     const order = await prisma.order.create({
       data: {
         siparisNo,
         firma: String(firma || firmaUnvan || musteriAd),
+        firmaId: refFirma?.id ?? null,
         urun: urun.ad,
         adet: adetNum,
         tutar,

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PRODUCTS_TEXT, type ProductsText } from "@/lib/i18n/ui-text";
 import { KartFormu, BOS_KART, type KartAlanlari } from "@/components/odeme/KartFormu";
 import { odemeyeGit, type OdemeYaniti } from "@/components/odeme/odeme-yonlendir";
+import { referansiYakala, referansiOku } from "@/lib/referans";
 
 interface Urun {
   id: string;
@@ -40,6 +41,7 @@ export default function Products({ t = PRODUCTS_TEXT }: { t?: ProductsText }) {
   const [galeri, setGaleri] = useState<{ gorseller: string[]; index: number; ad: string } | null>(null);
 
   useEffect(() => {
+    referansiYakala();
     fetch("/api/urunler")
       .then((r) => r.json())
       .then((j) => { if (j.ok) setUrunler(j.urunler); })
@@ -279,7 +281,7 @@ function SiparisModal({ urun, onClose, t }: { urun: Urun; onClose: () => void; t
     const res = await fetch("/api/siparis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, urunId: urun.id, adet: adetNum, ...(kartGerekli ? { kart } : {}) }),
+      body: JSON.stringify({ ...form, urunId: urun.id, adet: adetNum, ref: referansiOku(), ...(kartGerekli ? { kart } : {}) }),
     });
     const j = await res.json();
     if (j.ok && j.odeme) {

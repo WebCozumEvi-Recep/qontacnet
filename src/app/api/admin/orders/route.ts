@@ -24,10 +24,13 @@ export async function POST(req: NextRequest) {
   const araToplam = Number(adet) * bp;
   const hesaplananTutar = bp > 0 ? Math.round(araToplam + araToplam * kv / 100 - ind) : Number(tutar) || 0;
 
+  // Listeden seçilen firma kayıtlıysa sipariş o firmanın referansı sayılır.
+  const kayitliFirma = await prisma.firma.findFirst({ where: { ad: String(firma) }, select: { id: true } });
+
   const siparisNo = await nextSiparisNo();
   const order = await prisma.order.create({
     data: {
-      siparisNo, firma: String(firma), urun: String(urun), adet: Number(adet),
+      siparisNo, firma: String(firma), firmaId: kayitliFirma?.id ?? null, urun: String(urun), adet: Number(adet),
       tutar: hesaplananTutar, durum: "HAZIRLANIYOR",
       birimFiyat: bp, kdvOrani: kv, indirim: ind,
       notlar: String(notlar || ""),

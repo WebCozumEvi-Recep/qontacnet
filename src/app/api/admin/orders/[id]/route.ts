@@ -25,7 +25,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const body = (await req.json()) as Record<string, unknown>;
   const data: Record<string, unknown> = {};
-  if (typeof body.firma === "string" && body.firma.trim()) data.firma = body.firma.trim();
+  if (typeof body.firma === "string" && body.firma.trim()) {
+    data.firma = body.firma.trim();
+    const kayitliFirma = await prisma.firma.findFirst({ where: { ad: data.firma as string }, select: { id: true } });
+    data.firmaId = kayitliFirma?.id ?? null;
+  }
   if (typeof body.urun === "string" && body.urun.trim()) data.urun = body.urun.trim();
   if (typeof body.adet === "number" && body.adet > 0) data.adet = body.adet;
   if (typeof body.birimFiyat === "number") data.birimFiyat = body.birimFiyat;

@@ -8,7 +8,7 @@ import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 const pageTitles: Record<string, string> = {
   "/admin": "Platform Genel Bakış",
   "/admin/firmalar": "Firma Yönetimi",
-  "/admin/kartlar": "Kart Üretimi & Stok",
+  "/admin/kartlar": "Satılan Kartlar",
   "/admin/siparisler": "Sipariş Takibi",
   "/admin/lisanslar": "Lisans Yönetimi",
   "/admin/gelir": "Gelir Raporları",

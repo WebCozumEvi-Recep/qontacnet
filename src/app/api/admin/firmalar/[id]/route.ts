@@ -65,8 +65,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!f) return NextResponse.json({ ok: false, error: "Firma bulunamadı." }, { status: 404 });
 
-  const aktifKart = await prisma.member.count({ where: { firmaId: f.id, aktif: true } });
-  const siparisler = await prisma.order.findMany({ where: { firma: f.ad }, orderBy: { createdAt: "desc" } });
+  const aktifKart = await prisma.physicalCard.count({ where: { firmaId: f.id, aktif: true } });
+  const siparisler = await prisma.order.findMany({ where: { OR: [{ firmaId: f.id }, { firma: f.ad }] }, orderBy: { createdAt: "desc" } });
 
   const { passwordHash, _count, ...rest } = f;
   void passwordHash;
