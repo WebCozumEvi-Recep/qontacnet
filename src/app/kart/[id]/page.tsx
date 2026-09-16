@@ -4,7 +4,6 @@ import { after } from "next/server";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DilSecici } from "./DilSecici";
 import { KartAksiyonlar } from "./KartAksiyonlar";
 import { FirmaSablonu, FirmaSablonuIskelet } from "./FirmaSablonu";
 import type { UyeModul } from "@/components/UyeModulLightbox";
@@ -76,8 +75,6 @@ export default async function KartPage({ params, searchParams }: { params: Param
   return (
     <div className="min-h-screen flex flex-col items-center" style={{ background: "#050816" }}>
       <div className="fixed top-0 left-0 w-full h-64 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}20 0%, transparent 70%)` }} />
-
-      <DilSecici aktif={locale} />
 
       <div className="w-full max-w-sm mx-auto px-4 py-8 relative z-10">
         <div className="glass-card rounded-[2rem] p-6 mb-4 text-center relative overflow-hidden">
