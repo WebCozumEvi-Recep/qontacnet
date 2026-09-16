@@ -1,29 +1,33 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { aylikGelir, GELIR_SIPARIS } from "@/lib/gelir";
 
 export async function GET() {
   const session = await requireRole("admin");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
 
-  const [revenue, firmalar, licenses] = await Promise.all([
-    prisma.revenueSnapshot.findMany({ orderBy: { sira: "asc" } }),
-    prisma.firma.findMany({ select: { id: true, ad: true, paket: true, durum: true, mrr: true } }),
-    prisma.license.findMany(),
+  const [revenue, firmaToplam, firmalar] = await Promise.all([
+    aylikGelir(),
+    prisma.order.groupBy({
+      by: ["firmaId"],
+      where: { ...GELIR_SIPARIS, firmaId: { not: null } },
+      _sum: { tutar: true, adet: true },
+      _count: { _all: true },
+    }),
+    prisma.firma.findMany({ select: { id: true, ad: true } }),
   ]);
 
-  const order = { BASLANGIC: 0, PROFESYONEL: 1, KURUMSAL: 2 } as Record<string, number>;
-  const paketDagilim = licenses
-    .sort((a, b) => (order[a.ad] ?? 9) - (order[b.ad] ?? 9))
-    .map(l => {
-      const fs = firmalar.filter(f => f.paket === l.ad && f.durum === "AKTIF");
-      return { ad: l.ad, renk: l.renk, firmaCount: fs.length, mrr: fs.reduce((a, f) => a + f.mrr, 0) };
-    });
+  // Firma referansıyla gelen satışlar (tüm zamanlar)
+  const topFirmalar = firmaToplam
+    .map(g => ({
+      id: g.firmaId as string,
+      ad: firmalar.find(f => f.id === g.firmaId)?.ad ?? "Silinmiş firma",
+      tutar: g._sum.tutar ?? 0,
+      adet: g._sum.adet ?? 0,
+      siparis: g._count._all,
+    }))
+    .sort((a, b) => b.tutar - a.tutar);
 
-  const topFirmalar = firmalar
-    .filter(f => f.mrr > 0)
-    .sort((a, b) => b.mrr - a.mrr)
-    .map(f => ({ id: f.id, ad: f.ad, paket: f.paket, mrr: f.mrr }));
-
-  return NextResponse.json({ ok: true, revenue, paketDagilim, topFirmalar });
+  return NextResponse.json({ ok: true, revenue, topFirmalar });
 }

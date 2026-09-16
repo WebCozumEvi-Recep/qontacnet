@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { paketLabel } from "@/lib/labels";
 
 interface FirmaProfil {
   id: string; ad: string; email: string; telefon: string; adres: string;
@@ -139,23 +138,6 @@ export default function AyarlarPage() {
                   </select>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Paket Bilgisi</h3>
-            <div className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/20">
-              <div>
-                <p className="font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>
-                  {profil?.paket ? paketLabel[profil.paket] ?? profil.paket : "—"} Paketi
-                </p>
-                <p className="text-sm text-on-surface-variant mt-0.5">
-                  Durum: <span className="text-primary capitalize">{profil?.durum?.toLowerCase() ?? "—"}</span>
-                </p>
-              </div>
-              <button type="button" className="px-4 py-2 bg-primary-container text-on-primary-container rounded-xl text-sm font-medium hover:scale-[1.02] transition-all">
-                Paketi Yükselt
-              </button>
             </div>
           </div>
 

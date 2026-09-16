@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       if (exists) return NextResponse.json({ ok: false, error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
 
       const firma = await prisma.firma.create({
-        data: { ad: firmaAdi || ad, email: lower, passwordHash, temsilci: ad, durum: "DENEME", paket: "BASLANGIC" },
+        data: { ad: firmaAdi || ad, email: lower, passwordHash, temsilci: ad, durum: "AKTIF" },
       });
       await createSession({ sub: firma.id, role: "firma", email: firma.email });
       return NextResponse.json({ ok: true, role: "firma" });

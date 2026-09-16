@@ -1,19 +1,19 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { paketLabel, firmaDurumMap } from "@/lib/labels";
+import { firmaDurumMap } from "@/lib/labels";
 
 interface AdminFirma {
-  id: string; ad: string; email: string; paket: string; durum: string;
-  mrr: number; uyeSayisi: number; aktifKart: number;
+  id: string; ad: string; email: string; durum: string;
+  uyeSayisi: number; satilanKart: number; aktifKart: number;
   telefon?: string; adres?: string; website?: string; sektor?: string;
-  temsilci?: string; paketBaslangic?: string; paketBitis?: string | null;
+  temsilci?: string;
 }
 
 interface EditForm {
   ad: string; email: string; telefon: string; adres: string;
   website: string; sektor: string; temsilci: string;
-  paket: string; durum: string; paketBaslangic: string; paketBitis: string;
+  durum: string;
 }
 
 export default function AdminFirmalarPage() {
@@ -21,11 +21,9 @@ export default function AdminFirmalarPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [durum, setDurum] = useState("tum");
-  const [paket, setPaket] = useState("tum");
 
   const [editFirma, setEditFirma] = useState<AdminFirma | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ ad: "", email: "", telefon: "", adres: "", website: "", sektor: "", temsilci: "", paket: "", durum: "", paketBaslangic: "", paketBitis: "" });
-  const [editTab, setEditTab] = useState<"genel" | "paket">("genel");
+  const [editForm, setEditForm] = useState<EditForm>({ ad: "", email: "", telefon: "", adres: "", website: "", sektor: "", temsilci: "", durum: "" });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -33,8 +31,8 @@ export default function AdminFirmalarPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [newModal, setNewModal] = useState(false);
-  interface NewForm { ad: string; email: string; sifre: string; telefon: string; temsilci: string; paket: string; }
-  const [newForm, setNewForm] = useState<NewForm>({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", paket: "DENEME" });
+  interface NewForm { ad: string; email: string; sifre: string; telefon: string; temsilci: string; durum: string; }
+  const [newForm, setNewForm] = useState<NewForm>({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", durum: "AKTIF" });
   const [newLoading, setNewLoading] = useState(false);
   const [newError, setNewError] = useState("");
 
@@ -44,27 +42,18 @@ export default function AdminFirmalarPage() {
 
   const filtered = useMemo(() => firmalar.filter(f => {
     if (durum !== "tum" && f.durum !== durum) return false;
-    if (paket !== "tum" && f.paket !== paket) return false;
     if (q && !f.ad.toLowerCase().includes(q.toLowerCase()) && !f.email.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
-  }), [firmalar, q, durum, paket]);
-
-  function toDateInput(v?: string | null) {
-    if (!v) return "";
-    return new Date(v).toISOString().slice(0, 10);
-  }
+  }), [firmalar, q, durum]);
 
   function openEdit(f: AdminFirma) {
     setEditFirma(f);
-    setEditTab("genel");
     setEditForm({
       ad: f.ad, email: f.email,
       telefon: f.telefon ?? "", adres: f.adres ?? "",
       website: f.website ?? "", sektor: f.sektor ?? "",
       temsilci: f.temsilci ?? "",
-      paket: f.paket, durum: f.durum,
-      paketBaslangic: toDateInput(f.paketBaslangic),
-      paketBitis: toDateInput(f.paketBitis),
+      durum: f.durum,
     });
     setEditError("");
   }
@@ -81,7 +70,7 @@ export default function AdminFirmalarPage() {
     const j = await res.json();
     setEditLoading(false);
     if (!j.ok) { setEditError(j.error || "Güncelleme başarısız."); return; }
-    setFirmalar(prev => prev.map(f => f.id === editFirma.id ? { ...f, ...editForm, paketBaslangic: editForm.paketBaslangic || f.paketBaslangic, paketBitis: editForm.paketBitis || null } : f));
+    setFirmalar(prev => prev.map(f => f.id === editFirma.id ? { ...f, ...editForm } : f));
     setEditFirma(null);
   }
 
@@ -91,14 +80,14 @@ export default function AdminFirmalarPage() {
     const res = await fetch("/api/admin/firmalar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ad: newForm.ad, email: newForm.email, passwordHash: newForm.sifre, telefon: newForm.telefon, temsilci: newForm.temsilci, paket: "BASLANGIC", durum: newForm.paket }),
+      body: JSON.stringify({ ad: newForm.ad, email: newForm.email, passwordHash: newForm.sifre, telefon: newForm.telefon, temsilci: newForm.temsilci, durum: newForm.durum }),
     });
     const j = await res.json();
     setNewLoading(false);
     if (!j.ok) { setNewError(j.error || "Eklenemedi."); return; }
     setFirmalar(prev => [...prev, j.firma]);
     setNewModal(false);
-    setNewForm({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", paket: "DENEME" });
+    setNewForm({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", durum: "AKTIF" });
   }
 
   async function handleDelete() {
@@ -123,13 +112,9 @@ export default function AdminFirmalarPage() {
         </div>
         <select value={durum} onChange={e => setDurum(e.target.value)} className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none">
           <option value="tum">Tüm Durumlar</option>
-          <option value="AKTIF">Aktif</option><option value="DENEME">Deneme</option><option value="ASKIDA">Askıda</option><option value="IPTAL">İptal</option>
+          <option value="AKTIF">Aktif</option><option value="ASKIDA">Askıda</option><option value="IPTAL">İptal</option>
         </select>
-        <select value={paket} onChange={e => setPaket(e.target.value)} className="bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-primary outline-none">
-          <option value="tum">Tüm Paketler</option>
-          <option value="BASLANGIC">Başlangıç</option><option value="PROFESYONEL">Profesyonel</option><option value="KURUMSAL">Kurumsal</option>
-        </select>
-        <button onClick={() => { setNewForm({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", paket: "DENEME" }); setNewError(""); setNewModal(true); }}
+        <button onClick={() => { setNewForm({ ad: "", email: "", sifre: "", telefon: "", temsilci: "", durum: "AKTIF" }); setNewError(""); setNewModal(true); }}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all">
           <span className="material-symbols-outlined text-base">add</span>Yeni Firma
         </button>
@@ -141,17 +126,16 @@ export default function AdminFirmalarPage() {
             <thead className="bg-white/3 border-b border-white/5">
               <tr className="text-left text-on-surface-variant">
                 <th className="px-4 py-3 font-medium">Firma</th>
-                <th className="px-4 py-3 font-medium">Paket</th>
                 <th className="px-4 py-3 font-medium text-center">Üye</th>
+                <th className="px-4 py-3 font-medium text-center">Satılan Kart</th>
                 <th className="px-4 py-3 font-medium text-center">Aktif Kart</th>
-                <th className="px-4 py-3 font-medium text-right">MRR</th>
                 <th className="px-4 py-3 font-medium">Durum</th>
                 <th className="px-4 py-3 font-medium">İşlem</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-on-surface-variant">Yükleniyor...</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-on-surface-variant">Yükleniyor...</td></tr>
               ) : filtered.map(f => (
                 <tr key={f.id} className="border-b border-white/5 hover:bg-white/3 transition-all">
                   <td className="px-4 py-3">
@@ -162,10 +146,9 @@ export default function AdminFirmalarPage() {
                       <div><p className="text-on-surface font-medium">{f.ad}</p><p className="text-xs text-on-surface-variant">{f.email}</p></div>
                     </div>
                   </td>
-                  <td className="px-4 py-3"><span className="text-primary">{paketLabel[f.paket]}</span></td>
                   <td className="px-4 py-3 text-center text-on-surface">{f.uyeSayisi}</td>
+                  <td className="px-4 py-3 text-center text-on-surface">{f.satilanKart}</td>
                   <td className="px-4 py-3 text-center text-on-surface">{f.aktifKart}</td>
-                  <td className="px-4 py-3 text-right font-medium text-on-surface">₺{f.mrr.toLocaleString("tr-TR")}</td>
                   <td className="px-4 py-3">
                     <span className="text-xs px-2 py-1 rounded-full" style={{ background: `${firmaDurumMap[f.durum].color}15`, color: firmaDurumMap[f.durum].color, border: `1px solid ${firmaDurumMap[f.durum].color}30` }}>
                       {firmaDurumMap[f.durum].label}
@@ -184,7 +167,7 @@ export default function AdminFirmalarPage() {
                   </td>
                 </tr>
               ))}
-              {!loading && filtered.length === 0 && (<tr><td colSpan={7} className="px-4 py-8 text-center text-on-surface-variant">Sonuç bulunamadı.</td></tr>)}
+              {!loading && filtered.length === 0 && (<tr><td colSpan={6} className="px-4 py-8 text-center text-on-surface-variant">Sonuç bulunamadı.</td></tr>)}
             </tbody>
           </table>
         </div>
@@ -202,18 +185,8 @@ export default function AdminFirmalarPage() {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            {/* Sekmeler */}
-            <div className="flex border-b border-white/8">
-              {(["genel", "paket"] as const).map(tab => (
-                <button key={tab} onClick={() => setEditTab(tab)}
-                  className={`px-6 py-3 text-sm font-medium transition-all border-b-2 -mb-px ${editTab === tab ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}>
-                  {tab === "genel" ? "Genel Bilgiler" : "Paket & Tarih"}
-                </button>
-              ))}
-            </div>
             <form onSubmit={handleEdit}>
               <div className="p-6 space-y-4">
-                {editTab === "genel" ? (
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -261,48 +234,16 @@ export default function AdminFirmalarPage() {
                         placeholder="Şirket adresi"
                         className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all" />
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-on-surface-variant mb-1 block">Paket</label>
-                        <select value={editForm.paket} onChange={e => setEditForm(p => ({ ...p, paket: e.target.value }))}
-                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                          <option value="BASLANGIC">Başlangıç</option>
-                          <option value="PROFESYONEL">Profesyonel</option>
-                          <option value="KURUMSAL">Kurumsal</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
-                        <select value={editForm.durum} onChange={e => setEditForm(p => ({ ...p, durum: e.target.value }))}
-                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                          <option value="AKTIF">Aktif</option>
-                          <option value="DENEME">Deneme</option>
-                          <option value="ASKIDA">Askıda</option>
-                          <option value="IPTAL">İptal</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-on-surface-variant mb-1 block">Paket Başlangıç</label>
-                        <input type="date" value={editForm.paketBaslangic} onChange={e => setEditForm(p => ({ ...p, paketBaslangic: e.target.value }))}
-                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
-                      </div>
-                      <div>
-                        <label className="text-xs text-on-surface-variant mb-1 block">Paket Bitiş <span className="text-on-surface-variant/50">(opsiyonel)</span></label>
-                        <input type="date" value={editForm.paketBitis} onChange={e => setEditForm(p => ({ ...p, paketBitis: e.target.value }))}
-                          className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary outline-none transition-all [color-scheme:dark]" />
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-white/3 border border-white/8 text-xs text-on-surface-variant">
-                      <span className="material-symbols-outlined text-sm align-middle mr-1">info</span>
-                      Paket değiştirildiğinde MRR otomatik güncellenir. Deneme durumunda MRR sıfırlanır.
+                    <div>
+                      <label className="text-xs text-on-surface-variant mb-1 block">Durum</label>
+                      <select value={editForm.durum} onChange={e => setEditForm(p => ({ ...p, durum: e.target.value }))}
+                        className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
+                        <option value="AKTIF">Aktif</option>
+                        <option value="ASKIDA">Askıda</option>
+                        <option value="IPTAL">İptal</option>
+                      </select>
                     </div>
                   </>
-                )}
               </div>
               <div className="px-6 pb-5">
                 {editError && <p className="text-xs text-red-400 flex items-center gap-1 mb-3"><span className="material-symbols-outlined text-sm">error</span>{editError}</p>}
@@ -364,9 +305,8 @@ export default function AdminFirmalarPage() {
                 </div>
                 <div className="col-span-2">
                   <label className="text-xs text-on-surface-variant mb-1 block">Başlangıç Durumu</label>
-                  <select value={newForm.paket} onChange={e => setNewForm(p => ({ ...p, paket: e.target.value }))}
+                  <select value={newForm.durum} onChange={e => setNewForm(p => ({ ...p, durum: e.target.value }))}
                     className="w-full bg-surface-dim border border-white/10 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:border-primary outline-none">
-                    <option value="DENEME">Deneme</option>
                     <option value="AKTIF">Aktif</option>
                     <option value="ASKIDA">Askıda</option>
                   </select>

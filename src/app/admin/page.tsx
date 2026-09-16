@@ -1,12 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { paketLabel, siparisDurumMap, trDate } from "@/lib/labels";
+import { siparisDurumMap, trDate } from "@/lib/labels";
 
 interface Overview {
-  stats: { aktifFirma: number; denemeFirma: number; toplamUye: number; aktifKart: number; mrr: number; yeniBasvuru: number; aktifSiparis: number; bekleyenKart: number };
-  revenue: { ay: string; mrr: number }[];
-  topFirmalar: { id: string; ad: string; paket: string; uyeSayisi: number }[];
+  stats: { aktifFirma: number; toplamFirma: number; toplamUye: number; aktifKart: number; buAySatis: number; yeniBasvuru: number; aktifSiparis: number; bekleyenKart: number };
+  revenue: { ay: string; tutar: number }[];
+  topFirmalar: { id: string; ad: string; uyeSayisi: number }[];
   sonSiparisler: { id: string; siparisNo: string; firma: string; adet: number; durum: string }[];
   yeniBasvurular: { id: string; firmaAdi: string; yetkili: string; uyeSayisi: string; createdAt: string }[];
 }
@@ -27,14 +27,14 @@ export default function AdminDashboard() {
 
   if (!d) return <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant max-w-[1200px]">Yükleniyor...</div>;
   const s = d.stats;
-  const maxMrr = Math.max(...d.revenue.map(r => r.mrr), 1);
+  const maxTutar = Math.max(...d.revenue.map(r => r.tutar), 1);
 
   return (
     <div className="space-y-6 max-w-[1200px]">
       <div className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"><span className="material-symbols-outlined text-primary text-3xl">shield_person</span></div>
-          <div><h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC Platform Yönetimi</h2><p className="text-on-surface-variant text-sm mt-0.5"><span className="text-primary font-medium">{s.aktifFirma} aktif firma</span> · {s.toplamUye} üye · ₺{s.mrr.toLocaleString("tr-TR")} aylık gelir</p></div>
+          <div><h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>QONTAC Platform Yönetimi</h2><p className="text-on-surface-variant text-sm mt-0.5"><span className="text-primary font-medium">{s.aktifFirma} aktif firma</span> · {s.toplamUye} üye · bu ay ₺{s.buAySatis.toLocaleString("tr-TR")} satış</p></div>
         </div>
         <div className="flex gap-3">
           <Link href="/admin/basvurular" className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all"><span className="material-symbols-outlined text-base">mark_email_unread</span>{s.yeniBasvuru} Yeni Başvuru</Link>
@@ -43,19 +43,19 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="corporate_fare" label="Aktif Firma" value={s.aktifFirma} sub={`${s.denemeFirma} deneme süresinde`} color="#d4af37" href="/admin/firmalar" />
-        <StatCard icon="payments" label="Aylık Gelir (MRR)" value={`₺${(s.mrr / 1000).toFixed(1)}K`} sub="Mevcut ay" color="#42faba" href="/admin/gelir" />
+        <StatCard icon="corporate_fare" label="Aktif Firma" value={s.aktifFirma} sub={`${s.toplamFirma} kayıtlı firma`} color="#d4af37" href="/admin/firmalar" />
+        <StatCard icon="payments" label="Bu Ay Satış" value={`₺${s.buAySatis.toLocaleString("tr-TR")}`} sub="Ödenmiş siparişler" color="#42faba" href="/admin/gelir" />
         <StatCard icon="credit_card" label="Aktif Kart" value={s.aktifKart} sub={`${s.bekleyenKart} kart aktivasyon bekliyor`} color="#6001d1" href="/admin/kartlar" />
         <StatCard icon="local_shipping" label="Bekleyen Sipariş" value={s.aktifSiparis} sub="Hazırlanıyor / Kargoda" color="#f0d289" href="/admin/siparisler" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="glass-card rounded-2xl p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4"><h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Aylık Gelir Trendi (MRR)</h3><span className="text-xs text-on-surface-variant">12 aylık</span></div>
+          <div className="flex items-center justify-between mb-4"><h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Aylık Satış Geliri</h3><span className="text-xs text-on-surface-variant">12 aylık</span></div>
           <div className="flex items-end gap-2 h-40">
             {d.revenue.map((r, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full">
-                <div className="w-full rounded-t-md transition-all hover:opacity-80" style={{ height: `${(r.mrr / maxMrr) * 100}%`, background: i === d.revenue.length - 1 ? "#d4af37" : "rgba(212, 175, 55,0.4)" }} title={`${r.ay}: ₺${r.mrr.toLocaleString("tr-TR")}`} />
+                <div className="w-full rounded-t-md transition-all hover:opacity-80" style={{ height: `${(r.tutar / maxTutar) * 100}%`, background: i === d.revenue.length - 1 ? "#d4af37" : "rgba(212, 175, 55,0.4)" }} title={`${r.ay}: ₺${r.tutar.toLocaleString("tr-TR")}`} />
                 <span className="text-xs text-on-surface-variant" style={{ fontSize: "10px" }}>{r.ay}</span>
               </div>
             ))}
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
               <Link key={f.id} href={`/admin/firmalar/${f.id}`} className="flex items-center gap-3 hover:bg-white/5 rounded-lg p-2 -mx-2 transition-all">
                 <span className="text-xs text-on-surface-variant w-4 text-center">{i + 1}</span>
                 <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0"><span className="material-symbols-outlined text-primary text-sm">corporate_fare</span></div>
-                <div className="flex-1 min-w-0"><p className="text-sm text-on-surface font-medium truncate">{f.ad}</p><p className="text-xs text-on-surface-variant">{paketLabel[f.paket]}</p></div>
+                <div className="flex-1 min-w-0"><p className="text-sm text-on-surface font-medium truncate">{f.ad}</p></div>
                 <div className="text-right"><p className="text-sm font-semibold text-primary">{f.uyeSayisi}</p><p className="text-xs text-on-surface-variant">üye</p></div>
               </Link>
             ))}

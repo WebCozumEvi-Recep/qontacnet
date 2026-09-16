@@ -3,8 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
-const DURUMLAR = ["AKTIF", "DENEME", "ASKIDA", "IPTAL"];
-const PAKETLER = ["BASLANGIC", "PROFESYONEL", "KURUMSAL"];
+const DURUMLAR = ["AKTIF", "ASKIDA", "IPTAL"];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireRole("admin");
@@ -24,14 +23,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.sektor === "string") data.sektor = body.sektor.trim();
   if (typeof body.temsilci === "string") data.temsilci = body.temsilci.trim();
   if (typeof body.durum === "string" && DURUMLAR.includes(body.durum)) data.durum = body.durum;
-  if (typeof body.paket === "string" && PAKETLER.includes(body.paket)) {
-    data.paket = body.paket;
-    const lic = await prisma.license.findUnique({ where: { ad: body.paket as "BASLANGIC" | "PROFESYONEL" | "KURUMSAL" } });
-    if (lic) data.mrr = body.durum === "DENEME" || f.durum === "DENEME" ? 0 : lic.aylikFiyat;
-  }
-  if (typeof body.mrr === "number") data.mrr = body.mrr;
-  if (typeof body.paketBaslangic === "string" && body.paketBaslangic) data.paketBaslangic = new Date(body.paketBaslangic);
-  if (typeof body.paketBitis === "string") data.paketBitis = body.paketBitis ? new Date(body.paketBitis) : null;
   if (typeof body.newPassword === "string" && body.newPassword.length >= 6) {
     data.passwordHash = bcrypt.hashSync(body.newPassword as string, 10);
   }
@@ -65,14 +56,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!f) return NextResponse.json({ ok: false, error: "Firma bulunamadı." }, { status: 404 });
 
-  const aktifKart = await prisma.physicalCard.count({ where: { firmaId: f.id, aktif: true } });
+  const [satilanKart, aktifKart] = await Promise.all([
+    prisma.physicalCard.count({ where: { firmaId: f.id } }),
+    prisma.physicalCard.count({ where: { firmaId: f.id, aktif: true } }),
+  ]);
   const siparisler = await prisma.order.findMany({ where: { OR: [{ firmaId: f.id }, { firma: f.ad }] }, orderBy: { createdAt: "desc" } });
 
   const { passwordHash, _count, ...rest } = f;
   void passwordHash;
   return NextResponse.json({
     ok: true,
-    firma: { ...rest, uyeSayisi: _count.members, aktifKart },
+    firma: { ...rest, uyeSayisi: _count.members, satilanKart, aktifKart },
     siparisler,
   });
 }

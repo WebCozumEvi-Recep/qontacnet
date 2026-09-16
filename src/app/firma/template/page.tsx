@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth-context";
-import { temaLimiti, paketLabel } from "@/lib/labels";
 import ModulYonetimi from "@/components/firma/ModulYonetimi";
 import { TemplateGalleryCard } from "@/components/templates/TemplateGalleryCard";
 import { MiniCardPreview } from "@/components/templates/MiniCardPreview";
@@ -44,10 +42,6 @@ async function fetchModules(templateId: string): Promise<TemplateModuleChip[]> {
 }
 
 export default function TemplatePage() {
-  const { user } = useAuth();
-  const firma = user?.data as { ad?: string; paket?: string } | undefined;
-  const paket = firma?.paket ?? "BASLANGIC";
-  const limit = temaLimiti[paket] ?? 1;
 
   const [items, setItems] = useState<CardTemplateItem[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -58,7 +52,8 @@ export default function TemplatePage() {
   const [formName, setFormName] = useState("");
   const [formColor, setFormColor] = useState("#d4af37");
   const [formDescription, setFormDescription] = useState("");
-  const [limitWarning, setLimitWarning] = useState("");
+
+  const [hata, setHata] = useState("");
 
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -90,12 +85,6 @@ export default function TemplatePage() {
   const selected = items.find(t => t.id === selectedId);
 
   const openNew = () => {
-    if (items.length >= limit) {
-      setLimitWarning(
-        `${paketLabel[paket]} paketi en fazla ${limit} şablon oluşturmanıza izin verir.`,
-      );
-      return;
-    }
     setFormName("");
     setFormColor("#d4af37");
     setFormDescription("");
@@ -122,7 +111,7 @@ export default function TemplatePage() {
           body: JSON.stringify({ ad: formName, renk: formColor }),
         }).then(r => r.json());
         if (!r.ok) {
-          setLimitWarning(r.error ?? "Oluşturulamadı.");
+          setHata(r.error ?? "Oluşturulamadı.");
           setBusy(false);
           closeModal();
           return;
@@ -193,7 +182,7 @@ export default function TemplatePage() {
           </p>
         </div>
         <div className="text-xs text-on-surface-variant bg-white/5 rounded-xl px-3 py-2 border border-white/10 whitespace-nowrap">
-          {items.length} / {limit === Infinity ? "∞" : limit} şablon
+          {items.length} şablon
         </div>
       </div>
 
@@ -216,24 +205,22 @@ export default function TemplatePage() {
                 Önizle
               </button>
             )}
-            {items.length < limit && (
-              <button
-                type="button"
-                onClick={openNew}
-                className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all"
-              >
-                <span className="material-symbols-outlined text-base">add</span>
-                Yeni Şablon
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={openNew}
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all"
+            >
+              <span className="material-symbols-outlined text-base">add</span>
+              Yeni Şablon
+            </button>
           </div>
         </div>
 
-        {limitWarning && (
-          <div className="glass-card rounded-xl p-4 border border-amber-400/30 bg-amber-400/5 flex items-start gap-3">
-            <span className="material-symbols-outlined text-amber-400 text-lg">workspace_premium</span>
-            <p className="text-sm text-amber-200 flex-1">{limitWarning}</p>
-            <button type="button" onClick={() => setLimitWarning("")} className="text-on-surface-variant hover:text-on-surface">
+        {hata && (
+          <div className="glass-card rounded-xl p-4 border border-red-400/30 bg-red-400/5 flex items-start gap-3">
+            <span className="material-symbols-outlined text-red-400 text-lg">error</span>
+            <p className="text-sm text-red-200 flex-1">{hata}</p>
+            <button type="button" onClick={() => setHata("")} className="text-on-surface-variant hover:text-on-surface">
               <span className="material-symbols-outlined text-base">close</span>
             </button>
           </div>

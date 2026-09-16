@@ -29,7 +29,7 @@ const panels = [
     title: "Platform Admin",
     icon: "⚙️",
     color: "#18E6A7",
-    items: ["Firma yönetimi", "Kart üretimi", "Lisans yönetimi", "Sipariş takibi", "Gelir raporları"],
+    items: ["Firma yönetimi", "Satılan kartlar", "Firma referansları", "Sipariş takibi", "Gelir raporları"],
     mockupRows: [
       { label: "Toplam Firma", value: "87", color: "#18E6A7" },
       { label: "Aktif Kart", value: "24.500", color: "#d4af37" },

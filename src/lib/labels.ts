@@ -1,25 +1,5 @@
 // DB enum değerlerini UI etiketlerine çevirir
 
-export const paketLabel: Record<string, string> = {
-  BASLANGIC: "Başlangıç",
-  PROFESYONEL: "Profesyonel",
-  KURUMSAL: "Kurumsal",
-};
-
-// Pakete göre oluşturulabilecek maksimum kart teması sayısı
-export const temaLimiti: Record<string, number> = {
-  BASLANGIC: 1,
-  PROFESYONEL: 3,
-  KURUMSAL: Infinity,
-};
-
-// Pakete göre eklenebilecek maksimum üye sayısı
-export const uyeLimiti: Record<string, number> = {
-  BASLANGIC: 50,
-  PROFESYONEL: 500,
-  KURUMSAL: Infinity,
-};
-
 export const firmaDurumMap: Record<string, { label: string; color: string }> = {
   AKTIF: { label: "Aktif", color: "#42faba" },
   DENEME: { label: "Deneme", color: "#a8e8ff" },

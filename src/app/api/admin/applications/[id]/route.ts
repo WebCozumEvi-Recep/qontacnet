@@ -79,8 +79,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       passwordHash: bcrypt.hashSync(gecici, 10),
       telefon: app.telefon,
       temsilci: app.yetkili,
-      durum: "DENEME",
-      paket: "BASLANGIC",
+      durum: "AKTIF",
     },
   });
   await prisma.application.update({ where: { id }, data: { durum: "DONUSUM" } });

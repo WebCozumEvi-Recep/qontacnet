@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import { paketLabel, firmaDurumMap, trDate } from "@/lib/labels";
+import { firmaDurumMap, trDate } from "@/lib/labels";
 import { satisLinki } from "@/lib/referans";
 
 interface Firma {
   id: string; ad: string; email: string; telefon: string; sektor: string; temsilci: string;
-  paket: string; durum: string; mrr: number; paketBaslangic: string; paketBitis: string | null;
-  uyeSayisi: number; aktifKart: number;
+  durum: string; createdAt: string;
+  uyeSayisi: number; satilanKart: number; aktifKart: number;
 }
 interface Order { id: string; siparisNo: string; urun: string; adet: number; tutar: number; createdAt: string }
 
@@ -74,7 +74,7 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
             <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"><span className="material-symbols-outlined text-primary text-3xl">corporate_fare</span></div>
             <div>
               <h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{firma.ad}</h2>
-              <p className="text-on-surface-variant text-sm mt-0.5"><span className="text-primary font-medium">{paketLabel[firma.paket]}</span> · {firma.sektor}
+              <p className="text-on-surface-variant text-sm mt-0.5">{firma.sektor}
                 <span className="ml-3 text-xs px-2 py-0.5 rounded-full" style={{ background: `${du.color}15`, color: du.color, border: `1px solid ${du.color}30` }}>{du.label}</span>
               </p>
             </div>
@@ -105,9 +105,9 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Metric icon="group" label="Üye Sayısı" value={firma.uyeSayisi} color="#d4af37" />
-        <Metric icon="credit_card" label="Aktif Kart" value={firma.aktifKart} color="#42faba" />
-        <Metric icon="payments" label="Aylık Gelir" value={`₺${firma.mrr.toLocaleString("tr-TR")}`} color="#6001d1" />
-        <Metric icon="event" label="Üyelik Bitiş" value={firma.paketBitis ? trDate(firma.paketBitis) : "—"} color="#f0d289" />
+        <Metric icon="credit_card" label="Satılan Kart" value={firma.satilanKart} color="#42faba" />
+        <Metric icon="verified" label="Aktif Kart" value={firma.aktifKart} color="#6001d1" />
+        <Metric icon="shopping_cart" label="Sipariş" value={siparisler.length} color="#f0d289" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -116,27 +116,18 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
           <div className="space-y-3 text-sm">
             <Row icon="mail" label="E-posta" value={firma.email} /><Row icon="phone" label="Telefon" value={firma.telefon} />
             <Row icon="person" label="Temsilci" value={firma.temsilci} /><Row icon="category" label="Sektör" value={firma.sektor} />
-            <Row icon="event" label="Üyelik Başlangıç" value={trDate(firma.paketBaslangic)} />
+            <Row icon="event" label="Kayıt Tarihi" value={trDate(firma.createdAt)} />
           </div>
         </div>
 
         <div className="glass-card rounded-2xl p-6">
-          <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Lisans & Paket</h3>
+          <h3 className="text-sm font-semibold text-on-surface mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Firma Durumu</h3>
           <div className="space-y-3 text-sm">
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-              <div className="flex items-center justify-between mb-2"><span className="text-primary font-semibold">{paketLabel[firma.paket]} Paketi</span><span className="text-xs text-on-surface-variant">{du.label}</span></div>
-              <p className="text-2xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>₺{firma.mrr.toLocaleString("tr-TR")} <span className="text-sm text-on-surface-variant font-normal">/ ay</span></p>
-            </div>
-            <div>
-              <label className="text-xs text-on-surface-variant mb-1.5 block">Paket Değiştir</label>
-              <select value={firma.paket} onChange={e => patch({ paket: e.target.value })} disabled={busy} className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none">
-                <option value="BASLANGIC">Başlangıç</option><option value="PROFESYONEL">Profesyonel</option><option value="KURUMSAL">Kurumsal</option>
-              </select>
-            </div>
+            <p className="text-xs text-on-surface-variant">Firmalar satışta aracı olarak çalışır; lisans veya paket gerekmez.</p>
             <div>
               <label className="text-xs text-on-surface-variant mb-1.5 block">Durum</label>
               <select value={firma.durum} onChange={e => patch({ durum: e.target.value })} disabled={busy} className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none">
-                <option value="AKTIF">Aktif</option><option value="DENEME">Deneme</option><option value="ASKIDA">Askıda</option><option value="IPTAL">İptal</option>
+                <option value="AKTIF">Aktif</option><option value="ASKIDA">Askıda</option><option value="IPTAL">İptal</option>
               </select>
             </div>
           </div>

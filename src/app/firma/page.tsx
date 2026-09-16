@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { paketLabel } from "@/lib/labels";
 import Link from "next/link";
 
 interface Stats {
@@ -21,7 +20,7 @@ function StatCard({ icon, label, value, sub, color, href }: { icon: string; labe
 
 export default function FirmaDashboard() {
   const { user } = useAuth();
-  const firma = user?.data as { ad?: string; paket?: string; sektor?: string } | undefined;
+  const firma = user?.data as { ad?: string; sektor?: string } | undefined;
   const [d, setD] = useState<Stats | null>(null);
 
   useEffect(() => { fetch("/api/firma/stats").then(r => r.json()).then(j => { if (j.ok) setD(j); }); }, []);
@@ -35,7 +34,7 @@ export default function FirmaDashboard() {
       <div className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"><span className="material-symbols-outlined text-primary text-3xl">corporate_fare</span></div>
-          <div><h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{firma?.ad}</h2><p className="text-on-surface-variant text-sm mt-0.5"><span className="text-primary font-medium">{firma?.paket ? paketLabel[firma.paket] : ""}</span> Paketi · {firma?.sektor}</p></div>
+          <div><h2 className="text-xl font-bold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>{firma?.ad}</h2><p className="text-on-surface-variant text-sm mt-0.5">{firma?.sektor}</p></div>
         </div>
         <div className="flex gap-3">
           <Link href="/firma/uyeler" className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all"><span className="material-symbols-outlined text-base">group_add</span>Üye Ekle</Link>

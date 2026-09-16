@@ -11,14 +11,21 @@ export async function GET() {
     include: { _count: { select: { members: true } } },
   });
 
-  const list = await Promise.all(
-    firmalar.map(async (f) => {
-      const aktifKart = await prisma.member.count({ where: { firmaId: f.id, aktif: true } });
-      const { passwordHash, _count, ...rest } = f;
-      void passwordHash;
-      return { ...rest, uyeSayisi: _count.members, aktifKart };
-    })
-  );
+  // Firmanın referansıyla satılan kartlar (toplam ve aktif)
+  const kartSayilari = await prisma.physicalCard.groupBy({
+    by: ["firmaId", "aktif"],
+    where: { firmaId: { not: null } },
+    _count: { _all: true },
+  });
+  const say = (firmaId: string, aktif?: boolean) => kartSayilari
+    .filter(k => k.firmaId === firmaId && (aktif === undefined || k.aktif === aktif))
+    .reduce((a, k) => a + k._count._all, 0);
+
+  const list = firmalar.map((f) => {
+    const { passwordHash, _count, ...rest } = f;
+    void passwordHash;
+    return { ...rest, uyeSayisi: _count.members, satilanKart: say(f.id), aktifKart: say(f.id, true) };
+  });
 
   return NextResponse.json({ ok: true, firmalar: list });
 }
@@ -51,12 +58,11 @@ export async function POST(req: NextRequest) {
       website: typeof body.website === "string" ? body.website.trim() : "",
       sektor: typeof body.sektor === "string" ? body.sektor.trim() : "",
       temsilci: typeof body.temsilci === "string" ? body.temsilci.trim() : "",
-      paket: (["BASLANGIC", "PROFESYONEL", "KURUMSAL"].includes(String(body.paket)) ? body.paket : "BASLANGIC") as "BASLANGIC" | "PROFESYONEL" | "KURUMSAL",
-      durum: (["AKTIF", "DENEME", "ASKIDA", "IPTAL"].includes(String(body.durum)) ? body.durum : "DENEME") as "AKTIF" | "DENEME" | "ASKIDA" | "IPTAL",
+      durum: (["AKTIF", "ASKIDA", "IPTAL"].includes(String(body.durum)) ? body.durum : "AKTIF") as "AKTIF" | "ASKIDA" | "IPTAL",
     },
   });
 
   const { passwordHash: _pw, ...rest } = firma;
   void _pw;
-  return NextResponse.json({ ok: true, firma: { ...rest, uyeSayisi: 0, aktifKart: 0 } });
+  return NextResponse.json({ ok: true, firma: { ...rest, uyeSayisi: 0, satilanKart: 0, aktifKart: 0 } });
 }
