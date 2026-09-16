@@ -58,7 +58,7 @@ export default async function FirmaSatisSayfasi({ params, searchParams }: Props)
     <>
     <div className="bg-background px-4 py-8 md:py-12">
       <div className="max-w-2xl mx-auto space-y-6">
-        <header className="flex items-center gap-4">
+        <header className="flex items-center justify-between gap-4">
           {firma.logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={firma.logo} alt={firma.ad} className="h-14 w-auto max-w-[160px] object-contain rounded-lg bg-white/5 p-1" />
@@ -67,7 +67,7 @@ export default async function FirmaSatisSayfasi({ params, searchParams }: Props)
               <span className="material-symbols-outlined text-primary text-3xl">corporate_fare</span>
             </div>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 text-right">
             <p className="text-lg font-semibold text-on-surface truncate" style={{ fontFamily: "Sora, sans-serif" }}>{firma.ad}</p>
             <p className="text-xs text-on-surface-variant">QONTAC dijital kartvizit</p>
           </div>
