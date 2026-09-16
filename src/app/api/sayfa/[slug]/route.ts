@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { tx } from "@/lib/i18n/auto";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
+import { saticiDoldur } from "@/lib/satici";
 
 export const dynamic = "force-dynamic";
 
@@ -27,16 +28,17 @@ export async function GET(
   }
 
   let baslik = sayfa.baslik;
-  let icerik = sayfa.icerik || "";
+  const kaynakIcerik = await saticiDoldur(sayfa.icerik || "");
+  let icerik = kaynakIcerik;
 
   if (locale !== DEFAULT_LOCALE) {
     const ceviriler = (sayfa.ceviriler ?? {}) as Record<string, { baslik?: string; icerik?: string }>;
     const elle = ceviriler[locale];
     if (elle?.baslik || elle?.icerik) {
       baslik = elle.baslik || sayfa.baslik;
-      icerik = elle.icerik || sayfa.icerik || "";
+      icerik = elle.icerik ? await saticiDoldur(elle.icerik) : kaynakIcerik;
     } else {
-      const auto = await tx({ baslik: sayfa.baslik, icerik: sayfa.icerik || "" }, locale, { isHtml: true });
+      const auto = await tx({ baslik: sayfa.baslik, icerik: kaynakIcerik }, locale, { isHtml: true });
       baslik = auto.baslik;
       icerik = auto.icerik;
     }

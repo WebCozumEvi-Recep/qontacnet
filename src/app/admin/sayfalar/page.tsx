@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { LOCALES, LOCALE_LABELS, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
-import { SOZLESME, SOZLESME_YER_TUTUCULARI } from "@/lib/sozlesmeler";
+import { SOZLESME, SOZLESME_YER_TUTUCULARI, SATICI_YER_TUTUCULARI } from "@/lib/sozlesmeler";
 
 const SATIN_ALMA_SAYFALARI: string[] = Object.values(SOZLESME);
 const DOLDURULAN_SAYFALAR: string[] = [SOZLESME.onBilgi, SOZLESME.mesafeli];
@@ -225,6 +225,12 @@ function SayfaDuzenle({ sayfa, onClose, onSaved }: { sayfa: Sayfa; onClose: () =
         </div>
         <div>
           <label className="block text-xs text-on-surface-variant mb-1.5">İçerik</label>
+          <details className="mb-2 text-xs text-on-surface-variant">
+            <summary className="cursor-pointer hover:text-on-surface">Satıcı bilgisi ifadeleri (Ayarlar &gt; Satıcı Bilgileri&apos;nden otomatik dolar)</summary>
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 p-3 rounded-xl bg-white/3 border border-white/8">
+              {SATICI_YER_TUTUCULARI.map(([k, a]) => <span key={k}><code className="text-primary">{k}</code> {a}</span>)}
+            </div>
+          </details>
           {DOLDURULAN_SAYFALAR.includes(sayfa.slug) && (
             <div className="mb-2 p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-on-surface-variant">
               Bu metin satın alma sırasında alıcıya gösterilir. Aşağıdaki ifadeler otomatik doldurulur:

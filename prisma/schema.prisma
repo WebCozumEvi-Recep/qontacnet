@@ -404,6 +404,16 @@ model SiteSettings {
   iletisimTelefon        String   @default("+90 (850) 302 40 04")
   iletisimAdres          String   @default("Ümraniye, İstanbul / Türkiye")
   iletisimAciklama       String   @default("Geleceğin networking dünyasında yerinizi alın. Dijital, akıllı ve prestijli.")
+  // Satıcı (yasal) bilgileri — sözleşmelerdeki {{SATICI_...}} ifadelerine otomatik yerleşir
+  saticiUnvan            String   @default("")
+  saticiAdres            String   @default("")
+  saticiTelefon          String   @default("") // boşsa iletisimTelefon
+  saticiEposta           String   @default("") // boşsa iletisimEmail
+  saticiVergiDairesi     String   @default("")
+  saticiVergiNo          String   @default("")
+  saticiMersis           String   @default("")
+  saticiIadeAdresi       String   @default("") // boşsa saticiAdres
+  saticiTeslimatMasrafi  String   @default("Satıcıya")
   // Sosyal medya linkleri (boş olan footer'da gizlenir)
   sosyalLinkedin         String   @default("")
   sosyalInstagram        String   @default("")

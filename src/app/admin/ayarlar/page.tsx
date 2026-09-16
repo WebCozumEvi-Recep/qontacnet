@@ -5,6 +5,8 @@ interface AdminUser { id: string; ad: string; email: string; rol: string }
 interface SiteSettings {
   logoUrl: string; faviconUrl: string; logoText: string; googleSiteVerification: string; headKod: string; bodyKod: string;
   iletisimEmail: string; iletisimTelefon: string; iletisimAdres: string; iletisimAciklama: string;
+  saticiUnvan: string; saticiAdres: string; saticiTelefon: string; saticiEposta: string; saticiVergiDairesi: string;
+  saticiVergiNo: string; saticiMersis: string; saticiIadeAdresi: string; saticiTeslimatMasrafi: string;
   sosyalLinkedin: string; sosyalInstagram: string; sosyalX: string; sosyalFacebook: string; sosyalYoutube: string; sosyalWebsite: string;
 }
 
@@ -173,6 +175,8 @@ function SiteKimligi() {
   const [s, setS] = useState<SiteSettings>({
     logoUrl: "", faviconUrl: "", logoText: "QONTAC", googleSiteVerification: "", headKod: "", bodyKod: "",
     iletisimEmail: "", iletisimTelefon: "", iletisimAdres: "", iletisimAciklama: "",
+    saticiUnvan: "", saticiAdres: "", saticiTelefon: "", saticiEposta: "", saticiVergiDairesi: "",
+    saticiVergiNo: "", saticiMersis: "", saticiIadeAdresi: "", saticiTeslimatMasrafi: "Satıcıya",
     sosyalLinkedin: "", sosyalInstagram: "", sosyalX: "", sosyalFacebook: "", sosyalYoutube: "", sosyalWebsite: "",
   });
   const [saving, setSaving] = useState(false);
@@ -197,6 +201,15 @@ function SiteKimligi() {
         iletisimTelefon: j.settings.iletisimTelefon ?? "",
         iletisimAdres: j.settings.iletisimAdres ?? "",
         iletisimAciklama: j.settings.iletisimAciklama ?? "",
+        saticiUnvan: j.settings.saticiUnvan ?? "",
+        saticiAdres: j.settings.saticiAdres ?? "",
+        saticiTelefon: j.settings.saticiTelefon ?? "",
+        saticiEposta: j.settings.saticiEposta ?? "",
+        saticiVergiDairesi: j.settings.saticiVergiDairesi ?? "",
+        saticiVergiNo: j.settings.saticiVergiNo ?? "",
+        saticiMersis: j.settings.saticiMersis ?? "",
+        saticiIadeAdresi: j.settings.saticiIadeAdresi ?? "",
+        saticiTeslimatMasrafi: j.settings.saticiTeslimatMasrafi || "Satıcıya",
         sosyalLinkedin: j.settings.sosyalLinkedin ?? "",
         sosyalInstagram: j.settings.sosyalInstagram ?? "",
         sosyalX: j.settings.sosyalX ?? "",
@@ -328,6 +341,39 @@ function SiteKimligi() {
           <div>
             <label className="block text-xs text-on-surface-variant mb-1.5">Adres</label>
             <input value={s.iletisimAdres} onChange={e => setS(p => ({ ...p, iletisimAdres: e.target.value }))} className={inputCls} placeholder="Şehir / Ülke" />
+          </div>
+        </div>
+      </div>
+
+      {/* Satıcı Bilgileri */}
+      <div className="border-t border-white/10 pt-5 mb-5">
+        <p className="text-sm font-semibold text-on-surface mb-1">Satıcı Bilgileri</p>
+        <p className="text-[11px] text-on-surface-variant mb-4">
+          Mesafeli satış sözleşmesi, ön bilgilendirme formu ve diğer özel sayfalardaki <code className="text-primary">{"{{SATICI_...}}"}</code> ifadelerine otomatik yerleşir.
+          Telefon, e-posta ve iade adresi boş bırakılırsa iletişim bilgileri / şirket adresi kullanılır.
+        </p>
+        <div className="grid md:grid-cols-2 gap-4">
+          {([
+            ["saticiUnvan", "Şirket Unvanı", "Örnek Teknoloji A.Ş.", "md:col-span-2"],
+            ["saticiAdres", "Şirket Adresi", "Mahalle, cadde, no, ilçe / il", "md:col-span-2"],
+            ["saticiTelefon", "Telefon", s.iletisimTelefon || "+90 ...", ""],
+            ["saticiEposta", "E-posta", s.iletisimEmail || "info@...", ""],
+            ["saticiVergiDairesi", "Vergi Dairesi", "Ümraniye", ""],
+            ["saticiVergiNo", "Vergi Numarası", "1234567890", ""],
+            ["saticiMersis", "MERSİS Numarası", "0123456789012345", ""],
+            ["saticiIadeAdresi", "İade Adresi", s.saticiAdres || "Şirket adresiyle aynı", ""],
+          ] as const).map(([k, etiket, ornek, cls]) => (
+            <div key={k} className={cls}>
+              <label className="block text-xs text-on-surface-variant mb-1.5">{etiket}</label>
+              <input value={s[k]} onChange={e => setS(p => ({ ...p, [k]: e.target.value }))} className={inputCls} placeholder={ornek} />
+            </div>
+          ))}
+          <div>
+            <label className="block text-xs text-on-surface-variant mb-1.5">Teslimat Masrafı</label>
+            <select value={s.saticiTeslimatMasrafi} onChange={e => setS(p => ({ ...p, saticiTeslimatMasrafi: e.target.value }))} className={inputCls}>
+              <option value="Satıcıya">Satıcıya ait</option>
+              <option value="Alıcıya">Alıcıya ait</option>
+            </select>
           </div>
         </div>
       </div>
