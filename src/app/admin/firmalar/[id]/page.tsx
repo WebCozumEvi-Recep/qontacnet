@@ -3,6 +3,7 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { firmaDurumMap, trDate } from "@/lib/labels";
 import { satisLinki } from "@/lib/referans";
+import { KartSablonlari } from "./KartSablonlari";
 
 interface Firma {
   id: string; ad: string; email: string; telefon: string; sektor: string; temsilci: string;
@@ -178,6 +179,8 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
         </div>
         {hata && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{hata}</p>}
       </div>
+
+      <KartSablonlari firmaId={firma.id} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Metric icon="group" label="Üye Sayısı" value={firma.uyeSayisi} color="#d4af37" />

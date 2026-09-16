@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { baslangicTarihi } from "@/lib/kart";
 
-const MEMBER_SELECT = { select: { id: true, ad: true, soyad: true, email: true, telefon: true } } as const;
+const MEMBER_SELECT = { select: { id: true, ad: true, soyad: true, email: true, telefon: true, unvan: true } } as const;
 
 // Kartın firmasını, siparişini, notunu ve üyesini günceller.
 // memberId verilirse kart o üyeye bağlanıp aktive edilir; null verilirse bağ çözülür.

@@ -598,3 +598,20 @@ model AlanAdi {
   @@index([memberId])
   @@index([durum, bitisTarihi])
 }
+
+// Kart baskı şablonu (firmaya özel): ön/arka zemin görseli + ad soyad, GSM, QR vb.
+// alanların yerleşimi. Satılan kartlarda seçilip üyenin bilgileriyle baskı görseli üretilir.
+model KartSablonu {
+  id         String   @id @default(cuid())
+  firmaId    String
+  ad         String
+  yon        String   @default("yatay") // "yatay" (85.6×54 mm) | "dikey" (54×85.6 mm)
+  onGorsel   String   @default("")
+  arkaGorsel String   @default("")
+  // [{ tip, yuz, x, y, genislik, boyut, renk, font, kalin, hiza, gorunur }] — konum/ölçüler kart boyutuna oranla (0–1)
+  alanlar    Json     @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([firmaId])
+}

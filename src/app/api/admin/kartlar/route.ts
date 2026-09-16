@@ -11,7 +11,7 @@ export async function GET() {
   const [kartlar, firmalar, uyeler, siparisler] = await Promise.all([
     prisma.physicalCard.findMany({
       orderBy: { createdAt: "desc" },
-      include: { member: { select: { id: true, ad: true, soyad: true, email: true, telefon: true } } },
+      include: { member: { select: { id: true, ad: true, soyad: true, email: true, telefon: true, unvan: true } } },
     }),
     prisma.firma.findMany({ select: { id: true, ad: true }, orderBy: { ad: "asc" } }),
     prisma.member.findMany({
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       prisma.physicalCard.update({
         where: { id: kart.id },
         data: { memberId, aktif: true, aktivasyonAt: baslangicTarihi(body.baslangic) },
-        include: { member: { select: { id: true, ad: true, soyad: true, email: true, telefon: true } } },
+        include: { member: { select: { id: true, ad: true, soyad: true, email: true, telefon: true, unvan: true } } },
       }),
       prisma.member.update({ where: { id: memberId }, data: { kartAktif: true, ...(firmaId ? { firmaId } : {}) } }),
     ]);

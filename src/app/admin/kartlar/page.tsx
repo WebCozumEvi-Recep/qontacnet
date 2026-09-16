@@ -3,11 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import { trDate } from "@/lib/labels";
 import { QRCodeSVG } from "qrcode.react";
 import { kartNfcUrl, kartQrUrl } from "@/lib/kart-url";
+import { KartBaskiModal } from "@/components/kart-baski/KartBaskiModal";
 
 interface Kart {
   id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null;
   firmaId: string | null; orderId: string | null; memberId: string | null; notlar: string; createdAt: string;
-  member: { id: string; ad: string; soyad: string; email: string; telefon: string } | null;
+  member: { id: string; ad: string; soyad: string; email: string; telefon: string; unvan: string } | null;
 }
 interface Secenek { id: string; ad: string }
 interface Uye { id: string; ad: string; email: string; telefon: string; firmaId: string | null; kartVar: boolean }
@@ -46,6 +47,7 @@ export default function SatilanKartlarPage() {
 
   const [silinecek, setSilinecek] = useState<Kart | null>(null);
   const [qrKart, setQrKart] = useState<Kart | null>(null);
+  const [baskiKart, setBaskiKart] = useState<Kart | null>(null);
 
   // Toplu işlem
   const [secili, setSecili] = useState<Set<string>>(new Set());
@@ -249,13 +251,13 @@ export default function SatilanKartlarPage() {
           </div>
         ) : (
           <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex lg:grid lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_76px] items-center gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
+            <div className="flex lg:grid lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_104px] items-center gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
               <input type="checkbox" checked={tumuSecili} onChange={tumunuSec} title="Listedeki tümünü seç" className="w-4 h-4 accent-[#d4af37] cursor-pointer" />
               <span className="lg:hidden normal-case tracking-normal text-xs">Tümünü seç</span>
               <span className="hidden lg:block">Seri No</span><span className="hidden lg:block">Üye</span><span className="hidden lg:block">Firma</span><span className="hidden lg:block">Sipariş</span><span className="hidden lg:block">Kart Adresi</span><span className="hidden lg:block">Durum</span><span className="hidden lg:block" />
             </div>
             {liste.map(k => (
-              <div key={k.id} className={`grid grid-cols-[24px_1fr] lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_76px] gap-x-3 gap-y-1.5 lg:items-center px-4 py-3 border-b border-white/5 last:border-0 ${secili.has(k.id) ? "bg-primary/5" : ""}`}>
+              <div key={k.id} className={`grid grid-cols-[24px_1fr] lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_104px] gap-x-3 gap-y-1.5 lg:items-center px-4 py-3 border-b border-white/5 last:border-0 ${secili.has(k.id) ? "bg-primary/5" : ""}`}>
                 <input type="checkbox" checked={secili.has(k.id)} onChange={() => secimDegistir(k.id)} className="w-4 h-4 mt-0.5 lg:mt-0 accent-[#d4af37] cursor-pointer row-span-7 lg:row-span-1" />
                 <div>
                   <p className="text-xs font-mono text-on-surface">{k.seriNo}</p>
@@ -286,6 +288,9 @@ export default function SatilanKartlarPage() {
                   ? <span className="text-xs text-tertiary" title={k.aktivasyonAt ? `Aktivasyon: ${trDate(k.aktivasyonAt)}` : ""}>Aktif</span>
                   : <span className="text-xs text-on-surface-variant/50">Bekliyor</span>}
                 <div className="flex gap-1 lg:justify-end">
+                  <button onClick={() => setBaskiKart(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary" title="Baskı görseli">
+                    <span className="material-symbols-outlined text-base">print</span>
+                  </button>
                   <button onClick={() => duzenleAc(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface" title="Düzenle">
                     <span className="material-symbols-outlined text-base">edit</span>
                   </button>
@@ -410,6 +415,21 @@ export default function SatilanKartlarPage() {
             )}
           </div>
         </div>
+      )}
+
+      {baskiKart && (
+        <KartBaskiModal
+          seriNo={baskiKart.seriNo}
+          qrUrl={kartQrUrl(baskiKart.token)}
+          firmaId={baskiKart.firmaId}
+          firmalar={firmalar}
+          baslangic={{
+            adSoyad: baskiKart.member ? `${baskiKart.member.ad} ${baskiKart.member.soyad}`.trim() : "",
+            unvan: baskiKart.member?.unvan ?? "",
+            gsm: baskiKart.member?.telefon ?? "",
+          }}
+          onClose={() => setBaskiKart(null)}
+        />
       )}
 
       {/* QR kodu */}
