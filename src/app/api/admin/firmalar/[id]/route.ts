@@ -68,7 +68,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     prisma.physicalCard.count({ where: { firmaId: f.id } }),
     prisma.physicalCard.count({ where: { firmaId: f.id, aktif: true } }),
   ]);
-  const siparisler = await prisma.order.findMany({ where: { OR: [{ firmaId: f.id }, { firma: f.ad }] }, orderBy: { createdAt: "desc" } });
+  const siparisler = await prisma.order.findMany({ where: { OR: [{ firmaId: f.id }, { firma: f.ad }], odemeDurum: { notIn: ["BASARISIZ", "BEKLIYOR"] } }, orderBy: { createdAt: "desc" } });
 
   const { passwordHash, _count, ...rest } = f;
   void passwordHash;

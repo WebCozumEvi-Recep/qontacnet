@@ -90,7 +90,10 @@ export default function SiparisDetayPage() {
   const kdvTutar = Math.round(araToplam * order.kdvOrani / 100);
   const genelToplam = order.birimFiyat > 0 ? araToplam + kdvTutar - order.indirim : order.tutar;
   const fmt = (n: number) => `₺${n.toLocaleString("tr-TR")}`;
-  const durum = siparisDurumMap[order.durum] ?? { label: order.durum, color: "#aaa", icon: "receipt" };
+  // Ödemesi alınmamış siparişte iş akışı durumu yerine ödeme durumu gösterilir
+  const durum = order.odemeDurum === "BASARISIZ" ? { label: "Ödeme Başarısız", color: "#f87171", icon: "credit_card_off" }
+    : order.odemeDurum === "BEKLIYOR" ? { label: "Ödeme Bekleniyor", color: "#f87171", icon: "hourglass_empty" }
+    : siparisDurumMap[order.durum] ?? { label: order.durum, color: "#aaa", icon: "receipt" };
   // Site siparişlerinde müşteri = ad soyad; firma varsa ikinci satırda gösterilir
   const siteSiparisi = order.kaynak === "SITE" || order.kaynak === "FIRMA_LINK";
   const musteriBaslik = siteSiparisi && order.musteriAd ? order.musteriAd : order.firma;

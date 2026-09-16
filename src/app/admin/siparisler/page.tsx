@@ -19,6 +19,10 @@ const odemeBadge: Record<string, { label: string; cls: string }> = {
   BASARISIZ: { label: "Ödeme Başarısız", cls: "bg-red-400/10 text-red-400 border-red-400/30" },
 };
 
+// Ödemesi alınmamış site siparişi (başarısız ya da yarıda kalmış): iş akışına girmez.
+const odenmedi = (o: { odemeDurum?: string }) => o.odemeDurum === "BASARISIZ" || o.odemeDurum === "BEKLIYOR";
+const ODENMEDI_SEKME = "ODENMEDI";
+
 interface OrderForm {
   firma: string; urun: string; adet: string; tutar: string;
   birimFiyat: string; kdvOrani: string; indirim: string; notlar: string;
@@ -54,12 +58,14 @@ export default function AdminSiparislerPage() {
   }, []);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { tum: orders.length };
-    Object.keys(siparisDurumMap).forEach(k => c[k] = orders.filter(o => o.durum === k).length);
+    const c: Record<string, number> = { tum: orders.length, [ODENMEDI_SEKME]: orders.filter(odenmedi).length };
+    Object.keys(siparisDurumMap).forEach(k => c[k] = orders.filter(o => o.durum === k && !odenmedi(o)).length);
     return c;
   }, [orders]);
 
-  const filtered = tab === "tum" ? orders : orders.filter(o => o.durum === tab);
+  const filtered = tab === "tum" ? orders
+    : tab === ODENMEDI_SEKME ? orders.filter(odenmedi)
+    : orders.filter(o => o.durum === tab && !odenmedi(o));
   // İptaller ve ödemesi tamamlanmamış site siparişleri ciroya dahil edilmez
   const toplamCiro = filtered
     .filter(o => o.durum !== "IPTAL" && (!o.odemeDurum || o.odemeDurum === "MANUEL" || o.odemeDurum === "ODENDI"))
@@ -115,10 +121,10 @@ export default function AdminSiparislerPage() {
     <div className="space-y-6 max-w-[1200px]">
       {/* İstatistikler */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat icon="receipt_long" label="Toplam Sipariş" value={orders.length} sub="Tüm zamanlar" color="#d4af37" />
+        <Stat icon="receipt_long" label="Toplam Sipariş" value={orders.length} sub={counts[ODENMEDI_SEKME] ? `${counts[ODENMEDI_SEKME]} ödenmemiş dahil` : "Tüm zamanlar"} color="#d4af37" />
         <Stat icon="pending_actions" label="Bekleyen" value={(counts["HAZIRLANIYOR"]||0)+(counts["URETIMDE"]||0)+(counts["KARGODA"]||0)} sub="Hazırlanan + Kargoda" color="#f0d289" />
         <Stat icon="check_circle" label="Teslim Edilen" value={counts["TESLIM"]||0} sub="Tamamlandı" color="#42faba" />
-        <Stat icon="payments" label="Ciro" value={`₺${toplamCiro.toLocaleString("tr-TR")}`} sub={tab === "tum" ? "Tüm aktif" : siparisDurumMap[tab]?.label} color="#6001d1" />
+        <Stat icon="payments" label="Ciro" value={`₺${toplamCiro.toLocaleString("tr-TR")}`} sub={tab === "tum" ? "Tüm aktif" : tab === ODENMEDI_SEKME ? "Ödenmemişler ciroya girmez" : siparisDurumMap[tab]?.label} color="#6001d1" />
       </div>
 
       {/* Tab + Yeni Sipariş */}
@@ -128,6 +134,7 @@ export default function AdminSiparislerPage() {
           {Object.keys(siparisDurumMap).map(d => (
             <TabButton key={d} active={tab === d} onClick={() => setTab(d)} label={siparisDurumMap[d].label} count={counts[d]||0} color={siparisDurumMap[d].color} />
           ))}
+          <TabButton active={tab === ODENMEDI_SEKME} onClick={() => setTab(ODENMEDI_SEKME)} label="Ödenmedi" count={counts[ODENMEDI_SEKME]||0} color="#f87171" />
         </div>
         <button onClick={() => { setNewForm(emptyForm); setNewError(""); setNewModal(true); }}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:scale-[1.02] transition-all whitespace-nowrap">
@@ -138,18 +145,26 @@ export default function AdminSiparislerPage() {
       {/* Sipariş Listesi */}
       <div className="space-y-3">
         {loading ? <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant">Yükleniyor...</div> : filtered.map(o => (
-          <div key={o.id} className="glass-card rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-primary/20 transition-all">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${siparisDurumMap[o.durum].color}15`, border: `1px solid ${siparisDurumMap[o.durum].color}30` }}>
-              <span className="material-symbols-outlined" style={{ color: siparisDurumMap[o.durum].color }}>{siparisDurumMap[o.durum].icon}</span>
-            </div>
+          <div key={o.id} className={`glass-card rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-primary/20 transition-all ${odenmedi(o) ? "opacity-70" : ""}`}>
+            {odenmedi(o) ? (
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-400/10 border border-red-400/30">
+                <span className="material-symbols-outlined text-red-400">{o.odemeDurum === "BASARISIZ" ? "credit_card_off" : "hourglass_empty"}</span>
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: `${siparisDurumMap[o.durum].color}15`, border: `1px solid ${siparisDurumMap[o.durum].color}30` }}>
+                <span className="material-symbols-outlined" style={{ color: siparisDurumMap[o.durum].color }}>{siparisDurumMap[o.durum].icon}</span>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="text-on-surface font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>{o.siparisNo}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full"
-                  style={{ background: `${siparisDurumMap[o.durum].color}15`, color: siparisDurumMap[o.durum].color, border: `1px solid ${siparisDurumMap[o.durum].color}30` }}>
-                  {siparisDurumMap[o.durum].label}
-                </span>
+                {!odenmedi(o) && (
+                  <span className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ background: `${siparisDurumMap[o.durum].color}15`, color: siparisDurumMap[o.durum].color, border: `1px solid ${siparisDurumMap[o.durum].color}30` }}>
+                    {siparisDurumMap[o.durum].label}
+                  </span>
+                )}
                 {(o.kaynak === "SITE" || o.kaynak === "FIRMA_LINK") && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">{o.kaynak === "FIRMA_LINK" ? "Firma Linki" : "Site"}</span>
                 )}

@@ -20,7 +20,9 @@ export async function GET() {
   const aktifFirma = firmalar.filter(f => f.durum === "AKTIF").length;
   const buAySatis = revenue[revenue.length - 1]?.tutar ?? 0;
   const yeniBasvuru = applications.filter(a => a.durum === "YENI").length;
-  const aktifSiparis = orders.filter(o => ["HAZIRLANIYOR", "URETIMDE", "KARGODA"].includes(o.durum)).length;
+  // Ödemesi alınmamış site siparişleri (başarısız / yarıda kalmış) iş akışına girmez.
+  const gecerli = orders.filter(o => o.odemeDurum !== "BASARISIZ" && o.odemeDurum !== "BEKLIYOR");
+  const aktifSiparis = gecerli.filter(o => ["HAZIRLANIYOR", "URETIMDE", "KARGODA"].includes(o.durum)).length;
 
   const topFirmalar = [...firmalar]
     .map(f => ({ id: f.id, ad: f.ad, uyeSayisi: f._count.members }))
@@ -32,7 +34,7 @@ export async function GET() {
     stats: { aktifFirma, toplamFirma: firmalar.length, toplamUye, aktifKart, buAySatis, yeniBasvuru, aktifSiparis, bekleyenKart },
     revenue,
     topFirmalar,
-    sonSiparisler: orders.slice(0, 4),
+    sonSiparisler: gecerli.slice(0, 4),
     yeniBasvurular: applications.filter(a => a.durum === "YENI" || a.durum === "ILETISIMDE").slice(0, 4),
   });
 }
