@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
-const MEMBER_SELECT = { select: { id: true, ad: true, soyad: true, email: true } } as const;
+const MEMBER_SELECT = { select: { id: true, ad: true, soyad: true, email: true, telefon: true } } as const;
 
 // Kartın firmasını, siparişini, notunu ve üyesini günceller.
 // memberId verilirse kart o üyeye bağlanıp aktive edilir; null verilirse bağ çözülür.

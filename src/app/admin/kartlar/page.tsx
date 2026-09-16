@@ -7,10 +7,10 @@ import { kartNfcUrl, kartQrUrl } from "@/lib/kart-url";
 interface Kart {
   id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null;
   firmaId: string | null; orderId: string | null; memberId: string | null; notlar: string; createdAt: string;
-  member: { id: string; ad: string; soyad: string; email: string } | null;
+  member: { id: string; ad: string; soyad: string; email: string; telefon: string } | null;
 }
 interface Secenek { id: string; ad: string }
-interface Uye { id: string; ad: string; email: string; kartVar: boolean }
+interface Uye { id: string; ad: string; email: string; telefon: string; kartVar: boolean }
 interface Siparis { id: string; siparisNo: string; firma: string; firmaId: string | null; musteriAd: string; urun: string; adet: number }
 
 interface KartForm { firmaId: string; orderId: string; memberId: string; notlar: string; adet: string }
@@ -67,7 +67,7 @@ export default function SatilanKartlarPage() {
       if (durumFiltre === "bekliyor" && k.aktif) return false;
       if (firmaFiltre && k.firmaId !== firmaFiltre) return false;
       if (!q) return true;
-      const uye = k.member ? `${k.member.ad} ${k.member.soyad} ${k.member.email}` : "";
+      const uye = k.member ? `${k.member.ad} ${k.member.soyad} ${k.member.email} ${k.member.telefon}` : "";
       return [k.seriNo, k.token, uye, firmaAd(k.firmaId), siparisNo(k.orderId), k.notlar]
         .some(v => v.toLocaleLowerCase("tr").includes(q));
     });
@@ -166,10 +166,10 @@ export default function SatilanKartlarPage() {
 
   function tsvIndir() {
     const satirlar = liste.map(k => [
-      k.seriNo, k.member ? `${k.member.ad} ${k.member.soyad}`.trim() : "", firmaAd(k.firmaId), siparisNo(k.orderId),
+      k.seriNo, k.member ? `${k.member.ad} ${k.member.soyad}`.trim() : "", k.member?.telefon ?? "", firmaAd(k.firmaId), siparisNo(k.orderId),
       kartNfcUrl(k.token), kartQrUrl(k.token), k.aktif ? "Aktif" : "Bekliyor", trDate(k.createdAt),
     ].join("\t"));
-    const txt = "Seri No\tÜye\tFirma\tSipariş\tNFC URL\tQR URL\tDurum\tTarih\n" + satirlar.join("\n");
+    const txt = "Seri No\tÜye\tTelefon\tFirma\tSipariş\tNFC URL\tQR URL\tDurum\tTarih\n" + satirlar.join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
     a.download = "satilan-kartlar.tsv";
@@ -248,7 +248,7 @@ export default function SatilanKartlarPage() {
                   {k.member ? (
                     <>
                       <p className="text-sm text-on-surface truncate">{`${k.member.ad} ${k.member.soyad}`.trim()}</p>
-                      <p className="text-xs text-on-surface-variant truncate">{k.member.email}</p>
+                      <p className="text-xs text-on-surface-variant truncate" title={k.member.email}>{k.member.telefon || <span className="opacity-50">Telefon yok</span>}</p>
                     </>
                   ) : <p className="text-xs text-on-surface-variant/50">Üye bağlanmadı</p>}
                   {k.notlar && <p className="text-[11px] text-on-surface-variant/70 truncate" title={k.notlar}>{k.notlar}</p>}
@@ -322,7 +322,7 @@ export default function SatilanKartlarPage() {
                     <label className="text-xs text-on-surface-variant mb-1 block">Üye</label>
                     <select value={form.memberId} onChange={e => setForm(p => ({ ...p, memberId: e.target.value }))} className={inputCls}>
                       <option value="">— Bağlı değil (üye kartı okutunca kendisi bağlar) —</option>
-                      {secilebilirUyeler.map(u => <option key={u.id} value={u.id}>{u.ad} · {u.email}</option>)}
+                      {secilebilirUyeler.map(u => <option key={u.id} value={u.id}>{u.ad} · {u.telefon || u.email}</option>)}
                     </select>
                     <p className="text-[11px] text-on-surface-variant/70 mt-1">Üye seçilirse kart hemen aktive edilir.</p>
                   </div>

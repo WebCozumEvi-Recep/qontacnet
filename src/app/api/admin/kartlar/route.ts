@@ -11,11 +11,11 @@ export async function GET() {
   const [kartlar, firmalar, uyeler, siparisler] = await Promise.all([
     prisma.physicalCard.findMany({
       orderBy: { createdAt: "desc" },
-      include: { member: { select: { id: true, ad: true, soyad: true, email: true } } },
+      include: { member: { select: { id: true, ad: true, soyad: true, email: true, telefon: true } } },
     }),
     prisma.firma.findMany({ select: { id: true, ad: true }, orderBy: { ad: "asc" } }),
     prisma.member.findMany({
-      select: { id: true, ad: true, soyad: true, email: true, physicalCard: { select: { id: true } } },
+      select: { id: true, ad: true, soyad: true, email: true, telefon: true, physicalCard: { select: { id: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.findMany({
@@ -31,7 +31,7 @@ export async function GET() {
     ok: true,
     kartlar,
     firmalar,
-    uyeler: uyeler.map(u => ({ id: u.id, ad: `${u.ad} ${u.soyad}`.trim(), email: u.email, kartVar: !!u.physicalCard })),
+    uyeler: uyeler.map(u => ({ id: u.id, ad: `${u.ad} ${u.soyad}`.trim(), email: u.email, telefon: u.telefon, kartVar: !!u.physicalCard })),
     siparisler,
   });
 }
