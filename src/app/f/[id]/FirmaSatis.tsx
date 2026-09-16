@@ -88,6 +88,7 @@ export function FirmaSatis({ firmaId, urun, odeme, no }: { firmaId: string; urun
         urun={urun}
         endpoint={`/api/f/${firmaId}/siparis`}
         firmaAlani={false}
+        adetAlani={false}
         onOdemeOncesi={(y) => {
           if (!y.hesapToken) return;
           try { sessionStorage.setItem(anahtar(y.siparisNo), y.hesapToken); } catch {}

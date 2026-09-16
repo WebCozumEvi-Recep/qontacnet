@@ -12,6 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  body.adet = 1; // satış sayfasında adet seçilmez
   return siteSiparisiOlustur(req, body, {
     kaynak: "FIRMA_LINK",
     firmaId: firma.id,

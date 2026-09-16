@@ -15,12 +15,14 @@ interface Props {
   onClose?: () => void;
   /** "Firma" serbest metin alanı gösterilsin mi. */
   firmaAlani?: boolean;
+  /** Adet girişi gösterilsin mi; gizliyse her sipariş 1 adettir. */
+  adetAlani?: boolean;
   /** Banka ekranına geçmeden hemen önce sipariş yanıtıyla çağrılır. */
   onOdemeOncesi?: (yanit: { siparisNo: string; hesapToken?: string | null }) => void;
 }
 
 // Ürün satın alma formu: müşteri + fatura + (gerekiyorsa) kart bilgisi → 3D ödeme.
-export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis", onClose, firmaAlani = true, onOdemeOncesi }: Props) {
+export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis", onClose, firmaAlani = true, adetAlani = true, onOdemeOncesi }: Props) {
   const [form, setForm] = useState({
     musteriAd: "", firma: "", email: "", telefon: "", adres: "", adet: "1", notlar: "",
     faturaTip: "BIREYSEL", tcKimlik: "", vergiNo: "", vergiDairesi: "", firmaUnvan: "",
@@ -146,6 +148,7 @@ export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis
           )}
         </div>
 
+        {adetAlani && (
         <div className="grid grid-cols-2 gap-4 mb-4 items-end">
           <div>
             <label className="block text-xs text-on-surface-variant mb-1.5">{t.quantity}</label>
@@ -158,6 +161,7 @@ export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis
             </p>
           </div>
         </div>
+        )}
 
         <div className="mb-5">
           <label className="block text-xs text-on-surface-variant mb-1.5">{t.note}</label>
@@ -184,7 +188,7 @@ export function SiparisFormu({ urun, t = PRODUCTS_TEXT, endpoint = "/api/siparis
             </button>
           )}
           <button type="submit" disabled={saving} className="flex-1 py-3 rounded-xl bg-primary-container text-on-primary-container text-sm font-bold hover:scale-[1.02] transition-all disabled:opacity-60">
-            {saving ? t.redirecting : t.toPayment}
+            {saving ? t.redirecting : <>{t.toPayment} · ₺{toplam.toLocaleString("tr-TR")}</>}
           </button>
         </div>
         <p className="text-[11px] text-on-surface-variant mt-3 flex items-center gap-1">
