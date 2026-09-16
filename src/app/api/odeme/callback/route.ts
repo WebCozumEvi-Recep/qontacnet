@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/?odeme=hata`, 303);
   }
 
-  const yol = sonucYolu(order.kaynak);
+  const yol = sonucYolu(order.kaynak, order.firmaId);
   const no = encodeURIComponent(order.siparisNo);
 
   // Zaten işlenmişse tekrar işleme (çift callback / yenileme koruması)

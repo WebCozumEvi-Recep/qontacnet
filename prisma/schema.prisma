@@ -104,6 +104,8 @@ model Firma {
   updatedAt      DateTime   @updatedAt
   resetToken     String?    @unique
   resetExpiry    DateTime?
+  // Satış linkinden (/f/<id>) satılan ürün
+  urunId         String?
 
   members   Member[]
   templates CardTemplate[]
@@ -341,7 +343,10 @@ model Order {
   id        String       @id @default(cuid())
   siparisNo String       @unique
   firma     String
-  firmaId   String?      // satışı getiren firma (?ref= linki veya admin seçimi)
+  firmaId   String?      // satışı getiren firma (/f/<id> satış linki veya admin seçimi)
+  memberId  String?      // siparişle açılan / bağlanan üye hesabı
+  // Firma linkinden gelen siparişte şifre belirleme anahtarı; ödeme onaylanınca üyenin resetToken'ı olur
+  hesapToken String?     @unique
   urun      String
   adet      Int
   tutar     Int

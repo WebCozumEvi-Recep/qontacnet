@@ -23,6 +23,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.sektor === "string") data.sektor = body.sektor.trim();
   if (typeof body.temsilci === "string") data.temsilci = body.temsilci.trim();
   if (typeof body.durum === "string" && DURUMLAR.includes(body.durum)) data.durum = body.durum;
+  if (typeof body.logo === "string") data.logo = body.logo.trim();
+  if ("urunId" in body) {
+    const urunId = typeof body.urunId === "string" && body.urunId ? body.urunId : null;
+    if (urunId && !(await prisma.product.findUnique({ where: { id: urunId }, select: { id: true } }))) {
+      return NextResponse.json({ ok: false, error: "Ürün bulunamadı." }, { status: 404 });
+    }
+    data.urunId = urunId;
+  }
   if (typeof body.newPassword === "string" && body.newPassword.length >= 6) {
     data.passwordHash = bcrypt.hashSync(body.newPassword as string, 10);
   }

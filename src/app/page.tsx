@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ProblemSolution from "@/components/ProblemSolution";
@@ -33,7 +34,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const PANEL_HREF: Record<string, string> = { admin: "/admin", firma: "/firma", uye: "/uye" };
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
+  // Eski firma satış linkleri (?ref=<firmaId>) firmanın satış sayfasına taşındı.
+  const { ref } = await searchParams;
+  if (ref && /^[a-z0-9]{10,40}$/i.test(ref)) redirect(`/f/${ref}`);
+
   const [s, { locale, t }, session] = await Promise.all([getSiteSettings(), getI18n(), getSession()]);
   const accountHref = session ? PANEL_HREF[session.role] ?? "/auth/login" : "/auth/login";
 

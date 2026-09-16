@@ -33,8 +33,9 @@ const firmaNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { href: "/admin", icon: "dashboard", label: "Genel Bakış" },
   { href: "/admin/firmalar", icon: "corporate_fare", label: "Firmalar" },
-  { href: "/admin/kartlar", icon: "credit_card", label: "Satılan Kartlar" },
+  { href: "/admin/uyeler", icon: "group", label: "Üyeler" },
   { href: "/admin/siparisler", icon: "local_shipping", label: "Siparişler" },
+  { href: "/admin/kartlar", icon: "credit_card", label: "Satılan Kartlar" },
   { href: "/admin/gelir", icon: "trending_up", label: "Gelir Raporu" },
   { href: "/admin/urunler", icon: "inventory_2", label: "Ürünler" },
   { href: "/admin/uye-modulleri", icon: "widgets", label: "Üye Modülleri" },

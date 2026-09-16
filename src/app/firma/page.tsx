@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
+import { satisLinki } from "@/lib/referans";
 
 interface Stats {
   stats: { toplamUye: number; aktif: number; toplamGoruntulenme: number; toplamLead: number };
@@ -20,7 +21,8 @@ function StatCard({ icon, label, value, sub, color, href }: { icon: string; labe
 
 export default function FirmaDashboard() {
   const { user } = useAuth();
-  const firma = user?.data as { ad?: string; sektor?: string } | undefined;
+  const firma = user?.data as { id?: string; ad?: string; sektor?: string; urunId?: string | null } | undefined;
+  const [kopyalandi, setKopyalandi] = useState(false);
   const [d, setD] = useState<Stats | null>(null);
 
   useEffect(() => { fetch("/api/firma/stats").then(r => r.json()).then(j => { if (j.ok) setD(j); }); }, []);
@@ -41,6 +43,26 @@ export default function FirmaDashboard() {
           <Link href="/firma/analitik" className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-sm text-on-surface-variant hover:text-primary transition-all"><span className="material-symbols-outlined text-base">bar_chart</span>Rapor</Link>
         </div>
       </div>
+
+      {firma?.id && (
+        <div className="glass-card rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Satış Linkiniz</p>
+            <p className="text-xs text-on-surface-variant mb-1">
+              {firma.urunId
+                ? "Bu linkten kart satın alanlar ödeme sonrası otomatik olarak üyeniz olur."
+                : "Satış linkiniz henüz aktif değil; ürün tanımlaması için QONTAC ile iletişime geçin."}
+            </p>
+            <p className="text-xs font-mono text-primary truncate">{satisLinki(firma.id)}</p>
+          </div>
+          <button type="button"
+            onClick={() => { navigator.clipboard?.writeText(satisLinki(firma.id!)); setKopyalandi(true); setTimeout(() => setKopyalandi(false), 1500); }}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-primary/15 border border-primary/25 text-primary whitespace-nowrap">
+            <span className="material-symbols-outlined text-sm">{kopyalandi ? "check" : "content_copy"}</span>
+            {kopyalandi ? "Kopyalandı" : "Linki Kopyala"}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon="group" label="Toplam Üye" value={d?.stats.toplamUye ?? "—"} sub={`${d?.stats.aktif ?? 0} aktif`} color="#d4af37" href="/firma/uyeler" />

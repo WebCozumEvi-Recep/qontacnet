@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Dosya 5MB'dan büyük olamaz." }, { status: 400 });
     }
 
-    const allowedFolders = ["urunler", "site"];
+    const allowedFolders = ["urunler", "site", "firmalar"];
     const folderRaw = String(formData.get("folder") || "urunler");
     const folder = allowedFolders.includes(folderRaw) ? folderRaw : "urunler";
 

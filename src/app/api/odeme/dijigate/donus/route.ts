@@ -24,7 +24,7 @@ async function isle(req: NextRequest): Promise<NextResponse> {
   if (!order) return NextResponse.redirect(`${base}/?odeme=hata`, 303);
 
   // `next` yalnızca uygulama içi bir yol olabilir — açık yönlendirme (open redirect) olmasın.
-  const yol = next.startsWith("/") && !next.startsWith("//") ? next : sonucYolu(order.kaynak);
+  const yol = next.startsWith("/") && !next.startsWith("//") ? next : sonucYolu(order.kaynak, order.firmaId);
   const no = encodeURIComponent(siparisNo);
 
   // Webhook bizden önce davranmış olabilir.

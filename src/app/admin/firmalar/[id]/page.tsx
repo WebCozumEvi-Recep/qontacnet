@@ -6,9 +6,10 @@ import { satisLinki } from "@/lib/referans";
 
 interface Firma {
   id: string; ad: string; email: string; telefon: string; sektor: string; temsilci: string;
-  durum: string; createdAt: string;
+  durum: string; createdAt: string; logo: string; urunId: string | null;
   uyeSayisi: number; satilanKart: number; aktifKart: number;
 }
+interface Urun { id: string; ad: string; fiyat: number; aktif: boolean }
 interface Order { id: string; siparisNo: string; urun: string; adet: number; tutar: number; createdAt: string }
 
 export default function FirmaDetayPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,11 +24,15 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
   const [pwBusy, setPwBusy] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [linkKopyalandi, setLinkKopyalandi] = useState(false);
+  const [urunler, setUrunler] = useState<Urun[]>([]);
+  const [logoYukleniyor, setLogoYukleniyor] = useState(false);
+  const [hata, setHata] = useState("");
 
   useEffect(() => {
     fetch(`/api/admin/firmalar/${id}`).then(r => r.json()).then(j => {
       if (j.ok) { setFirma(j.firma); setSiparisler(j.siparisler); } else setNotFound(true);
     }).finally(() => setLoading(false));
+    fetch("/api/admin/urunler").then(r => r.json()).then(j => { if (j.ok) setUrunler(j.urunler); });
   }, [id]);
 
   const patch = async (body: Record<string, unknown>) => {
@@ -35,8 +40,21 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
     try {
       const res = await fetch(`/api/admin/firmalar/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const j = await res.json();
-      if (j.ok) setFirma(f => (f ? { ...f, ...j.firma } : f));
+      if (j.ok) { setFirma(f => (f ? { ...f, ...j.firma } : f)); setHata(""); }
+      else setHata(j.error ?? "Kaydedilemedi.");
     } finally { setBusy(false); }
+  };
+
+  const logoYukle = async (dosya: File) => {
+    setLogoYukleniyor(true); setHata("");
+    try {
+      const fd = new FormData();
+      fd.append("file", dosya);
+      fd.append("folder", "firmalar");
+      const j = await fetch("/api/admin/upload", { method: "POST", body: fd }).then(r => r.json());
+      if (j.ok) await patch({ logo: j.url });
+      else setHata(j.error ?? "Logo yüklenemedi.");
+    } finally { setLogoYukleniyor(false); }
   };
 
   const handlePwSet = async (e: React.FormEvent) => {
@@ -89,18 +107,69 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <div className="glass-card rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Satış Linki</p>
-          <p className="text-xs text-on-surface-variant mb-1">Bu linkle gelen kart siparişleri bu firmanın referansı olarak kaydedilir.</p>
-          <p className="text-xs font-mono text-primary truncate">{satisLinki(firma.id)}</p>
+      <div className="glass-card rounded-2xl p-6 space-y-5">
+        <div>
+          <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Satış Sayfası</h3>
+          <p className="text-xs text-on-surface-variant mt-0.5">Firmanın linkinden gelenler burada seçilen ürünü satın alır ve ödeme sonrası bu firmaya bağlı üye olur.</p>
         </div>
-        <button type="button"
-          onClick={() => { navigator.clipboard?.writeText(satisLinki(firma.id)); setLinkKopyalandi(true); setTimeout(() => setLinkKopyalandi(false), 1500); }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-primary/15 border border-primary/25 text-primary whitespace-nowrap">
-          <span className="material-symbols-outlined text-sm">{linkKopyalandi ? "check" : "content_copy"}</span>
-          {linkKopyalandi ? "Kopyalandı" : "Linki Kopyala"}
-        </button>
+        <div className="grid md:grid-cols-2 gap-5">
+          <div>
+            <label className="text-xs text-on-surface-variant mb-1.5 block">Firma Logosu</label>
+            <div className="flex items-center gap-3">
+              <div className="w-20 h-20 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {firma.logo
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={firma.logo} alt="" className="w-full h-full object-contain" />
+                  : <span className="material-symbols-outlined text-on-surface-variant text-3xl">image</span>}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-primary/15 border border-primary/25 text-primary cursor-pointer ${logoYukleniyor ? "opacity-60 pointer-events-none" : ""}`}>
+                  <span className="material-symbols-outlined text-sm">upload</span>{logoYukleniyor ? "Yükleniyor..." : firma.logo ? "Logoyu Değiştir" : "Logo Yükle"}
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) void logoYukle(f); e.target.value = ""; }} />
+                </label>
+                {firma.logo && (
+                  <button type="button" onClick={() => patch({ logo: "" })} disabled={busy} className="text-xs text-on-surface-variant hover:text-red-400 text-left">Logoyu kaldır</button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-on-surface-variant mb-1.5 block">Satılacak Ürün</label>
+            <select value={firma.urunId ?? ""} onChange={e => patch({ urunId: e.target.value })} disabled={busy}
+              className="w-full bg-surface-dim border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none">
+              <option value="">— Ürün seçilmedi (satış kapalı) —</option>
+              {urunler.map(u => (
+                <option key={u.id} value={u.id} disabled={!u.aktif}>{u.ad} · ₺{u.fiyat.toLocaleString("tr-TR")}{u.aktif ? "" : " (pasif)"}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-on-surface-variant/70 mt-1">Ürünler ve fiyatları Ürünler menüsünden yönetilir.</p>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-white/5">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-on-surface-variant">Satış Linki</p>
+            <p className="text-xs font-mono text-primary truncate">{satisLinki(firma.id)}</p>
+            {(!firma.urunId || firma.durum !== "AKTIF") && (
+              <p className="text-[11px] text-amber-300 mt-1">
+                {firma.durum !== "AKTIF" ? "Firma aktif olmadığı için link şu an satışa kapalı." : "Ürün seçilmeden link satışa açılmaz."}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <a href={`/f/${firma.id}`} target="_blank" rel="noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-white/10 text-on-surface-variant hover:text-primary whitespace-nowrap">
+              <span className="material-symbols-outlined text-sm">open_in_new</span>Aç
+            </a>
+            <button type="button"
+              onClick={() => { navigator.clipboard?.writeText(satisLinki(firma.id)); setLinkKopyalandi(true); setTimeout(() => setLinkKopyalandi(false), 1500); }}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-primary/15 border border-primary/25 text-primary whitespace-nowrap">
+              <span className="material-symbols-outlined text-sm">{linkKopyalandi ? "check" : "content_copy"}</span>
+              {linkKopyalandi ? "Kopyalandı" : "Linki Kopyala"}
+            </button>
+          </div>
+        </div>
+        {hata && <p className="text-xs text-red-400 flex items-center gap-1"><span className="material-symbols-outlined text-sm">error</span>{hata}</p>}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

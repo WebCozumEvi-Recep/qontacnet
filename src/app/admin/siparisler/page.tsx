@@ -150,8 +150,8 @@ export default function AdminSiparislerPage() {
                   style={{ background: `${siparisDurumMap[o.durum].color}15`, color: siparisDurumMap[o.durum].color, border: `1px solid ${siparisDurumMap[o.durum].color}30` }}>
                   {siparisDurumMap[o.durum].label}
                 </span>
-                {o.kaynak === "SITE" && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">Site</span>
+                {(o.kaynak === "SITE" || o.kaynak === "FIRMA_LINK") && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">{o.kaynak === "FIRMA_LINK" ? "Firma Linki" : "Site"}</span>
                 )}
                 {o.odemeDurum && odemeBadge[o.odemeDurum] && (
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${odemeBadge[o.odemeDurum].cls}`}>
@@ -160,7 +160,7 @@ export default function AdminSiparislerPage() {
                 )}
               </div>
               <p className="text-sm text-on-surface-variant">{o.firma} · {o.urun}</p>
-              {o.kaynak === "SITE" && (o.musteriAd || o.telefon) && (
+              {(o.kaynak === "SITE" || o.kaynak === "FIRMA_LINK") && (o.musteriAd || o.telefon) && (
                 <p className="text-xs text-on-surface-variant mt-0.5">
                   {o.musteriAd}{o.telefon && <span> · {o.telefon}</span>}{o.email && <span> · {o.email}</span>}
                 </p>
