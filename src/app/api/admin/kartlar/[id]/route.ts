@@ -68,6 +68,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const kart = await prisma.physicalCard.findUnique({ where: { id } });
   if (!kart) return NextResponse.json({ ok: false, error: "Kart bulunamadı." }, { status: 404 });
+  if (kart.basildiAt) {
+    return NextResponse.json({ ok: false, error: "Bu aktif basılmış karttır, silemezsiniz." }, { status: 409 });
+  }
 
   await prisma.$transaction([
     ...(kart.memberId ? [prisma.member.update({ where: { id: kart.memberId }, data: { kartAktif: false } })] : []),

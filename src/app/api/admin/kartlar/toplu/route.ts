@@ -13,10 +13,14 @@ export async function POST(req: NextRequest) {
   const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === "string").slice(0, 1000) : [];
   if (ids.length === 0) return NextResponse.json({ ok: false, error: "Kart seçilmedi." }, { status: 400 });
 
-  const kartlar = await prisma.physicalCard.findMany({ where: { id: { in: ids } }, select: { id: true, memberId: true } });
+  const kartlar = await prisma.physicalCard.findMany({ where: { id: { in: ids } }, select: { id: true, memberId: true, basildiAt: true } });
   const uyeIdler = kartlar.map(k => k.memberId).filter((x): x is string => !!x);
 
   if (body.islem === "sil") {
+    const basilan = kartlar.filter(k => k.basildiAt).length;
+    if (basilan) {
+      return NextResponse.json({ ok: false, error: `Seçimde ${basilan} basılmış kart var; basılmış kartlar silinemez.` }, { status: 409 });
+    }
     await prisma.$transaction([
       prisma.member.updateMany({ where: { id: { in: uyeIdler } }, data: { kartAktif: false } }),
       prisma.physicalCard.deleteMany({ where: { id: { in: ids } } }),

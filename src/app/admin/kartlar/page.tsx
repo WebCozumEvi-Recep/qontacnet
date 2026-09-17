@@ -47,6 +47,7 @@ export default function SatilanKartlarPage() {
   const [hata, setHata] = useState("");
 
   const [silinecek, setSilinecek] = useState<Kart | null>(null);
+  const [silinemez, setSilinemez] = useState<string | null>(null); // basılmış kart silme uyarısı
   const [qrKart, setQrKart] = useState<Kart | null>(null);
   const [baski, setBaski] = useState<{ kart: Kart; sablonlar: HamSablon[] } | null>(null);
   const [sablonYok, setSablonYok] = useState<Kart | null>(null);
@@ -166,11 +167,10 @@ export default function SatilanKartlarPage() {
     if (!silinecek) return;
     const res = await fetch(`/api/admin/kartlar/${silinecek.id}`, { method: "DELETE" });
     const j = await res.json();
-    if (j.ok) {
-      setKartlar(p => p.filter(k => k.id !== silinecek.id));
-      setSecili(p => { const y = new Set(p); y.delete(silinecek.id); return y; });
-      setSilinecek(null);
-    }
+    if (!j.ok) { setSilinecek(null); setSilinemez(j.error || "Kart silinemedi."); return; }
+    setKartlar(p => p.filter(k => k.id !== silinecek.id));
+    setSecili(p => { const y = new Set(p); y.delete(silinecek.id); return y; });
+    setSilinecek(null);
   }
 
   const tumuSecili = liste.length > 0 && liste.every(k => secili.has(k.id));
@@ -277,7 +277,11 @@ export default function SatilanKartlarPage() {
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-primary/15 border border-primary/25 text-primary">
             <span className="material-symbols-outlined text-sm">edit</span>Toplu Düzenle
           </button>
-          <button onClick={() => { setHata(""); setTopluSil(true); }}
+          <button onClick={() => {
+            const basilan = seciliKartlar.filter(k => k.basildiAt).length;
+            if (basilan) { setSilinemez(`Seçimde ${basilan} basılmış kart var. Basılmış kartlar silinemez; önce seçimden çıkarın.`); return; }
+            setHata(""); setTopluSil(true);
+          }}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 border border-red-500/30 text-red-400">
             <span className="material-symbols-outlined text-sm">delete</span>Toplu Sil
           </button>
@@ -343,7 +347,7 @@ export default function SatilanKartlarPage() {
                   <button onClick={() => duzenleAc(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface" title="Düzenle">
                     <span className="material-symbols-outlined text-base">edit</span>
                   </button>
-                  <button onClick={() => setSilinecek(k)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400" title="Sil">
+                  <button onClick={() => (k.basildiAt ? setSilinemez(`${k.seriNo} aktif basılmış karttır, silemezsiniz.`) : setSilinecek(k))} className="p-1.5 rounded-lg hover:bg-red-500/10 text-on-surface-variant hover:text-red-400" title="Sil">
                     <span className="material-symbols-outlined text-base">delete</span>
                   </button>
                 </div>
@@ -630,6 +634,20 @@ export default function SatilanKartlarPage() {
                 {kaydediliyor ? "Siliniyor..." : "Evet, Sil"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Basılmış kart silinemez */}
+      {silinemez && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSilinemez(null)}>
+          <div className="w-full max-w-sm rounded-2xl p-6 text-center" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-outlined text-red-400 text-2xl">block</span>
+            </div>
+            <h3 className="font-semibold text-on-surface mb-1">Silinemez</h3>
+            <p className="text-xs text-on-surface-variant mb-5">{silinemez}</p>
+            <button onClick={() => setSilinemez(null)} className="w-full py-2.5 rounded-xl text-sm font-semibold bg-primary text-black">Tamam</button>
           </div>
         </div>
       )}
