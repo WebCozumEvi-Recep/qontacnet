@@ -49,6 +49,7 @@ export default function SatilanKartlarPage() {
   const [silinecek, setSilinecek] = useState<Kart | null>(null);
   const [qrKart, setQrKart] = useState<Kart | null>(null);
   const [baskiKart, setBaskiKart] = useState<Kart | null>(null);
+  const [tekrarBaski, setTekrarBaski] = useState<Kart | null>(null); // basılmış kart için onay
 
   // Toplu işlem
   const [secili, setSecili] = useState<Set<string>>(new Set());
@@ -322,7 +323,7 @@ export default function SatilanKartlarPage() {
                   {k.basildiAt ? "Basıldı" : "Basılmadı"}
                 </button>
                 <div className="flex gap-1 lg:justify-end">
-                  <button onClick={() => setBaskiKart(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary" title="Baskı görseli">
+                  <button onClick={() => (k.basildiAt ? setTekrarBaski(k) : setBaskiKart(k))} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary" title="Baskı görseli">
                     <span className="material-symbols-outlined text-base">print</span>
                   </button>
                   <button onClick={() => duzenleAc(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface" title="Düzenle">
@@ -465,6 +466,27 @@ export default function SatilanKartlarPage() {
           }}
           onClose={() => setBaskiKart(null)}
         />
+      )}
+
+      {/* Basılmış kartı yeniden yazdırma onayı */}
+      {tekrarBaski && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setTekrarBaski(null)}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-outlined text-amber-300 text-2xl">warning</span>
+            </div>
+            <h3 className="font-semibold text-on-surface text-center mb-1">Bu kart zaten basıldı</h3>
+            <p className="text-sm text-on-surface font-mono text-center mb-1">{tekrarBaski.seriNo}</p>
+            <p className="text-xs text-on-surface-variant text-center mb-5">
+              {trDate(tekrarBaski.basildiAt!)} tarihinde basıldı olarak işaretlendi. Yeniden yazdırmak istediğinize emin misiniz?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setTekrarBaski(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">İptal</button>
+              <button onClick={() => { setBaskiKart(tekrarBaski); setTekrarBaski(null); }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black">Devam Et</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* QR kodu */}
