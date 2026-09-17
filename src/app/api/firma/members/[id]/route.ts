@@ -10,13 +10,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const member = await prisma.member.findFirst({
     where: { id, firmaId: session.sub },
-    include: { leads: { orderBy: { createdAt: "desc" } } },
+    include: { leads: { orderBy: { createdAt: "desc" } }, firma: { select: { varsayilanAvatar: true } } },
   });
   if (!member) return NextResponse.json({ ok: false, error: "Üye bulunamadı." }, { status: 404 });
 
-  const { passwordHash, ...safe } = member;
+  const { passwordHash, firma, ...safe } = member;
   void passwordHash;
-  return NextResponse.json({ ok: true, member: safe });
+  return NextResponse.json({ ok: true, member: { ...safe, varsayilanAvatar: firma?.varsayilanAvatar ?? "" } });
 }
 
 const EDITABLE = ["ad", "soyad", "unvan", "departman", "telefon"] as const;

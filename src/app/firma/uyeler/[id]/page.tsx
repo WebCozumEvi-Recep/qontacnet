@@ -10,7 +10,7 @@ interface Member {
   id: string; ad: string; soyad: string; email: string; telefon: string; unvan: string; departman: string;
   whatsapp: string; linkedin: string; biyografi: string; aktif: boolean; kartRenk: string;
   goruntulemeSayisi: number; leadSayisi: number; createdAt: string; leads: Lead[];
-  firma?: { ad: string }; avatar?: string;
+  firma?: { ad: string }; avatar?: string; varsayilanAvatar?: string;
 }
 
 export default function UyeDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -82,9 +82,9 @@ export default function UyeDetailPage({ params }: { params: Promise<{ id: string
       <div className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-5">
         <div className="relative">
           <div className="w-20 h-20 rounded-full flex items-center justify-center flex-shrink-0 border-2 overflow-hidden" style={{ background: `${member.kartRenk}20`, borderColor: `${member.kartRenk}40` }}>
-            {member.avatar ? (
+            {member.avatar || member.varsayilanAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={member.avatar} alt={`${member.ad} ${member.soyad}`} className="w-full h-full object-cover object-center" />
+              <img src={member.avatar || member.varsayilanAvatar} alt={`${member.ad} ${member.soyad}`} className="w-full h-full object-cover object-center" />
             ) : (
               <span className="material-symbols-outlined text-4xl" style={{ color: member.kartRenk }}>person</span>
             )}

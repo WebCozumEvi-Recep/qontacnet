@@ -40,14 +40,16 @@ export async function GET() {
   const session = await requireRole("firma");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
 
-  const members = await prisma.member.findMany({
+  const [uyeler, firma] = await Promise.all([prisma.member.findMany({
     where: { firmaId: session.sub },
     orderBy: { createdAt: "asc" },
     select: {
       id: true, ad: true, soyad: true, email: true, unvan: true, departman: true,
       aktif: true, kartRenk: true, goruntulemeSayisi: true, leadSayisi: true, avatar: true,
     },
-  });
+  }), prisma.firma.findUnique({ where: { id: session.sub }, select: { varsayilanAvatar: true } })]);
+  // Fotoğraf yüklememiş üyelerde firmanın varsayılan fotoğrafı gösterilir
+  const members = uyeler.map(m => ({ ...m, avatar: m.avatar || firma?.varsayilanAvatar || "" }));
 
   const aktif = members.filter(m => m.aktif).length;
   const toplamGoruntulenme = members.reduce((a, m) => a + m.goruntulemeSayisi, 0);
