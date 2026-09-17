@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { trDate } from "@/lib/labels";
 import { QRCodeSVG } from "qrcode.react";
 import { kartNfcUrl, kartQrUrl } from "@/lib/kart-url";
-import { KartBaskiModal } from "@/components/kart-baski/KartBaskiModal";
+import { KartBaskiModal, type HamSablon } from "@/components/kart-baski/KartBaskiModal";
 
 interface Kart {
   id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; basildiAt: string | null;
@@ -48,7 +48,9 @@ export default function SatilanKartlarPage() {
 
   const [silinecek, setSilinecek] = useState<Kart | null>(null);
   const [qrKart, setQrKart] = useState<Kart | null>(null);
-  const [baskiKart, setBaskiKart] = useState<Kart | null>(null);
+  const [baski, setBaski] = useState<{ kart: Kart; sablonlar: HamSablon[] } | null>(null);
+  const [sablonYok, setSablonYok] = useState<Kart | null>(null);
+  const [baskiYukleniyor, setBaskiYukleniyor] = useState<string | null>(null);
   const [tekrarBaski, setTekrarBaski] = useState<Kart | null>(null); // basılmış kart için onay
 
   // Toplu işlem
@@ -146,6 +148,18 @@ export default function SatilanKartlarPage() {
     });
     const j = await res.json();
     if (j.ok) setKartlar(p => p.map(x => (x.id === k.id ? { ...x, basildiAt: j.kart.basildiAt } : x)));
+  }
+
+  // Yalnız kartın firmasının şablonlarıyla baskı yapılır; yoksa uyarı gösterilir.
+  async function baskiAc(k: Kart) {
+    if (!k.firmaId) { setSablonYok(k); return; }
+    setBaskiYukleniyor(k.id);
+    try {
+      const j = await fetch(`/api/admin/kart-sablonlari?firmaId=${encodeURIComponent(k.firmaId)}`).then(r => r.json()).catch(() => null);
+      const liste: HamSablon[] = j?.ok ? j.sablonlar : [];
+      if (liste.length === 0) setSablonYok(k);
+      else setBaski({ kart: k, sablonlar: liste });
+    } finally { setBaskiYukleniyor(null); }
   }
 
   async function sil() {
@@ -323,7 +337,7 @@ export default function SatilanKartlarPage() {
                   {k.basildiAt ? "Basıldı" : "Basılmadı"}
                 </button>
                 <div className="flex gap-1 lg:justify-end">
-                  <button onClick={() => (k.basildiAt ? setTekrarBaski(k) : setBaskiKart(k))} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary" title="Baskı görseli">
+                  <button onClick={() => (k.basildiAt ? setTekrarBaski(k) : void baskiAc(k))} disabled={baskiYukleniyor === k.id} className="disabled:opacity-40 p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary" title="Baskı görseli">
                     <span className="material-symbols-outlined text-base">print</span>
                   </button>
                   <button onClick={() => duzenleAc(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface" title="Düzenle">
@@ -452,19 +466,41 @@ export default function SatilanKartlarPage() {
         </div>
       )}
 
-      {baskiKart && (
+      {sablonYok && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSablonYok(null)}>
+          <div className="w-full max-w-sm rounded-2xl p-6 text-center" style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)" }} onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-outlined text-amber-300 text-2xl">warning</span>
+            </div>
+            <h3 className="font-semibold text-on-surface mb-1">Baskı şablonu bulunmamaktadır</h3>
+            <p className="text-xs text-on-surface-variant mb-5">
+              {sablonYok.firmaId
+                ? `${firmaAd(sablonYok.firmaId)} firmasına ait kart baskı şablonu yok. Firma sayfasından şablon oluşturabilirsiniz.`
+                : "Bu kart bir firmaya bağlı değil. Baskı için karta firma atanmalı ve firmanın şablonu olmalı."}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setSablonYok(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">Kapat</button>
+              {sablonYok.firmaId && (
+                <a href={`/admin/firmalar/${sablonYok.firmaId}`} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black">Firmaya Git</a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {baski && (
         <KartBaskiModal
-          seriNo={baskiKart.seriNo}
-          qrUrl={kartQrUrl(baskiKart.token)}
-          firmaId={baskiKart.firmaId}
-          firmalar={firmalar}
+          seriNo={baski.kart.seriNo}
+          qrUrl={kartQrUrl(baski.kart.token)}
+          sablonlar={baski.sablonlar}
+          firmaAd={firmaAd(baski.kart.firmaId)}
           baslangic={{
-            ad: baskiKart.member?.ad ?? "",
-            soyad: baskiKart.member?.soyad ?? "",
-            unvan: baskiKart.member?.unvan ?? "",
-            gsm: baskiKart.member?.telefon ?? "",
+            ad: baski.kart.member?.ad ?? "",
+            soyad: baski.kart.member?.soyad ?? "",
+            unvan: baski.kart.member?.unvan ?? "",
+            gsm: baski.kart.member?.telefon ?? "",
           }}
-          onClose={() => setBaskiKart(null)}
+          onClose={() => setBaski(null)}
         />
       )}
 
@@ -482,7 +518,7 @@ export default function SatilanKartlarPage() {
             </p>
             <div className="flex gap-3">
               <button onClick={() => setTekrarBaski(null)} className="flex-1 py-2.5 rounded-xl text-sm border border-white/10 text-on-surface-variant hover:bg-white/5">İptal</button>
-              <button onClick={() => { setBaskiKart(tekrarBaski); setTekrarBaski(null); }}
+              <button onClick={() => { void baskiAc(tekrarBaski); setTekrarBaski(null); }}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-black">Devam Et</button>
             </div>
           </div>

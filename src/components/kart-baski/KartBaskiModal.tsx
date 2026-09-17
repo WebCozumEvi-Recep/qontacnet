@@ -1,10 +1,9 @@
 "use client";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { KartTuvali } from "@/components/kart-baski/KartTuvali";
 import { ALAN_ETIKET, alanlariDuzenle, zeminRengi, zeminBasilir, gorselIndir, yazdir, type KartDegerleri, type KartSablonVerisi, type Yon, type Yuz } from "@/lib/kart-baski";
 
-interface HamSablon {
+export interface HamSablon {
   id: string; firmaId: string; ad: string; yon: Yon; onGorsel: string; arkaGorsel: string;
   onRenk: string; arkaRenk: string; onZeminBas: boolean; arkaZeminBas: boolean; alanlar: unknown;
 }
@@ -12,8 +11,9 @@ interface HamSablon {
 interface Props {
   seriNo: string;
   qrUrl: string;
-  firmaId: string | null;
-  firmalar: { id: string; ad: string }[];
+  /** Kartın firmasının şablonları (boş olmamalı; çağıran kontrol eder) */
+  sablonlar: HamSablon[];
+  firmaAd: string;
   baslangic: Omit<KartDegerleri, "qr">;
   onClose: () => void;
 }
@@ -22,22 +22,13 @@ const inputCls = "w-full bg-surface-dim border border-white/10 rounded-xl px-3 p
 const dosyaAdi = (s: string) => s.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 60);
 
 // Satılan kart için şablon seçip baskı görselini önizler; JPG indirir ya da yazdırır.
-export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, onClose }: Props) {
-  const [sablonlar, setSablonlar] = useState<HamSablon[] | null>(null);
-  const [seciliId, setSeciliId] = useState("");
+// Yalnız kartın firmasına ait şablonlarla baskı yapılır.
+export function KartBaskiModal({ seriNo, qrUrl, sablonlar, firmaAd, baslangic, onClose }: Props) {
+  const [seciliId, setSeciliId] = useState(sablonlar[0]?.id ?? "");
   const [degerler, setDegerler] = useState<KartDegerleri>({ ...baslangic, qr: qrUrl });
   const on = useRef<HTMLCanvasElement | null>(null);
   const arka = useRef<HTMLCanvasElement | null>(null);
   const [uyari, setUyari] = useState("");
-
-  useEffect(() => {
-    fetch("/api/admin/kart-sablonlari").then(r => r.json()).then(j => {
-      const liste: HamSablon[] = j.ok ? j.sablonlar : [];
-      setSablonlar(liste);
-      // Kartın firmasının ilk şablonu varsayılan
-      setSeciliId((liste.find(s => s.firmaId === firmaId) ?? liste[0])?.id ?? "");
-    });
-  }, [firmaId]);
 
   useEffect(() => {
     const f = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -46,7 +37,7 @@ export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, on
   }, [onClose]);
 
   const sablon: KartSablonVerisi | null = useMemo(() => {
-    const s = sablonlar?.find(x => x.id === seciliId);
+    const s = sablonlar.find(x => x.id === seciliId);
     return s ? {
       id: s.id, ad: s.ad, yon: s.yon, onGorsel: s.onGorsel, arkaGorsel: s.arkaGorsel,
       onRenk: zeminRengi(s.onRenk), arkaRenk: zeminRengi(s.arkaRenk),
@@ -57,13 +48,6 @@ export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, on
 
   // Arka yüzde hiç içerik yoksa (görsel/alan) yalnız ön yüz basılır
   const arkaVar = !!sablon && (!!sablon.arkaGorsel || sablon.arkaRenk !== "#ffffff" || sablon.alanlar.some(a => a.yuz === "arka" && a.gorunur));
-  const firmaAd = (id: string) => firmalar.find(f => f.id === id)?.ad ?? "Diğer";
-  const gruplar = useMemo(() => {
-    const m = new Map<string, HamSablon[]>();
-    for (const s of sablonlar ?? []) m.set(s.firmaId, [...(m.get(s.firmaId) ?? []), s]);
-    return [...m.entries()].sort(([a], [b]) => (a === firmaId ? -1 : b === firmaId ? 1 : 0));
-  }, [sablonlar, firmaId]);
-
   const ad = dosyaAdi(`${seriNo}-${`${degerler.ad} ${degerler.soyad}`.trim() || "kart"}`);
   // Önizleme tasarımı gösterir; indirme/yazdırma gizli baskı tuvallerinden yapılır
   const indir = (y: Yuz) => {
@@ -86,28 +70,12 @@ export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, on
           </button>
         </div>
 
-        {sablonlar === null ? (
-          <p className="p-10 text-center text-sm text-on-surface-variant">Yükleniyor...</p>
-        ) : sablonlar.length === 0 ? (
-          <div className="p-10 text-center space-y-3">
-            <p className="text-sm text-on-surface-variant">Henüz kart baskı şablonu yok.</p>
-            {firmaId && (
-              <Link href={`/admin/firmalar/${firmaId}`} className="inline-block px-4 py-2 rounded-xl text-sm bg-primary-container text-on-primary-container font-semibold">
-                Firma sayfasında şablon oluştur
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="p-6 grid lg:grid-cols-[280px_1fr] gap-6">
+        <div className="p-6 grid lg:grid-cols-[280px_1fr] gap-6">
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-on-surface-variant mb-1 block">Şablon</label>
+                <label className="text-xs text-on-surface-variant mb-1 block">Şablon · {firmaAd}</label>
                 <select value={seciliId} onChange={e => setSeciliId(e.target.value)} className={inputCls}>
-                  {gruplar.map(([fid, liste]) => (
-                    <optgroup key={fid} label={firmaAd(fid) + (fid === firmaId ? " (kartın firması)" : "")}>
-                      {liste.map(s => <option key={s.id} value={s.id}>{s.ad}</option>)}
-                    </optgroup>
-                  ))}
+                  {sablonlar.map(s => <option key={s.id} value={s.id}>{s.ad}</option>)}
                 </select>
               </div>
               {(["ad", "soyad", "unvan", "gsm"] as const).map(k => (
@@ -166,7 +134,6 @@ export function KartBaskiModal({ seriNo, qrUrl, firmaId, firmalar, baslangic, on
               </div>
             )}
           </div>
-        )}
       </div>
     </div>
   );
