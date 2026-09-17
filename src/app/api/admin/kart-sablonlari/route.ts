@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
       arkaGorsel: okunan.data.arkaGorsel ?? "",
       onRenk: okunan.data.onRenk ?? "#ffffff",
       arkaRenk: okunan.data.arkaRenk ?? "#ffffff",
+      onZeminBas: okunan.data.onZeminBas ?? true,
+      arkaZeminBas: okunan.data.arkaZeminBas ?? true,
       alanlar: okunan.data.alanlar ?? (varsayilanAlanlar(yon) as unknown as object),
     },
   });

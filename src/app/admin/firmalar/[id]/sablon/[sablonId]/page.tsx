@@ -32,6 +32,7 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
   const [yukleniyor, setYukleniyor] = useState<string | null>(null);
   const [ekleMenusu, setEkleMenusu] = useState(false);
   const [zeminTuru, setZeminTuru] = useState<Partial<Record<Yuz, "gorsel" | "renk">>>({});
+  const [baskiGorunumu, setBaskiGorunumu] = useState(false);
   const [mesaj, setMesaj] = useState<{ ok: boolean; metin: string } | null>(null);
   const surukleme = useRef<{ id: string; dx: number; dy: number } | null>(null);
   const olcumTuvali = useRef<HTMLCanvasElement | null>(null);
@@ -42,7 +43,8 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
       if (!j.ok) { setMesaj({ ok: false, metin: j.error ?? "Şablon yüklenemedi." }); return; }
       const s = j.sablon;
       const alanlar = alanlariDuzenle(s.alanlar, s.yon);
-      setSablon({ id: s.id, ad: s.ad, yon: s.yon, onGorsel: s.onGorsel, arkaGorsel: s.arkaGorsel, onRenk: zeminRengi(s.onRenk), arkaRenk: zeminRengi(s.arkaRenk), alanlar });
+      setSablon({ id: s.id, ad: s.ad, yon: s.yon, onGorsel: s.onGorsel, arkaGorsel: s.arkaGorsel, onRenk: zeminRengi(s.onRenk), arkaRenk: zeminRengi(s.arkaRenk),
+        onZeminBas: s.onZeminBas !== false, arkaZeminBas: s.arkaZeminBas !== false, alanlar });
       setSeciliId(alanlar[0]?.id ?? null);
     });
     fetch(`/api/admin/firmalar/${firmaId}`).then(r => r.json()).then(j => { if (j.ok) setFirmaWeb(j.firma.website ?? ""); }).catch(() => {});
@@ -151,7 +153,8 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
     try {
       const j = await fetch(`/api/admin/kart-sablonlari/${sablonId}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ad: sablon.ad, yon: sablon.yon, onGorsel: sablon.onGorsel, arkaGorsel: sablon.arkaGorsel, onRenk: sablon.onRenk, arkaRenk: sablon.arkaRenk, alanlar: sablon.alanlar }),
+        body: JSON.stringify({ ad: sablon.ad, yon: sablon.yon, onGorsel: sablon.onGorsel, arkaGorsel: sablon.arkaGorsel, onRenk: sablon.onRenk, arkaRenk: sablon.arkaRenk,
+          onZeminBas: sablon.onZeminBas, arkaZeminBas: sablon.arkaZeminBas, alanlar: sablon.alanlar }),
       }).then(r => r.json());
       if (!j.ok) { setMesaj({ ok: false, metin: j.error ?? "Kaydedilemedi." }); return; }
       setDegisti(false);
@@ -191,10 +194,18 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
                 </button>
               ))}
             </div>
-            <p className="text-xs text-on-surface-variant">{wmm} × {hmm} mm · baskı {w} × {h} px (300 DPI)</p>
+            <div className="flex gap-1 p-1 rounded-xl bg-white/5">
+              {([[false, "Tasarım"], [true, "Baskı"]] as const).map(([b, etiket]) => (
+                <button key={etiket} onClick={() => setBaskiGorunumu(b)} title={b ? "Yalnız basılacak kısımlar (dama = basılmaz)" : "Kartın görünümü"}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium ${baskiGorunumu === b ? "bg-white/15 text-on-surface" : "text-on-surface-variant hover:text-on-surface"}`}>
+                  {etiket}
+                </button>
+              ))}
+            </div>
           </div>
+          <p className="text-xs text-on-surface-variant -mt-2">{wmm} × {hmm} mm · baskı {w} × {h} px (300 DPI)</p>
           <div className={`mx-auto ${sablon.yon === "dikey" ? "max-w-[340px]" : "max-w-[680px]"}`}>
-            <KartTuvali sablon={sablon} yuz={yuz} degerler={ornek} vurgu={seciliId} onIsaretci={isaretci} />
+            <KartTuvali sablon={sablon} yuz={yuz} degerler={ornek} vurgu={seciliId} onIsaretci={isaretci} baski={baskiGorunumu} />
           </div>
           <p className="text-[11px] text-on-surface-variant text-center">Alanları kart üzerinde sürükleyerek konumlandırın. Seçili alan kesik çizgiyle gösterilir.</p>
 
@@ -236,6 +247,7 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
               const renk = y === "on" ? sablon.onRenk : sablon.arkaRenk;
               const renkAyarla = (r: string) => guncelle(y === "on" ? { onRenk: r } : { arkaRenk: r });
               const tur = zeminTuru[y] ?? (url ? "gorsel" : "renk");
+              const bas = y === "on" ? sablon.onZeminBas : sablon.arkaZeminBas;
               return (
                 <div key={y} className="p-3 rounded-xl border border-white/8 bg-white/[0.02] space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -282,6 +294,14 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
                       </div>
                     </div>
                   )}
+                  <label className="flex items-start gap-2 pt-1 cursor-pointer">
+                    <input type="checkbox" checked={!bas} className="mt-0.5 accent-[#d4af37]"
+                      onChange={e => guncelle(y === "on" ? { onZeminBas: !e.target.checked } : { arkaZeminBas: !e.target.checked })} />
+                    <span className="text-[11px] leading-snug text-on-surface-variant">
+                      <span className="text-on-surface">Zemini baskıda basma</span> — zemin yalnız tasarımda görünür
+                      (ör. kart zaten siyah). Çıktı şeffaf PNG olur.
+                    </span>
+                  </label>
                 </div>
               );
             })}
@@ -414,9 +434,9 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
                 <Kaydirici etiket="Dikey konum" deger={secili.y} min={0} max={1} adim={0.005}
                   goster={v => `${(v * hmm).toFixed(1)} mm`} onChange={v => alanGuncelle(secili.id, { y: v })} />
 
-                {secili.tip !== "qr" && secili.tip !== "gorsel" && (
+                {secili.tip !== "gorsel" && (
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Renk</label>
+                    <label className="text-xs text-on-surface-variant mb-1 block">{secili.tip === "qr" ? "QR Rengi" : "Renk"}</label>
                     <div className="flex items-center gap-2">
                       <input type="color" value={secili.renk} onChange={e => alanGuncelle(secili.id, { renk: e.target.value })}
                         className="w-10 h-9 flex-shrink-0 rounded-lg bg-transparent border border-white/10 cursor-pointer" />
@@ -463,7 +483,28 @@ export default function KartSablonEditoru({ params }: { params: Promise<{ id: st
                   </div>
                 )}
                 {secili.tip === "qr" && (
-                  <p className="text-[11px] text-on-surface-variant/70">QR, okunabilirlik için beyaz zemin üzerine siyah basılır; içeriği kartın QR adresidir.</p>
+                  <div>
+                    <label className="text-xs text-on-surface-variant mb-1 block">QR Arka Planı</label>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => alanGuncelle(secili.id, { zemin: "" })}
+                        className={`px-2.5 h-9 rounded-lg border text-xs ${!secili.zemin ? "border-primary/50 bg-primary/15 text-primary" : "border-white/10 text-on-surface-variant hover:text-on-surface"}`}>
+                        Şeffaf
+                      </button>
+                      <input type="color" value={secili.zemin || "#ffffff"} onChange={e => alanGuncelle(secili.id, { zemin: e.target.value })}
+                        className="w-10 h-9 flex-shrink-0 rounded-lg bg-transparent border border-white/10 cursor-pointer" />
+                      <div className="flex gap-1 ml-auto">
+                        {["#ffffff", "#000000"].map(r => (
+                          <button key={r} type="button" onClick={() => alanGuncelle(secili.id, { zemin: r })} title={r}
+                            className={`w-6 h-6 rounded-full border ${secili.zemin === r ? "border-primary ring-2 ring-primary/40" : "border-white/20"}`}
+                            style={{ background: r }} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant/70 mt-1">
+                      Şeffafta yalnız kodun kendisi basılır. Siyah kartta açık renk (beyaz/altın) seçin; kod ile zemin arasında güçlü kontrast olmalı,
+                      basmadan önce telefonla okutarak deneyin. İçerik kartın QR adresidir.
+                    </p>
+                  </div>
                 )}
               </div>
             )}

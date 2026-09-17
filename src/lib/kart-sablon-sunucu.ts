@@ -5,7 +5,7 @@ const GORSEL_YOLU = /^\/uploads\/[\w./-]+$/;
 
 /** İstek gövdesinden şablon alanlarını doğrular; yalnız gönderilen alanlar döner. */
 export function sablonGovdesiOku(body: Record<string, unknown>, mevcutYon?: Yon) {
-  const data: { ad?: string; yon?: Yon; onGorsel?: string; arkaGorsel?: string; onRenk?: string; arkaRenk?: string; alanlar?: object } = {};
+  const data: { ad?: string; yon?: Yon; onGorsel?: string; arkaGorsel?: string; onRenk?: string; arkaRenk?: string; onZeminBas?: boolean; arkaZeminBas?: boolean; alanlar?: object } = {};
   if (typeof body.ad === "string") {
     const ad = body.ad.trim().slice(0, 100);
     if (!ad) return { hata: "Şablon adı zorunludur." } as const;
@@ -21,6 +21,9 @@ export function sablonGovdesiOku(body: Record<string, unknown>, mevcutYon?: Yon)
   }
   for (const k of ["onRenk", "arkaRenk"] as const) {
     if (typeof body[k] === "string" && RENK.test(body[k] as string)) data[k] = (body[k] as string).toLowerCase();
+  }
+  for (const k of ["onZeminBas", "arkaZeminBas"] as const) {
+    if (typeof body[k] === "boolean") data[k] = body[k] as boolean;
   }
   if ("alanlar" in body) data.alanlar = alanlariDuzenle(body.alanlar, data.yon ?? mevcutYon ?? "yatay");
   return { data } as const;

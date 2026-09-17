@@ -27,6 +27,8 @@ export interface SablonAlani {
   gorunur: boolean;
   /** metin: yazı; ikon: Material Symbols adı; gorsel: /uploads yolu */
   icerik: string;
+  /** QR'ın arka planı ("" = şeffaf, yalnız kodun kendisi basılır). QR'da `renk` kodun rengidir. */
+  zemin: string;
 }
 
 export interface KartSablonVerisi {
@@ -37,6 +39,9 @@ export interface KartSablonVerisi {
   arkaGorsel: string;
   onRenk: string;
   arkaRenk: string;
+  /** false ise zemin yalnız tasarımda görünür, baskı çıktısına girmez */
+  onZeminBas: boolean;
+  arkaZeminBas: boolean;
   alanlar: SablonAlani[];
 }
 
@@ -98,9 +103,9 @@ export const yeniAlanId = () => Math.random().toString(36).slice(2, 10);
 export function yeniAlan(tip: AlanTipi, yuz: Yuz, icerik = ""): SablonAlani {
   const temel: SablonAlani = {
     id: yeniAlanId(), tip, yuz, x: 0.5, y: 0.5, boyut: 0.06, renk: "#ffffff", font: "Montserrat",
-    kalin: false, hiza: "center", gorunur: true, icerik,
+    kalin: false, hiza: "center", gorunur: true, icerik, zemin: "",
   };
-  if (tip === "qr") return { ...temel, x: 0.06, y: 0.2, boyut: 0.5, hiza: "left" };
+  if (tip === "qr") return { ...temel, x: 0.06, y: 0.2, boyut: 0.5, hiza: "left", renk: "#000000", zemin: "#ffffff" };
   if (tip === "gorsel") return { ...temel, x: 0.5, y: 0.35, boyut: 0.2 };
   if (tip === "ikon") return { ...temel, boyut: 0.1, icerik: icerik || "nfc" };
   if (tip === "ad" || tip === "adSoyad") return { ...temel, boyut: 0.085, kalin: true };
@@ -148,6 +153,10 @@ export function alanlariDuzenle(ham: unknown, yon: Yon): SablonAlani[] {
     if (tip === "ikon" && !IKON_ADI.test(icerik)) icerik = "nfc";
     if (tip === "gorsel" && icerik && !GORSEL_YOLU.test(icerik)) icerik = "";
     if (!(tip === "metin" || tip === "ikon" || tip === "gorsel")) icerik = "";
+    // Eski şablonlarda `zemin` yoktur: QR o zaman beyaz üzerine siyahtı
+    const eski = typeof h.zemin !== "string";
+    const renk = tip === "qr" && eski ? v.renk : typeof h.renk === "string" && RENK.test(h.renk) ? h.renk : v.renk;
+    const zemin = eski ? v.zemin : RENK.test(h.zemin!) ? h.zemin! : "";
     sonuc.push({
       id: typeof h.id === "string" && /^[\w-]{1,20}$/.test(h.id) ? h.id : yeniAlanId(),
       tip,
@@ -155,12 +164,13 @@ export function alanlariDuzenle(ham: unknown, yon: Yon): SablonAlani[] {
       x: sayi(h.x, v.x),
       y: sayi(h.y, v.y),
       boyut: sayi(h.boyut, v.boyut),
-      renk: typeof h.renk === "string" && /^#[0-9a-f]{6}$/i.test(h.renk) ? h.renk : v.renk,
+      renk,
       font: typeof h.font === "string" && (FONTLAR as readonly string[]).includes(h.font) ? h.font : v.font,
       kalin: typeof h.kalin === "boolean" ? h.kalin : v.kalin,
       hiza: h.hiza === "left" || h.hiza === "center" || h.hiza === "right" ? h.hiza : v.hiza,
       gorunur: typeof h.gorunur === "boolean" ? h.gorunur : v.gorunur,
       icerik,
+      zemin: tip === "qr" ? zemin : "",
     });
   }
   return sonuc;
@@ -272,21 +282,25 @@ export function alanKutusu(
  */
 export function yuzCiz(
   ctx: CanvasRenderingContext2D,
-  s: { yon: Yon; alanlar: SablonAlani[]; onRenk: string; arkaRenk: string },
+  s: Pick<KartSablonVerisi, "yon" | "alanlar" | "onRenk" | "arkaRenk" | "onZeminBas" | "arkaZeminBas">,
   yuz: Yuz,
   zemin: HTMLImageElement | null,
   degerler: KartDegerleri,
   qrKaynak: HTMLCanvasElement | null,
   gorseller: Gorseller,
   vurgu?: string | null,
+  /** true: baskı çıktısı — zemini basılmayacak yüzde zemin çizilmez (tuval şeffaf kalır) */
+  baski = false,
 ) {
   const { w: W, h: H } = olcu(s.yon);
   ctx.canvas.width = W;
   ctx.canvas.height = H;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = zeminRengi(yuz === "on" ? s.onRenk : s.arkaRenk);
-  ctx.fillRect(0, 0, W, H);
-  if (zemin) ctx.drawImage(zemin, 0, 0, W, H);
+  if (!baski || zeminBasilir(s, yuz)) {
+    ctx.fillStyle = zeminRengi(yuz === "on" ? s.onRenk : s.arkaRenk);
+    ctx.fillRect(0, 0, W, H);
+    if (zemin) ctx.drawImage(zemin, 0, 0, W, H);
+  }
 
   for (const a of s.alanlar) {
     if (a.yuz !== yuz || !a.gorunur) continue;
@@ -326,11 +340,17 @@ export function yuzCiz(
   }
 }
 
-/** Tuvali JPG olarak indirir. */
-export function jpgIndir(canvas: HTMLCanvasElement, dosyaAdi: string) {
+export const zeminBasilir = (s: Pick<KartSablonVerisi, "onZeminBas" | "arkaZeminBas">, yuz: Yuz) =>
+  yuz === "on" ? s.onZeminBas : s.arkaZeminBas;
+
+/**
+ * Tuvali indirir: zemin basılıyorsa JPG, basılmıyorsa şeffaf PNG
+ * (JPG şeffaflık taşımaz; boş alan siyaha dönüp mürekkep harcatır).
+ */
+export function gorselIndir(canvas: HTMLCanvasElement, dosyaAdi: string, seffaf: boolean) {
   const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/jpeg", 0.95);
-  a.download = dosyaAdi.endsWith(".jpg") ? dosyaAdi : `${dosyaAdi}.jpg`;
+  a.href = seffaf ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", 0.95);
+  a.download = `${dosyaAdi}.${seffaf ? "png" : "jpg"}`;
   a.click();
 }
 
@@ -339,7 +359,8 @@ export function yazdir(sayfalar: HTMLCanvasElement[], yon: Yon, baslik: string) 
   const { wmm, hmm } = olcu(yon);
   const w = window.open("", "_blank");
   if (!w) return false;
-  const imgs = sayfalar.map(c => `<div class="s"><img src="${c.toDataURL("image/jpeg", 0.95)}"></div>`).join("");
+  // PNG: zemini basılmayan yüzlerde şeffaflık korunur
+  const imgs = sayfalar.map(c => `<div class="s"><img src="${c.toDataURL("image/png")}"></div>`).join("");
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${baslik.replace(/</g, "&lt;")}</title>
 <style>@page{size:${wmm}mm ${hmm}mm;margin:0}html,body{margin:0;padding:0}
 .s{width:${wmm}mm;height:${hmm}mm;page-break-after:always;overflow:hidden}.s:last-child{page-break-after:auto}

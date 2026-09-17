@@ -304,3 +304,10 @@ body {
 .ck-dark .ck.ck-button, .ck-dark .ck.ck-button .ck-icon { color: rgba(255,255,255,0.8) !important; }
 .ck-dark .ck.ck-button:hover { background: rgba(255,255,255,0.08) !important; }
 .ck-dark .ck.ck-editor__editable.ck-focused { border-color: rgba(212,175,55,0.5) !important; box-shadow: none !important; }
+
+/* Kart baskı önizlemesi: basılmayan (şeffaf) alanları dama deseniyle gösterir */
+.dama {
+  background-color: #fff;
+  background-image: conic-gradient(#d9d9d9 25%, transparent 0 50%, #d9d9d9 0 75%, transparent 0);
+  background-size: 16px 16px;
+}

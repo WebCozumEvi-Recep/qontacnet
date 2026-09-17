@@ -611,6 +611,9 @@ model KartSablonu {
   // Zemin rengi (görsel yoksa ya da görselin altında) — "#rrggbb"
   onRenk     String   @default("#ffffff")
   arkaRenk   String   @default("#ffffff")
+  // false: zemin (renk/görsel) yalnız tasarımda görünür, baskıda basılmaz (ör. zaten siyah kart)
+  onZeminBas   Boolean @default(true)
+  arkaZeminBas Boolean @default(true)
   // [{ tip, yuz, x, y, genislik, boyut, renk, font, kalin, hiza, gorunur }] — konum/ölçüler kart boyutuna oranla (0–1)
   alanlar    Json     @default("[]")
   createdAt  DateTime @default(now())
