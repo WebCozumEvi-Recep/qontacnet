@@ -10,6 +10,8 @@ type MemberExt = Member & {
   showWebsite?: boolean;
   showBio?: boolean;
   kartArkaplan?: string;
+  firmaVarsayilanAvatar?: string;
+  firmaVarsayilanArkaplan?: string;
 };
 
 async function uploadMemberFile(file: File): Promise<string> {
@@ -62,6 +64,9 @@ export default function ProfilPage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Üye kendi görselini yükleyene kadar firmanın varsayılanı gösterilir
+  const gorunenAvatar = avatar || member?.firmaVarsayilanAvatar || "";
+  const gorunenArkaplan = kartArkaplan || member?.firmaVarsayilanArkaplan || "";
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
   const toggle = (k: keyof typeof toggles) => setToggles(t => ({ ...t, [k]: !t[k] }));
@@ -127,9 +132,9 @@ export default function ProfilPage() {
               className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 overflow-hidden flex items-center justify-center cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
             >
-              {avatar ? (
+              {gorunenAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatar} alt="Profil fotoğrafı" className="w-full h-full object-cover object-center" />
+                <img src={gorunenAvatar} alt="Profil fotoğrafı" className="w-full h-full object-cover object-center" />
               ) : (
                 <span className="material-symbols-outlined text-primary text-4xl">person</span>
               )}
@@ -170,9 +175,9 @@ export default function ProfilPage() {
           <h3 className="text-sm font-semibold text-on-surface mb-1" style={{ fontFamily: "Sora, sans-serif" }}>Profil Kutusu Arkaplanı</h3>
           <p className="text-xs text-on-surface-variant mb-4">Kartının arkasına bir görsel ekle (opsiyonel). Metnin okunması için görsel hafif karartılır.</p>
           <div className="flex items-center gap-3 flex-wrap">
-            {kartArkaplan && (
+            {gorunenArkaplan && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={kartArkaplan} alt="" className="w-16 h-16 rounded-xl object-cover border border-white/10" />
+              <img src={gorunenArkaplan} alt="" className="w-16 h-16 rounded-xl object-cover border border-white/10" />
             )}
             <label className="px-3 py-2 rounded-xl glass-card text-xs text-on-surface flex items-center gap-2 cursor-pointer hover:bg-white/5 transition-all">
               <span className={`material-symbols-outlined text-sm ${bgUploading ? "animate-spin" : ""}`}>{bgUploading ? "progress_activity" : "upload"}</span>
@@ -194,6 +199,9 @@ export default function ProfilPage() {
               </button>
             )}
           </div>
+          {!kartArkaplan && gorunenArkaplan && (
+            <p className="text-[11px] text-on-surface-variant/60 mt-2">Şu an firmanın varsayılan görseli kullanılıyor.</p>
+          )}
           <p className="text-[11px] text-on-surface-variant/60 mt-2">Değişikliğin kaydolması için “Kaydet” butonuna bas.</p>
         </div>
         </div>

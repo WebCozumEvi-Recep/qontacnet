@@ -94,6 +94,9 @@ model Firma {
   website        String     @default("")
   sektor         String     @default("")
   logo           String     @default("")
+  // Üye kendi görselini yükleyene kadar kartta gösterilen varsayılanlar
+  varsayilanAvatar    String @default("")
+  varsayilanArkaplan  String @default("")
   temsilci       String     @default("")
   paket          Paket      @default(BASLANGIC)
   durum          FirmaDurum @default(DENEME)

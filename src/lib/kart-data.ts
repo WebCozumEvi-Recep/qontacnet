@@ -62,7 +62,7 @@ export const getKartCekirdek = cache(async (id: string, locale: Locale) => {
         showBio: true, showWhatsapp: true, showLinkedin: true, showInstagram: true, showWebsite: true,
         firma: {
           select: {
-            id: true, ad: true,
+            id: true, ad: true, varsayilanAvatar: true, varsayilanArkaplan: true,
             templates: { where: { aktif: true }, take: 1, orderBy: { createdAt: "asc" }, select: { id: true, renk: true } },
           },
         },
@@ -88,8 +88,9 @@ export const getKartCekirdek = cache(async (id: string, locale: Locale) => {
     firmaAdi: member.firma?.ad ?? "",
     // Kart üzerinde firma tam unvanı yerine üyenin profilde girdiği takım adı gösterilir
     takim: member.departman ?? "",
-    avatar: member.avatar,
-    kartArkaplan: member.kartArkaplan,
+    // Üye kendi görselini yüklemediyse firmanın varsayılanı gösterilir
+    avatar: member.avatar || member.firma?.varsayilanAvatar || "",
+    kartArkaplan: member.kartArkaplan || member.firma?.varsayilanArkaplan || "",
     kartRenk: member.firma?.templates[0]?.renk ?? member.kartRenk,
     telefon: member.telefon,
     email: member.email,

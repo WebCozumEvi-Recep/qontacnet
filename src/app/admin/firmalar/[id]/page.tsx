@@ -7,7 +7,7 @@ import { KartSablonlari } from "./KartSablonlari";
 
 interface Firma {
   id: string; ad: string; email: string; telefon: string; sektor: string; temsilci: string;
-  durum: string; createdAt: string; logo: string; urunId: string | null;
+  durum: string; createdAt: string; logo: string; varsayilanAvatar: string; varsayilanArkaplan: string; urunId: string | null;
   uyeSayisi: number; satilanKart: number; aktifKart: number;
 }
 interface Urun { id: string; ad: string; fiyat: number; aktif: boolean; firmaId: string | null }
@@ -26,7 +26,7 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [linkKopyalandi, setLinkKopyalandi] = useState(false);
   const [urunler, setUrunler] = useState<Urun[]>([]);
-  const [logoYukleniyor, setLogoYukleniyor] = useState(false);
+  const [yukleniyor, setYukleniyor] = useState<string | null>(null);
   const [hata, setHata] = useState("");
 
   useEffect(() => {
@@ -46,16 +46,16 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
     } finally { setBusy(false); }
   };
 
-  const logoYukle = async (dosya: File) => {
-    setLogoYukleniyor(true); setHata("");
+  const gorselYukle = async (alan: "logo" | "varsayilanAvatar" | "varsayilanArkaplan", dosya: File) => {
+    setYukleniyor(alan); setHata("");
     try {
       const fd = new FormData();
       fd.append("file", dosya);
       fd.append("folder", "firmalar");
       const j = await fetch("/api/admin/upload", { method: "POST", body: fd }).then(r => r.json());
-      if (j.ok) await patch({ logo: j.url });
-      else setHata(j.error ?? "Logo yüklenemedi.");
-    } finally { setLogoYukleniyor(false); }
+      if (j.ok) await patch({ [alan]: j.url });
+      else setHata(j.error ?? "Görsel yüklenemedi.");
+    } finally { setYukleniyor(null); }
   };
 
   const handlePwSet = async (e: React.FormEvent) => {
@@ -110,6 +110,41 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
 
       <div className="glass-card rounded-2xl p-6 space-y-5">
         <div>
+          <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Üye Kartı Varsayılan Görselleri</h3>
+          <p className="text-xs text-on-surface-variant mt-0.5">Firmanın üyeleri kendi profil fotoğrafını ya da profil kutusu arkaplanını yükleyene kadar kartlarında bunlar görünür.</p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-5">
+          {([
+            ["varsayilanAvatar", "Varsayılan Profil Fotoğrafı", "rounded-full", "person"],
+            ["varsayilanArkaplan", "Varsayılan Profil Kutusu Arkaplanı", "rounded-xl", "wallpaper"],
+          ] as const).map(([alan, etiket, sekil, ikon]) => (
+            <div key={alan}>
+              <label className="text-xs text-on-surface-variant mb-1.5 block">{etiket}</label>
+              <div className="flex items-center gap-3">
+                <div className={`w-20 h-20 ${sekil} bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0`}>
+                  {firma[alan]
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={firma[alan]} alt="" className="w-full h-full object-cover" />
+                    : <span className="material-symbols-outlined text-on-surface-variant text-3xl">{ikon}</span>}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-primary/15 border border-primary/25 text-primary cursor-pointer ${yukleniyor === alan ? "opacity-60 pointer-events-none" : ""}`}>
+                    <span className="material-symbols-outlined text-sm">upload</span>{yukleniyor === alan ? "Yükleniyor..." : firma[alan] ? "Değiştir" : "Görsel Yükle"}
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) void gorselYukle(alan, f); e.target.value = ""; }} />
+                  </label>
+                  {firma[alan] && (
+                    <button type="button" onClick={() => patch({ [alan]: "" })} disabled={busy} className="text-xs text-on-surface-variant hover:text-red-400 text-left">Kaldır</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="glass-card rounded-2xl p-6 space-y-5">
+        <div>
           <h3 className="text-sm font-semibold text-on-surface" style={{ fontFamily: "Sora, sans-serif" }}>Satış Sayfası</h3>
           <p className="text-xs text-on-surface-variant mt-0.5">Firmanın linkinden gelenler burada seçilen ürünü satın alır ve ödeme sonrası bu firmaya bağlı üye olur.</p>
         </div>
@@ -124,10 +159,10 @@ export default function FirmaDetayPage({ params }: { params: Promise<{ id: strin
                   : <span className="material-symbols-outlined text-on-surface-variant text-3xl">image</span>}
               </div>
               <div className="flex flex-col gap-2">
-                <label className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-primary/15 border border-primary/25 text-primary cursor-pointer ${logoYukleniyor ? "opacity-60 pointer-events-none" : ""}`}>
-                  <span className="material-symbols-outlined text-sm">upload</span>{logoYukleniyor ? "Yükleniyor..." : firma.logo ? "Logoyu Değiştir" : "Logo Yükle"}
+                <label className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-primary/15 border border-primary/25 text-primary cursor-pointer ${yukleniyor === "logo" ? "opacity-60 pointer-events-none" : ""}`}>
+                  <span className="material-symbols-outlined text-sm">upload</span>{yukleniyor === "logo" ? "Yükleniyor..." : firma.logo ? "Logoyu Değiştir" : "Logo Yükle"}
                   <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) void logoYukle(f); e.target.value = ""; }} />
+                    onChange={e => { const f = e.target.files?.[0]; if (f) void gorselYukle("logo", f); e.target.value = ""; }} />
                 </label>
                 {firma.logo && (
                   <button type="button" onClick={() => patch({ logo: "" })} disabled={busy} className="text-xs text-on-surface-variant hover:text-red-400 text-left">Logoyu kaldır</button>

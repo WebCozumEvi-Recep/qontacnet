@@ -24,6 +24,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.temsilci === "string") data.temsilci = body.temsilci.trim();
   if (typeof body.durum === "string" && DURUMLAR.includes(body.durum)) data.durum = body.durum;
   if (typeof body.logo === "string") data.logo = body.logo.trim();
+  for (const k of ["varsayilanAvatar", "varsayilanArkaplan"] as const) {
+    if (typeof body[k] !== "string") continue;
+    const v = (body[k] as string).trim();
+    if (v && !/^\/uploads\/[\w./-]+$/.test(v)) return NextResponse.json({ ok: false, error: "Geçersiz görsel yolu." }, { status: 400 });
+    data[k] = v;
+  }
   if ("urunId" in body) {
     const urunId = typeof body.urunId === "string" && body.urunId ? body.urunId : null;
     if (urunId) {

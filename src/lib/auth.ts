@@ -19,12 +19,15 @@ export async function getCurrentUser(): Promise<
   if (session.role === "uye") {
     const m = await prisma.member.findUnique({
       where: { id: session.sub },
-      include: { firma: { select: { ad: true } } },
+      include: { firma: { select: { ad: true, varsayilanAvatar: true, varsayilanArkaplan: true } } },
     });
     if (m) {
       const { passwordHash, firma, ...rest } = m;
       void passwordHash;
-      data = { ...rest, firmaAdi: firma?.ad ?? "", firmaId: m.firmaId };
+      data = {
+        ...rest, firmaAdi: firma?.ad ?? "", firmaId: m.firmaId,
+        firmaVarsayilanAvatar: firma?.varsayilanAvatar ?? "", firmaVarsayilanArkaplan: firma?.varsayilanArkaplan ?? "",
+      };
     }
   } else if (session.role === "firma") {
     data = strip(await prisma.firma.findUnique({ where: { id: session.sub } }));
