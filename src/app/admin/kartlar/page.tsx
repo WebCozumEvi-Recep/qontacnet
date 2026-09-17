@@ -276,14 +276,14 @@ export default function SatilanKartlarPage() {
           </div>
         ) : (
           <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex lg:grid lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_104px] items-center gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
+            <div className="flex lg:grid lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_92px_104px] items-center gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
               <input type="checkbox" checked={tumuSecili} onChange={tumunuSec} title="Listedeki tümünü seç" className="w-4 h-4 accent-[#d4af37] cursor-pointer" />
               <span className="lg:hidden normal-case tracking-normal text-xs">Tümünü seç</span>
-              <span className="hidden lg:block">Seri No</span><span className="hidden lg:block">Üye</span><span className="hidden lg:block">Firma</span><span className="hidden lg:block">Sipariş</span><span className="hidden lg:block">Kart Adresi</span><span className="hidden lg:block">Durum</span><span className="hidden lg:block" />
+              <span className="hidden lg:block">Seri No</span><span className="hidden lg:block">Üye</span><span className="hidden lg:block">Firma</span><span className="hidden lg:block">Sipariş</span><span className="hidden lg:block">Kart Adresi</span><span className="hidden lg:block">Durum</span><span className="hidden lg:block">Baskı</span><span className="hidden lg:block" />
             </div>
             {liste.map(k => (
-              <div key={k.id} className={`grid grid-cols-[24px_1fr] lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_104px] gap-x-3 gap-y-1.5 lg:items-center px-4 py-3 border-b border-white/5 last:border-0 ${secili.has(k.id) ? "bg-primary/5" : ""}`}>
-                <input type="checkbox" checked={secili.has(k.id)} onChange={() => secimDegistir(k.id)} className="w-4 h-4 mt-0.5 lg:mt-0 accent-[#d4af37] cursor-pointer row-span-7 lg:row-span-1" />
+              <div key={k.id} className={`grid grid-cols-[24px_1fr] lg:grid-cols-[24px_110px_1.3fr_1fr_110px_1.6fr_80px_92px_104px] gap-x-3 gap-y-1.5 lg:items-center px-4 py-3 border-b border-white/5 last:border-0 ${secili.has(k.id) ? "bg-primary/5" : ""}`}>
+                <input type="checkbox" checked={secili.has(k.id)} onChange={() => secimDegistir(k.id)} className="w-4 h-4 mt-0.5 lg:mt-0 accent-[#d4af37] cursor-pointer row-span-8 lg:row-span-1" />
                 <div>
                   <p className="text-xs font-mono text-on-surface">{k.seriNo}</p>
                   <p className="text-[10px] text-on-surface-variant">{trDate(k.createdAt)}</p>
@@ -307,20 +307,20 @@ export default function SatilanKartlarPage() {
                     <span className="material-symbols-outlined text-sm">qr_code_2</span>
                   </button>
                 </div>
-                <div className="flex flex-col items-start">
+                <div>
                 {gelecekMi(k)
                   ? <span className="text-xs text-amber-300" title="Başlangıç tarihi">{trDate(k.aktivasyonAt!)}&apos;de başlar</span>
                   : k.aktif
                   ? <span className="text-xs text-tertiary" title={k.aktivasyonAt ? `Aktivasyon: ${trDate(k.aktivasyonAt)}` : ""}>Aktif</span>
                   : <span className="text-xs text-on-surface-variant/50">Bekliyor</span>}
-                  <button type="button" onClick={() => void basildiDegistir(k)}
-                    title={k.basildiAt ? `Basıldı: ${trDate(k.basildiAt)} — kaldırmak için tıkla` : "Basıldı olarak işaretle"}
-                    className={`mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-medium ${
-                      k.basildiAt ? "bg-tertiary/15 border-tertiary/35 text-tertiary" : "border-white/10 text-on-surface-variant/60 hover:text-on-surface"}`}>
-                    <span className="material-symbols-outlined text-xs">{k.basildiAt ? "check" : "print"}</span>
-                    {k.basildiAt ? "Basıldı" : "Basılmadı"}
-                  </button>
                 </div>
+                <button type="button" onClick={() => void basildiDegistir(k)}
+                  title={k.basildiAt ? `Basıldı: ${trDate(k.basildiAt)} — geri almak için tıkla` : "Basıldı olarak işaretle"}
+                  className={`justify-self-start inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-medium whitespace-nowrap transition-colors ${
+                    k.basildiAt ? "bg-tertiary/15 border-tertiary/35 text-tertiary" : "border-white/10 text-on-surface-variant/70 hover:text-on-surface hover:border-white/25"}`}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{k.basildiAt ? "check_circle" : "radio_button_unchecked"}</span>
+                  {k.basildiAt ? "Basıldı" : "Basılmadı"}
+                </button>
                 <div className="flex gap-1 lg:justify-end">
                   <button onClick={() => setBaskiKart(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary" title="Baskı görseli">
                     <span className="material-symbols-outlined text-base">print</span>
