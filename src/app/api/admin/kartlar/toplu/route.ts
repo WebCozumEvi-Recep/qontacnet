@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth";
 
 // Seçili kartlarda toplu işlem.
 //  { ids, islem: "sil" }
-//  { ids, islem: "guncelle", firmaId?, orderId?, notlar? } — yalnız gönderilen alanlar değişir
+//  { ids, islem: "guncelle", firmaId?, orderId?, notlar?, basildi? } — yalnız gönderilen alanlar değişir
 export async function POST(req: NextRequest) {
   const session = await requireRole("admin");
   if (!session) return NextResponse.json({ ok: false, error: "Yetkisiz." }, { status: 401 });
@@ -26,10 +26,11 @@ export async function POST(req: NextRequest) {
 
   if (body.islem !== "guncelle") return NextResponse.json({ ok: false, error: "Geçersiz işlem." }, { status: 400 });
 
-  const data: { firmaId?: string | null; orderId?: string | null; notlar?: string } = {};
+  const data: { firmaId?: string | null; orderId?: string | null; notlar?: string; basildiAt?: Date | null } = {};
   if ("firmaId" in body) data.firmaId = typeof body.firmaId === "string" && body.firmaId ? body.firmaId : null;
   if ("orderId" in body) data.orderId = typeof body.orderId === "string" && body.orderId ? body.orderId : null;
   if (typeof body.notlar === "string") data.notlar = body.notlar.slice(0, 500);
+  if (typeof body.basildi === "boolean") data.basildiAt = body.basildi ? new Date() : null;
   if (Object.keys(data).length === 0) return NextResponse.json({ ok: false, error: "Değiştirilecek alan yok." }, { status: 400 });
 
   if (data.firmaId && !(await prisma.firma.findUnique({ where: { id: data.firmaId }, select: { id: true } }))) {
@@ -40,7 +41,11 @@ export async function POST(req: NextRequest) {
   }
 
   await prisma.$transaction([
-    prisma.physicalCard.updateMany({ where: { id: { in: ids } }, data }),
+    // Zaten basılmış kartların ilk basım tarihi korunur
+    prisma.physicalCard.updateMany({ where: { id: { in: ids }, ...(data.basildiAt ? { basildiAt: null } : {}) }, data }),
+    ...(data.basildiAt && Object.keys(data).length > 1
+      ? [prisma.physicalCard.updateMany({ where: { id: { in: ids } }, data: { ...data, basildiAt: undefined } })]
+      : []),
     // Bağlı üyelerin firması da kartla aynı olsun (tekli düzenlemedeki davranış).
     ...(data.firmaId && uyeIdler.length
       ? [prisma.member.updateMany({ where: { id: { in: uyeIdler } }, data: { firmaId: data.firmaId } })]

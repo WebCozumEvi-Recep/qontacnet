@@ -16,10 +16,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!kart) return NextResponse.json({ ok: false, error: "Kart bulunamadı." }, { status: 404 });
 
   const body = (await req.json()) as Record<string, unknown>;
-  const data: { firmaId?: string | null; orderId?: string | null; notlar?: string } = {};
+  const data: { firmaId?: string | null; orderId?: string | null; notlar?: string; basildiAt?: Date | null } = {};
   if ("firmaId" in body) data.firmaId = typeof body.firmaId === "string" && body.firmaId ? body.firmaId : null;
   if ("orderId" in body) data.orderId = typeof body.orderId === "string" && body.orderId ? body.orderId : null;
   if (typeof body.notlar === "string") data.notlar = body.notlar.slice(0, 500);
+  if (typeof body.basildi === "boolean") data.basildiAt = body.basildi ? (kart.basildiAt ?? new Date()) : null;
 
   const firmaId = data.firmaId !== undefined ? data.firmaId : kart.firmaId;
   const ops = [];

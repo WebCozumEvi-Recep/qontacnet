@@ -6,7 +6,7 @@ import { kartNfcUrl, kartQrUrl } from "@/lib/kart-url";
 import { KartBaskiModal } from "@/components/kart-baski/KartBaskiModal";
 
 interface Kart {
-  id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null;
+  id: string; seriNo: string; token: string; aktif: boolean; aktivasyonAt: string | null; basildiAt: string | null;
   firmaId: string | null; orderId: string | null; memberId: string | null; notlar: string; createdAt: string;
   member: { id: string; ad: string; soyad: string; email: string; telefon: string; unvan: string } | null;
 }
@@ -37,6 +37,7 @@ export default function SatilanKartlarPage() {
   const [arama, setArama] = useState("");
   const [durumFiltre, setDurumFiltre] = useState<"" | "aktif" | "bekliyor">("");
   const [firmaFiltre, setFirmaFiltre] = useState("");
+  const [baskiFiltre, setBaskiFiltre] = useState<"" | "basildi" | "basilmadi">("");
   const [kopyalanan, setKopyalanan] = useState<string | null>(null);
 
   const [modal, setModal] = useState<{ kart: Kart | null } | null>(null); // kart null → yeni
@@ -72,13 +73,15 @@ export default function SatilanKartlarPage() {
       if (durumFiltre === "aktif" && !k.aktif) return false;
       if (durumFiltre === "bekliyor" && k.aktif) return false;
       if (firmaFiltre && k.firmaId !== firmaFiltre) return false;
+      if (baskiFiltre === "basildi" && !k.basildiAt) return false;
+      if (baskiFiltre === "basilmadi" && k.basildiAt) return false;
       if (!q) return true;
       const uye = k.member ? `${k.member.ad} ${k.member.soyad} ${k.member.email} ${k.member.telefon}` : "";
       return [k.seriNo, k.token, uye, firmaAd(k.firmaId), siparisNo(k.orderId), k.notlar]
         .some(v => v.toLocaleLowerCase("tr").includes(q));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kartlar, arama, durumFiltre, firmaFiltre, firmalar, siparisler]);
+  }, [kartlar, arama, durumFiltre, firmaFiltre, baskiFiltre, firmalar, siparisler]);
 
   function kopyala(anahtar: string, metin: string) {
     navigator.clipboard?.writeText(metin);
@@ -135,6 +138,15 @@ export default function SatilanKartlarPage() {
     } finally { setKaydediliyor(false); }
   }
 
+  async function basildiDegistir(k: Kart) {
+    const res = await fetch(`/api/admin/kartlar/${k.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ basildi: !k.basildiAt }),
+    });
+    const j = await res.json();
+    if (j.ok) setKartlar(p => p.map(x => (x.id === k.id ? { ...x, basildiAt: j.kart.basildiAt } : x)));
+  }
+
   async function sil() {
     if (!silinecek) return;
     const res = await fetch(`/api/admin/kartlar/${silinecek.id}`, { method: "DELETE" });
@@ -183,9 +195,9 @@ export default function SatilanKartlarPage() {
   function tsvIndir() {
     const satirlar = liste.map(k => [
       k.seriNo, k.member ? `${k.member.ad} ${k.member.soyad}`.trim() : "", k.member?.telefon ?? "", firmaAd(k.firmaId), siparisNo(k.orderId),
-      kartNfcUrl(k.token), kartQrUrl(k.token), k.aktif ? "Aktif" : "Bekliyor", trDate(k.createdAt),
+      kartNfcUrl(k.token), kartQrUrl(k.token), k.aktif ? "Aktif" : "Bekliyor", k.basildiAt ? trDate(k.basildiAt) : "", trDate(k.createdAt),
     ].join("\t"));
-    const txt = "Seri No\tÜye\tTelefon\tFirma\tSipariş\tNFC URL\tQR URL\tDurum\tTarih\n" + satirlar.join("\n");
+    const txt = "Seri No\tÜye\tTelefon\tFirma\tSipariş\tNFC URL\tQR URL\tDurum\tBasıldı\tTarih\n" + satirlar.join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([txt], { type: "text/tab-separated-values" }));
     a.download = "satilan-kartlar.tsv";
@@ -220,6 +232,11 @@ export default function SatilanKartlarPage() {
           <option value="aktif">Aktif</option>
           <option value="bekliyor">Bekliyor</option>
         </select>
+        <select value={baskiFiltre} onChange={e => setBaskiFiltre(e.target.value as typeof baskiFiltre)} className={`${inputCls} md:w-40`}>
+          <option value="">Tüm baskılar</option>
+          <option value="basilmadi">Basılmadı</option>
+          <option value="basildi">Basıldı</option>
+        </select>
         <select value={firmaFiltre} onChange={e => setFirmaFiltre(e.target.value)} className={`${inputCls} md:w-48`}>
           <option value="">Tüm firmalar</option>
           {firmalar.map(f => <option key={f.id} value={f.id}>{f.ad}</option>)}
@@ -233,6 +250,14 @@ export default function SatilanKartlarPage() {
         <div className="sticky top-2 z-30 glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center gap-2 border border-primary/30">
           <span className="text-sm text-on-surface font-medium mr-auto">{secili.size.toLocaleString("tr-TR")} kart seçildi</span>
           <button onClick={() => setSecili(new Set())} className="px-3 py-1.5 rounded-lg text-xs border border-white/10 text-on-surface-variant hover:bg-white/5">Seçimi Kaldır</button>
+          <button disabled={kaydediliyor} onClick={() => void topluIstek({ islem: "guncelle", basildi: true })}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-tertiary/10 border border-tertiary/30 text-tertiary disabled:opacity-60">
+            <span className="material-symbols-outlined text-sm">print_connect</span>Basıldı İşaretle
+          </button>
+          <button disabled={kaydediliyor} onClick={() => void topluIstek({ islem: "guncelle", basildi: false })}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs border border-white/10 text-on-surface-variant hover:bg-white/5 disabled:opacity-60">
+            <span className="material-symbols-outlined text-sm">print_disabled</span>Basılmadı Yap
+          </button>
           <button onClick={() => { setTopluForm(BOS_TOPLU); setHata(""); setTopluDuzenle(true); }}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-primary/15 border border-primary/25 text-primary">
             <span className="material-symbols-outlined text-sm">edit</span>Toplu Düzenle
@@ -282,11 +307,20 @@ export default function SatilanKartlarPage() {
                     <span className="material-symbols-outlined text-sm">qr_code_2</span>
                   </button>
                 </div>
+                <div className="flex flex-col items-start">
                 {gelecekMi(k)
                   ? <span className="text-xs text-amber-300" title="Başlangıç tarihi">{trDate(k.aktivasyonAt!)}&apos;de başlar</span>
                   : k.aktif
                   ? <span className="text-xs text-tertiary" title={k.aktivasyonAt ? `Aktivasyon: ${trDate(k.aktivasyonAt)}` : ""}>Aktif</span>
                   : <span className="text-xs text-on-surface-variant/50">Bekliyor</span>}
+                  <button type="button" onClick={() => void basildiDegistir(k)}
+                    title={k.basildiAt ? `Basıldı: ${trDate(k.basildiAt)} — kaldırmak için tıkla` : "Basıldı olarak işaretle"}
+                    className={`mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-medium ${
+                      k.basildiAt ? "bg-tertiary/15 border-tertiary/35 text-tertiary" : "border-white/10 text-on-surface-variant/60 hover:text-on-surface"}`}>
+                    <span className="material-symbols-outlined text-xs">{k.basildiAt ? "check" : "print"}</span>
+                    {k.basildiAt ? "Basıldı" : "Basılmadı"}
+                  </button>
+                </div>
                 <div className="flex gap-1 lg:justify-end">
                   <button onClick={() => setBaskiKart(k)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary" title="Baskı görseli">
                     <span className="material-symbols-outlined text-base">print</span>

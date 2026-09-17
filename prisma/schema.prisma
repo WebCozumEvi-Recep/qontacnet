@@ -333,6 +333,7 @@ model PhysicalCard {
   memberId     String?   @unique
   aktif        Boolean   @default(false)
   aktivasyonAt DateTime?
+  basildiAt    DateTime?          // baskısı yapıldı olarak elle işaretlendiği an (null: basılmadı)
   createdAt    DateTime  @default(now())
 
   @@index([firmaId])
