@@ -40,7 +40,7 @@ export default function UyeLayout({ children }: { children: React.ReactNode }) {
   const title = pageTitles[pathname] ?? "Üye Paneli";
 
   const m = (user.data ?? {}) as { ad?: string; soyad?: string };
-  const initials = `${(m.ad ?? user.email ?? "Ü").charAt(0)}${(m.soyad ?? "").charAt(0)}`.toUpperCase();
+  const name = [m.ad, m.soyad].filter(Boolean).join(" ") || user.email || "";
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -51,7 +51,7 @@ export default function UyeLayout({ children }: { children: React.ReactNode }) {
           <DashboardTopBar title={title} onMenuClick={() => setSidebarOpen(true)} />
         </div>
         {/* Mobil uygulama görünümü başlığı */}
-        <UyeMobileHeader title={title} initials={initials} />
+        <UyeMobileHeader title={title} name={name} />
         <main className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6 overflow-x-hidden">{children}</main>
       </div>
       {/* Mobil alt tab bar */}
