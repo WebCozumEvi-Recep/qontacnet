@@ -8,6 +8,8 @@ export interface AuthUser {
   role: Role;
   email: string;
   data: Record<string, unknown>;
+  /** Admin panelinden bu hesaba geçildiyse true */
+  adminGirisi?: boolean;
 }
 
 interface RegisterData {

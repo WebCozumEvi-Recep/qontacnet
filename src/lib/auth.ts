@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession, type Role } from "@/lib/session";
+import { adminDonusJetonu, getSession, type Role } from "@/lib/session";
 
 // passwordHash'i çıkararak güvenli kullanıcı kaydını döner
 function strip<T extends { passwordHash?: string }>(obj: T | null) {
@@ -10,7 +10,7 @@ function strip<T extends { passwordHash?: string }>(obj: T | null) {
 }
 
 export async function getCurrentUser(): Promise<
-  { id: string; role: Role; email: string; data: Record<string, unknown> } | null
+  { id: string; role: Role; email: string; data: Record<string, unknown>; adminGirisi?: boolean } | null
 > {
   const session = await getSession();
   if (!session) return null;
@@ -36,7 +36,8 @@ export async function getCurrentUser(): Promise<
   }
 
   if (!data) return null;
-  return { id: session.sub, role: session.role, email: session.email, data };
+  const adminGirisi = session.role !== "admin" && !!(await adminDonusJetonu());
+  return { id: session.sub, role: session.role, email: session.email, data, ...(adminGirisi && { adminGirisi }) };
 }
 
 // Belirli rolü zorunlu kılan koruma — API route'larda kullanılır

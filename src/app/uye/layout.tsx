@@ -37,6 +37,11 @@ export default function UyeLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const adminDon = async () => {
+    await fetch("/api/auth/admin-don", { method: "POST" });
+    window.location.assign("/admin/uyeler");
+  };
+
   const title = pageTitles[pathname] ?? "Üye Paneli";
 
   const m = (user.data ?? {}) as { ad?: string; soyad?: string };
@@ -52,6 +57,15 @@ export default function UyeLayout({ children }: { children: React.ReactNode }) {
         </div>
         {/* Mobil uygulama görünümü başlığı */}
         <UyeMobileHeader title={title} name={name} />
+        {user.adminGirisi && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-amber-400/10 border-b border-amber-400/20 text-amber-300 text-xs sm:text-sm">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="material-symbols-outlined text-base">admin_panel_settings</span>
+              <span className="truncate">Admin olarak <b>{name}</b> hesabındasınız.</span>
+            </span>
+            <button onClick={adminDon} className="shrink-0 px-3 py-1 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 font-semibold">Admin&apos;e dön</button>
+          </div>
+        )}
         <main className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6 overflow-x-hidden">{children}</main>
       </div>
       {/* Mobil alt tab bar */}

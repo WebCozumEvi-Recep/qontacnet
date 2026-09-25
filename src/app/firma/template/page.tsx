@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ModulYonetimi from "@/components/firma/ModulYonetimi";
 import { TemplateGalleryCard } from "@/components/templates/TemplateGalleryCard";
 import { MiniCardPreview } from "@/components/templates/MiniCardPreview";
@@ -56,6 +56,19 @@ export default function TemplatePage() {
   const [hata, setHata] = useState("");
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Önizleme iframe'inin yeniden yüklenmesi için sayaç; key'e eklenir
+  const [onizlemeSurum, setOnizlemeSurum] = useState(0);
+  const [otoYenile, setOtoYenile] = useState(true);
+  const yenileZamanlayici = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onizlemeyiYenile = () => setOnizlemeSurum(v => v + 1);
+  // Yazarken her tuşta kayıt gidiyor; önizlemeyi son değişiklikten kısa süre sonra bir kez yenile
+  const kayitSonrasiYenile = () => {
+    if (!otoYenile) return;
+    if (yenileZamanlayici.current) clearTimeout(yenileZamanlayici.current);
+    yenileZamanlayici.current = setTimeout(onizlemeyiYenile, 800);
+  };
+  useEffect(() => () => { if (yenileZamanlayici.current) clearTimeout(yenileZamanlayici.current); }, []);
 
   const load = async () => {
     const j = await fetch("/api/firma/templates").then(r => r.json());
@@ -297,11 +310,43 @@ export default function TemplatePage() {
               Bu modüller şablonu seçen tüm üyelerin kartında görünür
             </p>
           </div>
-          <ModulYonetimi
-            templateId={selected.id}
-            aktif
-            onModulesChange={refreshSelectedModules}
-          />
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
+            <ModulYonetimi
+              templateId={selected.id}
+              aktif
+              onModulesChange={refreshSelectedModules}
+              onKaydedildi={kayitSonrasiYenile}
+            />
+            {/* Canlı önizleme — kayıttan sonra kendiliğinden yenilenir */}
+            <div className="xl:sticky xl:top-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-on-surface">Canlı Önizleme</h3>
+                <button
+                  type="button"
+                  onClick={onizlemeyiYenile}
+                  className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-lg text-xs text-on-surface-variant hover:text-primary"
+                  title="Önizlemeyi yenile"
+                >
+                  <span className="material-symbols-outlined text-base">refresh</span>
+                  Yenile
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-on-surface-variant cursor-pointer select-none">
+                <input type="checkbox" checked={otoYenile} onChange={e => setOtoYenile(e.target.checked)} className="accent-[#d4af37] w-3.5 h-3.5" />
+                Değişiklikte otomatik yenile
+              </label>
+              <div className="mx-auto w-full max-w-[320px]">
+                <div className="relative rounded-[2rem] border-[8px] border-black bg-black shadow-2xl overflow-hidden" style={{ aspectRatio: "9 / 19" }}>
+                  <iframe
+                    key={`${selected.id}-${onizlemeSurum}`}
+                    src={`/kart/onizle-${selected.id}`}
+                    title={`${selected.name} canlı önizleme`}
+                    className="w-full h-full bg-[#050816]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       )}
 
@@ -395,7 +440,7 @@ export default function TemplatePage() {
             <div className="mx-auto w-full max-w-[320px] flex-shrink-0">
               <div className="relative rounded-[2.2rem] border-[10px] border-black bg-black shadow-2xl overflow-hidden" style={{ aspectRatio: "9 / 19" }}>
                 <iframe
-                  key={selected.id}
+                  key={`${selected.id}-${onizlemeSurum}`}
                   src={`/kart/onizle-${selected.id}`}
                   title={`${selected.name} önizleme`}
                   className="w-full h-full bg-[#050816]"
@@ -422,6 +467,14 @@ export default function TemplatePage() {
                   <span className="material-symbols-outlined text-base">open_in_new</span>
                   Yeni sekmede aç
                 </a>
+                <button
+                  type="button"
+                  onClick={onizlemeyiYenile}
+                  className="px-5 py-2.5 glass-card rounded-xl text-sm text-white/80 hover:text-white inline-flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-base">refresh</span>
+                  Yenile
+                </button>
                 <button
                   type="button"
                   onClick={() => setPreviewOpen(false)}

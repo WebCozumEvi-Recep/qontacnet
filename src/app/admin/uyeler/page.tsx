@@ -36,6 +36,16 @@ export default function AdminUyelerPage() {
   const [modal, setModal] = useState<"yeni" | Uye | null>(null);
   const [form, setForm] = useState<UyeForm>(BOS_FORM);
   const [sifreGoster, setSifreGoster] = useState(false);
+  const [girisYapilan, setGirisYapilan] = useState<string | null>(null);
+
+  const hesabinaGir = async (u: Uye) => {
+    if (!confirm(`${`${u.ad} ${u.soyad}`.trim() || u.email} hesabına giriş yapılsın mı?\nAdmin paneline üye panelindeki "Admin'e dön" ile geri dönebilirsiniz.`)) return;
+    setGirisYapilan(u.id);
+    const j = await fetch(`/api/admin/uyeler/${u.id}/giris`, { method: "POST" }).then(r => r.json()).catch(() => ({ ok: false }));
+    if (j.ok) { window.location.assign("/uye"); return; }
+    setGirisYapilan(null);
+    alert(j.error || "Giriş yapılamadı.");
+  };
   const [kaydediliyor, setKaydediliyor] = useState(false);
   const [hata, setHata] = useState("");
 
@@ -119,11 +129,11 @@ export default function AdminUyelerPage() {
         : liste.length === 0 ? <div className="glass-card rounded-2xl p-12 text-center text-on-surface-variant text-sm">Sonuç bulunamadı.</div>
         : (
           <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="hidden lg:grid grid-cols-[1.6fr_1fr_1.1fr_120px_70px_90px_40px] gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
+            <div className="hidden lg:grid grid-cols-[1.6fr_1fr_1.1fr_120px_70px_90px_72px] gap-3 px-4 py-3 text-[10px] uppercase tracking-wider text-on-surface-variant/60 border-b border-white/5">
               <span>Üye</span><span>Telefon</span><span>Firma</span><span>Kart</span><span>Sipariş</span><span>Kayıt</span><span />
             </div>
             {liste.map(u => (
-              <div key={u.id} className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr_1.1fr_120px_70px_90px_40px] gap-1 lg:gap-3 lg:items-center px-4 py-3 border-b border-white/5 last:border-0">
+              <div key={u.id} className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr_1.1fr_120px_70px_90px_72px] gap-1 lg:gap-3 lg:items-center px-4 py-3 border-b border-white/5 last:border-0">
                 <div className="min-w-0">
                   <p className="text-sm text-on-surface truncate flex items-center gap-2">
                     <Link href={`/kart/${u.id}`} target="_blank" className="hover:text-primary truncate">{`${u.ad} ${u.soyad}`.trim()}</Link>
@@ -141,9 +151,14 @@ export default function AdminUyelerPage() {
                   : <p className="text-xs text-on-surface-variant/50">Kart yok</p>}
                 <p className="text-sm text-on-surface">{u.siparis || <span className="text-on-surface-variant/50">—</span>}</p>
                 <p className="text-xs text-on-surface-variant">{trDate(u.createdAt)}</p>
-                <button onClick={() => duzenleAc(u)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface justify-self-start lg:justify-self-end" title="Düzenle">
-                  <span className="material-symbols-outlined text-base">edit</span>
-                </button>
+                <div className="flex gap-1 justify-self-start lg:justify-self-end">
+                  <button onClick={() => hesabinaGir(u)} disabled={girisYapilan === u.id} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-primary disabled:opacity-50" title="Üyenin hesabına giriş yap">
+                    <span className="material-symbols-outlined text-base">{girisYapilan === u.id ? "progress_activity" : "login"}</span>
+                  </button>
+                  <button onClick={() => duzenleAc(u)} className="p-1.5 rounded-lg hover:bg-white/10 text-on-surface-variant hover:text-on-surface" title="Düzenle">
+                    <span className="material-symbols-outlined text-base">edit</span>
+                  </button>
+                </div>
               </div>
             ))}
             <div className="px-4 py-3 border-t border-white/5 text-xs text-on-surface-variant">{liste.length.toLocaleString("tr-TR")} üye</div>
