@@ -39,10 +39,13 @@ export default function ModulYonetimi({
   templateId,
   aktif,
   onModulesChange,
+  onKaydedildi,
 }: {
   templateId: string;
   aktif: boolean;
   onModulesChange?: () => void;
+  /** Her başarılı kayıttan (ekle/sil/güncelle/sırala) sonra çağrılır — önizlemeyi yenilemek için */
+  onKaydedildi?: () => void;
 }) {
   const [moduller, setModuller] = useState<Modul[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,14 +73,14 @@ export default function ModulYonetimi({
       body: JSON.stringify({ tip, templateId }),
     });
     const j = await r.json();
-    if (j.ok) setModuller(prev => [...prev, j.modul]);
+    if (j.ok) { setModuller(prev => [...prev, j.modul]); onKaydedildi?.(); }
     setAdding(false);
   }
 
   async function sil(id: string) {
     if (!confirm("Bu modülü silmek istediğine emin misin?")) return;
     const r = await fetch(`/api/firma/moduller/${id}`, { method: "DELETE" });
-    if ((await r.json()).ok) setModuller(prev => prev.filter(m => m.id !== id));
+    if ((await r.json()).ok) { setModuller(prev => prev.filter(m => m.id !== id)); onKaydedildi?.(); }
   }
 
   async function guncelle(id: string, patch: Partial<Modul>) {
@@ -87,6 +90,7 @@ export default function ModulYonetimi({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
+    onKaydedildi?.();
   }
 
   async function sirala(yeni: Modul[]) {
@@ -96,6 +100,7 @@ export default function ModulYonetimi({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: yeni.map(m => m.id) }),
     });
+    onKaydedildi?.();
   }
 
   function tasi(id: string, yon: -1 | 1) {
